@@ -768,9 +768,11 @@ body.sheet-open .sheet { transform: none; }
   justify-content: flex-end;
   padding: 0 22px calc(var(--safe-b) + 30px);
   opacity: 0;
-  transition: opacity 260ms;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 260ms, visibility 260ms;
 }
-.scanner.is-open { opacity: 1; }
+.scanner.is-open { opacity: 1; visibility: visible; pointer-events: auto; }
 
 #scannerVideo {
   position: absolute;
@@ -887,9 +889,11 @@ body.sheet-open .sheet { transform: none; }
   padding: 28px;
   background: radial-gradient(circle at 50% 42%, #2a1a05 0%, #0b1424 45%, #04101f 100%);
   opacity: 0;
-  transition: opacity 320ms;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 320ms, visibility 320ms;
 }
-.award.is-open { opacity: 1; }
+.award.is-open { opacity: 1; visibility: visible; pointer-events: auto; }
 
 /* Frost cracking outward from the medallion as it ignites. */
 .award__shatter {
