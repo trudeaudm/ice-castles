@@ -1,7 +1,7 @@
 /* Service worker: keeps the park usable where cell service isn't.
    Shell + map artwork are cached on install; API calls always try the
    network first and fall back to the last good response. */
-const CACHE = 'icecastles-v2';
+const CACHE = 'icecastles-v3';
 const SHELL = [
   '/', '/app.css', '/manifest.webmanifest',
   '/js/api.js', '/js/map.js', '/js/scanner.js', '/js/app.js',

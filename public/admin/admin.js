@@ -103,6 +103,7 @@ function signOut() {
   el('gate').hidden = false;
 }
 el('signOut').addEventListener('click', signOut);
+el('gridToggle').addEventListener('click', toggleGrid);
 
 /* -------------------------------------------------------------------------- */
 /* tabs                                                                      */
@@ -141,7 +142,8 @@ let gridOn = localStorage.getItem('ic_grid') !== '0';
 const gridCell = () => Number(state.settings.grid_cell) || 100;
 
 /** "F7" for the cell a pixel coordinate falls in. */
-const cellRef = (x, y) => ParkGrid.cellFor(x, y, gridCell());
+const cellRef = (x, y) =>
+  typeof ParkGrid === 'undefined' ? '—' : ParkGrid.cellFor(x, y, gridCell());
 
 function updateGridButton() {
   const button = document.getElementById('gridToggle');
@@ -154,14 +156,15 @@ function updateGridButton() {
 function toggleGrid() {
   gridOn = !gridOn;
   localStorage.setItem('ic_grid', gridOn ? '1' : '0');
-  if (!gridLayer || !map) return;
-  if (gridOn) gridLayer.addTo(map);
-  else map.removeLayer(gridLayer);
+  if (gridLayer && map) {
+    if (gridOn) gridLayer.addTo(map);
+    else map.removeLayer(gridLayer);
+  }
   updateGridButton();
 }
 
 function rebuildGrid() {
-  if (!map) return;
+  if (!map || typeof ParkGrid === 'undefined') return;
   if (gridLayer) map.removeLayer(gridLayer);
   const { width, height } = mapDims();
   gridLayer = ParkGrid.createGridLayer(L, { width, height, cell: gridCell() });
@@ -182,16 +185,8 @@ function initMap() {
   map.setMaxBounds(bounds.pad(0.25));
   map.fitBounds(bounds);
 
-  // Reference grid. This is a working layer only: it lives on the admin map so
-  // positions can be talked about out loud ("the golem is in E3") while the
-  // real artwork is still being drawn from overhead photos. It is a plain
-  // Leaflet layer, so it is never part of what a guest loads.
-  gridLayer = ParkGrid.createGridLayer(L, { width, height, cell: gridCell() });
-  if (gridOn) gridLayer.addTo(map);
-  updateGridButton();
-
-  // Clicking open ground creates a marker right there. This is the fastest
-  // possible path from "we added a sculpture" to "it's on the guest map".
+  // Core handlers first. If the grid block below throws (e.g. ParkGrid missing
+  // because a stale cached shell omitted grid.js), marker placement still works.
   map.on('click', async (event) => {
     const { x, y } = fromLatLng(event.latlng);
     try {
@@ -208,6 +203,17 @@ function initMap() {
       toast('Couldn’t add that marker.', true);
     }
   });
+
+  // Reference grid. Working layer only — never part of what a guest loads.
+  // Positions can be spoken out loud ("the golem is in E3") while the real
+  // artwork is still being drawn from overhead photos.
+  if (typeof ParkGrid === 'undefined') {
+    console.warn('Reference grid unavailable; continuing without it.');
+  } else {
+    gridLayer = ParkGrid.createGridLayer(L, { width, height, cell: gridCell() });
+    if (gridOn) gridLayer.addTo(map);
+  }
+  updateGridButton();
 }
 
 function markerIcon(poi) {

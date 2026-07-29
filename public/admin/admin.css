@@ -51,12 +51,16 @@ code { font-family: var(--mono); font-size: 0.9em; color: var(--aurora); }
 
 :focus-visible { outline: 2px solid var(--aurora); outline-offset: 2px; }
 
+/* Restore the HTML-spec behaviour of [hidden]. Author display rules
+   (e.g. .shell { display: flex }) otherwise override it. */
+[hidden] { display: none !important; }
+
 /* ---------------------------------- gate ---------------------------------- */
 
 .gate {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 2000;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -182,7 +186,10 @@ code { font-family: var(--mono); font-size: 0.9em; color: var(--aurora); }
 .view.is-active { display: flex; }
 
 .mapWrap { flex: 1; position: relative; min-width: 0; }
-#adminMap { position: absolute; inset: 0; background: var(--ink-900); }
+/* relative + isolation contains Leaflet's z-index (controls up to 800,
+   corners up to 1000) so they can't paint over .gate. height/width fill
+   .mapWrap the way absolute+inset used to. */
+#adminMap { position: relative; isolation: isolate; height: 100%; width: 100%; background: var(--ink-900); }
 .leaflet-container { background: var(--ink-900); font-family: var(--body); }
 .leaflet-control-attribution { display: none; }
 
