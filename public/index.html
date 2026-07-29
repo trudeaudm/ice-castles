@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Ice Castles — Park Guide</title>
+<meta name="description" content="Find your way through the ice. Map, markers and the Lantern Keeper's Trail.">
+<meta name="theme-color" content="#04101f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/vendor/leaflet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,500;1,9..144,600;1,9..144,700&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+
+<!-- Ambient aurora. Purely atmospheric, hidden from assistive tech. -->
+<div class="aurora" aria-hidden="true">
+  <span class="aurora__band aurora__band--1"></span>
+  <span class="aurora__band aurora__band--2"></span>
+  <span class="aurora__band aurora__band--3"></span>
+</div>
+
+<header class="topbar">
+  <div class="topbar__id">
+    <span class="topbar__eyebrow" id="parkLocation">Loading</span>
+    <h1 class="topbar__name" id="parkName">Ice Castles</h1>
+  </div>
+  <button class="progressRing" id="progressButton" type="button" aria-label="Open your passport">
+    <svg viewBox="0 0 44 44" aria-hidden="true">
+      <circle class="progressRing__track" cx="22" cy="22" r="18"></circle>
+      <circle class="progressRing__fill" cx="22" cy="22" r="18" id="progressFill"></circle>
+    </svg>
+    <span class="progressRing__label" id="progressLabel">0</span>
+  </button>
+</header>
+
+<!-- Map is the ground plane of the whole app. -->
+<main id="map" aria-label="Park map"></main>
+
+<div class="mapTools">
+  <button class="mapTool" id="recenterButton" type="button" aria-label="Fit the whole park on screen">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+  <button class="mapTool" id="filterButton" type="button" aria-label="Filter what the map shows">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+  </button>
+</div>
+
+<div class="legend" id="legend" hidden>
+  <p class="legend__title">Show on map</p>
+  <div class="legend__rows" id="legendRows"></div>
+</div>
+
+<!-- ------------------------------- POI sheet ------------------------------- -->
+<section class="sheet" id="sheet" aria-live="polite" aria-label="Marker details">
+  <button class="sheet__grip" id="sheetGrip" type="button" aria-label="Collapse details"></button>
+  <div class="sheet__scroll" id="sheetBody"></div>
+</section>
+
+<!-- ------------------------------- panels --------------------------------- -->
+<section class="panel" id="huntPanel" aria-label="Hunts" hidden>
+  <header class="panel__head">
+    <h2 class="panel__title">Trails</h2>
+    <button class="panel__close" data-close-panel type="button" aria-label="Close">Done</button>
+  </header>
+  <div class="panel__scroll" id="huntBody"></div>
+</section>
+
+<section class="panel" id="passportPanel" aria-label="Your passport" hidden>
+  <header class="panel__head">
+    <h2 class="panel__title">Passport</h2>
+    <button class="panel__close" data-close-panel type="button" aria-label="Close">Done</button>
+  </header>
+  <div class="panel__scroll" id="passportBody"></div>
+</section>
+
+<!-- ------------------------------- scanner -------------------------------- -->
+<section class="scanner" id="scanner" aria-label="Scan a code" hidden>
+  <video id="scannerVideo" playsinline muted></video>
+  <canvas id="scannerCanvas" hidden></canvas>
+  <div class="scanner__veil"></div>
+  <div class="scanner__frame" aria-hidden="true">
+    <span></span><span></span><span></span><span></span>
+    <i class="scanner__sweep"></i>
+  </div>
+  <p class="scanner__hint" id="scannerHint">Point your camera at a code on the trail</p>
+  <div class="scanner__manual">
+    <label class="scanner__label" for="manualCode">Or type the code printed under it</label>
+    <div class="scanner__row">
+      <input id="manualCode" inputmode="latin" autocapitalize="characters" autocomplete="off"
+             spellcheck="false" maxlength="12" placeholder="ABC123">
+      <button id="manualSubmit" type="button">Go</button>
+    </div>
+  </div>
+  <button class="scanner__close" id="scannerClose" type="button" aria-label="Close scanner">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+</section>
+
+<!-- --------------------------- the earn moment ---------------------------- -->
+<section class="award" id="award" hidden>
+  <div class="award__shatter" aria-hidden="true"></div>
+  <div class="award__stage">
+    <div class="award__medallion" id="awardMedallion">
+      <svg viewBox="0 0 120 120" aria-hidden="true">
+        <polygon class="award__facet" points="60,6 108,42 90,110 30,110 12,42"></polygon>
+        <polygon class="award__facetInner" points="60,26 92,50 79,96 41,96 28,50"></polygon>
+      </svg>
+      <span class="award__glyph" id="awardGlyph"></span>
+    </div>
+    <p class="award__kicker" id="awardKicker">Light collected</p>
+    <h2 class="award__title" id="awardTitle"></h2>
+    <p class="award__meta" id="awardMeta"></p>
+    <div class="award__pips" id="awardPips"></div>
+    <button class="award__done" id="awardDone" type="button">Keep exploring</button>
+  </div>
+</section>
+
+<!-- ------------------------------- bottom nav ----------------------------- -->
+<nav class="nav" aria-label="Main">
+  <button class="nav__item is-active" data-view="map" type="button">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4L3 6.5v13L9 17l6 3 6-2.5v-13L15 7 9 4zM9 4v13M15 7v13"/></svg>
+    <span>Map</span>
+  </button>
+  <button class="nav__item" data-view="hunt" type="button">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 5.4 5.6.6-4.2 3.9 1.2 5.7L12 15.8 6.9 18.6l1.2-5.7L4 9l5.6-.6L12 3z"/></svg>
+    <span>Trails</span>
+  </button>
+
+  <button class="scanFab" id="scanFab" type="button" aria-label="Scan a code">
+    <span class="scanFab__pulse" aria-hidden="true"></span>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 8V5a1 1 0 011-1h3M20 8V5a1 1 0 00-1-1h-3M4 16v3a1 1 0 001 1h3M20 16v3a1 1 0 01-1 1h-3"/>
+      <path d="M3.5 12h17"/>
+    </svg>
+  </button>
+
+  <button class="nav__item" data-view="passport" type="button">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM15 3v4h4M9 12h7M9 16h5"/></svg>
+    <span>Passport</span>
+  </button>
+  <button class="nav__item" data-view="info" type="button">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8v.4"/></svg>
+    <span>Info</span>
+  </button>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="bootSplash" id="bootSplash">
+  <div class="bootSplash__mark" aria-hidden="true">
+    <span></span><span></span><span></span>
+  </div>
+  <p class="bootSplash__text">Growing the ice…</p>
+</div>
+
+<script src="/vendor/leaflet.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/map.js"></script>
+<script src="/js/scanner.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>

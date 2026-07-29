@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Park admin — Ice Castles</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="/vendor/leaflet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,500;1,9..144,600;1,9..144,700&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <form class="gate__card" id="loginForm">
+    <p class="gate__eyebrow">Ice Castles</p>
+    <h1 class="gate__title">Park admin</h1>
+    <p class="gate__body">Enter the dashboard password to manage markers and trails.</p>
+    <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
+    <button type="submit" id="loginButton">Sign in</button>
+    <p class="gate__error" id="loginError" hidden></p>
+  </form>
+</div>
+
+<div class="shell" id="shell" hidden>
+  <header class="bar">
+    <div class="bar__id">
+      <span class="bar__eyebrow">Ice Castles</span>
+      <strong class="bar__title">Park admin</strong>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab is-active" data-tab="map" type="button">Map</button>
+      <button class="tab" data-tab="markers" type="button">Markers</button>
+      <button class="tab" data-tab="trails" type="button">Trails</button>
+      <button class="tab" data-tab="signs" type="button">Signs</button>
+      <button class="tab" data-tab="settings" type="button">Settings</button>
+    </nav>
+    <div class="bar__actions">
+      <button class="ghostButton is-active" id="gridToggle" type="button" aria-pressed="true" title="Reference grid — admin only, guests never see it">Grid on</button>
+      <span class="saveState" id="saveState"></span>
+      <a class="ghostButton" href="/" target="_blank" rel="noopener">View guest app</a>
+      <button class="ghostButton" id="signOut" type="button">Sign out</button>
+    </div>
+  </header>
+
+  <!-- ------------------------------- MAP TAB ------------------------------- -->
+  <section class="view is-active" data-view="map">
+    <div class="mapWrap">
+      <div id="adminMap"></div>
+      <div class="mapHint" id="mapHint">
+        <strong>Click anywhere on the map to add a marker there.</strong>
+        Drag a marker to move it — the new position saves by itself.
+      </div>
+    </div>
+    <aside class="inspector" id="inspector">
+      <div class="inspector__empty" id="inspectorEmpty">
+        <p class="inspector__emptyMark">◇</p>
+        <h2>Nothing selected</h2>
+        <p>Click a marker to edit it, or click open ground to place a new one.</p>
+      </div>
+      <form class="form" id="poiForm" hidden>
+        <div class="form__head">
+          <span class="codeTag" id="poiCode">------</span>
+          <button class="dangerButton" id="deletePoi" type="button">Delete</button>
+        </div>
+
+        <label>Name<input name="name" maxlength="120" required></label>
+        <div class="form__row">
+          <label>Category
+            <select name="category">
+              <option value="landmark">Landmark</option>
+              <option value="sculpture">Ice sculpture</option>
+              <option value="lantern">Lantern display</option>
+              <option value="photo-op">Photo spot</option>
+              <option value="ride">Ride</option>
+              <option value="amenity">Facilities</option>
+            </select>
+          </label>
+          <label>Zone<input name="zone" maxlength="80" placeholder="Dragon Roost"></label>
+        </div>
+
+        <label>Short line on the map card
+          <input name="blurb" maxlength="300" placeholder="Three dragons, and a great many fire lizards.">
+        </label>
+        <label>Full description
+          <textarea name="description" rows="5" maxlength="4000"></textarea>
+        </label>
+        <label>Did-you-know note
+          <textarea name="fun_fact" rows="2" maxlength="600"></textarea>
+        </label>
+        <label>Photo URL
+          <input name="image_url" maxlength="500" placeholder="https://…">
+        </label>
+
+        <div class="form__row">
+          <label>Map X<input name="x" type="number" step="1"></label>
+          <label>Map Y<input name="y" type="number" step="1"></label>
+        </div>
+
+        <label class="check">
+          <input type="checkbox" name="published">
+          <span>Visible to guests</span>
+        </label>
+
+        <div class="form__foot">
+          <button class="primaryButton" type="submit">Save marker</button>
+          <a class="ghostButton" id="qrLink" href="#" target="_blank" rel="noopener">Open QR code</a>
+        </div>
+      </form>
+    </aside>
+  </section>
+
+  <!-- ----------------------------- MARKERS TAB ----------------------------- -->
+  <section class="view" data-view="markers">
+    <div class="pane">
+      <div class="pane__head">
+        <h2>Markers</h2>
+        <button class="primaryButton" id="addPoiButton" type="button">Add marker</button>
+      </div>
+      <div class="tableWrap">
+        <table class="table" id="poiTable">
+          <thead>
+            <tr><th>Name</th><th>Category</th><th>Zone</th><th>Grid / px</th><th>Code</th><th>Live</th><th>Scans</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------ TRAILS TAB ----------------------------- -->
+  <section class="view" data-view="trails">
+    <div class="pane">
+      <div class="pane__head">
+        <h2>Trails</h2>
+        <button class="primaryButton" id="addHuntButton" type="button">New trail</button>
+      </div>
+      <p class="pane__note">
+        A trail is a set of markers. Guests earn one token per marker they scan, and the reward unlocks
+        when they have them all. Adding or removing a stop takes effect immediately in the guest app.
+      </p>
+      <div id="huntList"></div>
+    </div>
+  </section>
+
+  <!-- ------------------------------- SIGNS TAB ----------------------------- -->
+  <section class="view" data-view="signs">
+    <div class="pane">
+      <div class="pane__head">
+        <h2>Printable signs</h2>
+        <button class="primaryButton" id="printSheet" type="button">Open print sheet</button>
+      </div>
+      <p class="pane__note">
+        Every marker has its own code. The QR points at <code id="baseUrlSample">/s/CODE</code>, so a guest
+        can scan it with their phone's normal camera and land straight in the app — no install step.
+        Reprinting a sign? Roll the code first so the old printout stops working.
+      </p>
+      <div class="signGrid" id="signGrid"></div>
+    </div>
+  </section>
+
+  <!-- ----------------------------- SETTINGS TAB ---------------------------- -->
+  <section class="view" data-view="settings">
+    <div class="pane pane--narrow">
+      <div class="pane__head"><h2>Settings</h2></div>
+      <form class="form" id="settingsForm">
+        <label>Park name<input name="park_name" maxlength="80"></label>
+        <label>Location line<input name="location_name" maxlength="120"></label>
+        <label>Welcome headline<input name="welcome_headline" maxlength="120"></label>
+        <label>Welcome text<textarea name="welcome_body" rows="3" maxlength="1000"></textarea></label>
+        <label>Hours note<textarea name="hours_note" rows="2" maxlength="600"></textarea></label>
+        <label>Safety note<textarea name="safety_note" rows="2" maxlength="600"></textarea></label>
+
+        <h3 class="form__section">Map artwork</h3>
+        <p class="pane__note" style="margin:0 0 14px">
+          Marker positions are stored as pixels on this image. Swap in new artwork with the same
+          width and height and every marker stays exactly where you put it.
+        </p>
+        <label>Image URL<input name="map_image_url" maxlength="500"></label>
+        <div class="form__row">
+          <label>Image width (px)<input name="map_width" type="number"></label>
+          <label>Image height (px)<input name="map_height" type="number"></label>
+        </div>
+
+        <div class="form__foot">
+          <button class="primaryButton" type="submit">Save settings</button>
+        </div>
+      </form>
+
+      <div class="pane__head" style="margin-top:34px"><h2>Tonight</h2></div>
+      <div class="statRow" id="statRow"></div>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/vendor/leaflet.js"></script>
+<script src="/js/grid.js"></script>
+<script src="/admin/admin.js"></script>
+</body>
+</html>

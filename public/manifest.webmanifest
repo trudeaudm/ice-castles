@@ -1,0 +1,14 @@
+{
+  "name": "Ice Castles — Park Guide",
+  "short_name": "Ice Castles",
+  "description": "Map, markers and trails for your visit.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#04101f",
+  "theme_color": "#04101f",
+  "icons": [
+    { "src": "/assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
