@@ -181,7 +181,7 @@ function initMap() {
     attributionControl: false,
   });
   const bounds = L.latLngBounds(toLatLng(0, height), toLatLng(width, 0));
-  L.imageOverlay(state.settings.map_image_url || '/assets/park-map.svg', bounds).addTo(map);
+  L.imageOverlay(state.settings.map_image_url || '/assets/park-map.webp', bounds).addTo(map);
   map.setMaxBounds(bounds.pad(0.25));
   map.fitBounds(bounds);
 

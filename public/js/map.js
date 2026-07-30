@@ -50,6 +50,9 @@ const ParkMap = (() => {
       maxBoundsViscosity: 0.9,
       tap: true,
       bounceAtZoomLimits: false,
+      zoomAnimation: true,
+      fadeAnimation: false,
+      markerZoomAnimation: false,
     });
 
     bounds = L.latLngBounds(toLatLng(0, dims.height), toLatLng(dims.width, 0));
@@ -63,6 +66,11 @@ const ParkMap = (() => {
     };
     map.on('zoomend', syncZoomClass);
     syncZoomClass();
+
+    // Pause decorative CSS animations while the map is moving so the main
+    // thread isn't also running halo/aurora keyframes during pan/zoom.
+    map.on('movestart zoomstart', () => document.body.classList.add('map-moving'));
+    map.on('moveend zoomend', () => document.body.classList.remove('map-moving'));
 
     map.on('click', () => onSelect(null));
     return map;
@@ -154,8 +162,9 @@ const ParkMap = (() => {
   }
 
   const invalidate = () => map && map.invalidateSize();
+  const getMap = () => map;
 
-  return { init, render, fit, focusOn, highlight, celebrate, invalidate, colorFor, CATEGORY_COLORS };
+  return { init, render, fit, focusOn, highlight, celebrate, invalidate, getMap, colorFor, CATEGORY_COLORS };
 })();
 
 window.ParkMap = ParkMap;

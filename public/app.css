@@ -109,6 +109,12 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
 .aurora__band--2 { top: -30px;  background: radial-gradient(ellipse at 40% 50%, var(--violet), transparent 70%); animation: drift 34s ease-in-out -8s infinite reverse; opacity: 0.26; }
 .aurora__band--3 { top: 40px;   background: radial-gradient(ellipse at 60% 50%, #4aa3ff, transparent 72%); animation: drift 44s ease-in-out -18s infinite; opacity: 0.2; }
 
+/* While the guest is panning/zooming, freeze decorative loops so they
+   don't compete with map paints on a mid-range phone. */
+body.map-moving .pin__halo,
+body.map-moving .pin.is-target::before,
+body.map-moving .aurora__band { animation-play-state: paused; }
+
 @keyframes drift {
   0%, 100% { transform: translate3d(-6%, 0, 0) skewY(-2deg) scaleY(1); }
   50%      { transform: translate3d(6%, 18px, 0) skewY(2.5deg) scaleY(1.25); }
@@ -303,9 +309,8 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
   width: 42px; height: 42px;
   display: grid; place-items: center;
   border-radius: 13px;
-  background: rgba(13, 39, 67, 0.82);
+  background: rgba(13, 39, 67, 0.96);
   border: 1px solid var(--hairline);
-  backdrop-filter: blur(14px);
   color: var(--frost-300);
 }
 .mapTool svg { width: 19px; height: 19px; }
@@ -325,9 +330,8 @@ body.panel-open .mapTools { opacity: 0; transform: translateY(10px); pointer-eve
   width: 186px;
   padding: 12px;
   border-radius: var(--r-md);
-  background: rgba(7, 27, 49, 0.94);
+  background: rgba(7, 27, 49, 0.98);
   border: 1px solid var(--hairline);
-  backdrop-filter: blur(18px);
   animation: popIn 260ms var(--ease-spring);
 }
 
@@ -384,10 +388,9 @@ body.panel-open .mapTools { opacity: 0; transform: translateY(10px); pointer-eve
   display: flex;
   flex-direction: column;
   border-radius: var(--r-lg) var(--r-lg) 0 0;
-  background: linear-gradient(to bottom, rgba(13, 39, 67, 0.97), rgba(4, 16, 31, 0.99));
+  background: linear-gradient(to bottom, rgba(13, 39, 67, 0.99), rgba(4, 16, 31, 1));
   border-top: 1px solid var(--hairline);
   box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(22px);
   transform: translateY(104%);
   transition: transform 420ms var(--ease-out);
   padding-bottom: calc(var(--nav-h) + var(--safe-b) + 4px);
@@ -1010,9 +1013,8 @@ body.sheet-open .sheet { transform: none; }
   display: grid;
   grid-template-columns: 1fr 1fr 78px 1fr 1fr;
   align-items: center;
-  background: rgba(4, 16, 31, 0.94);
+  background: rgba(4, 16, 31, 0.98);
   border-top: 1px solid var(--hairline);
-  backdrop-filter: blur(22px);
 }
 
 .nav__item {
@@ -1070,9 +1072,8 @@ body.sheet-open .sheet { transform: none; }
   max-width: min(88vw, 400px);
   padding: 12px 18px;
   border-radius: 99px;
-  background: rgba(13, 39, 67, 0.97);
+  background: rgba(13, 39, 67, 0.98);
   border: 1px solid var(--hairline);
-  backdrop-filter: blur(16px);
   font-size: 13.5px;
   text-align: center;
   opacity: 0;

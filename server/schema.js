@@ -105,7 +105,9 @@ const DEFAULT_SETTINGS = {
   welcome_headline: 'Find your way through the ice',
   welcome_body:
     'Tap any marker to learn what you are looking at. Scan the codes you find on the trail to collect light and unlock the reward at the Warming Hut.',
-  map_image_url: '/assets/park-map.svg',
+  // WebP is what ships (grain + shadow baked in). park-map.svg remains the
+  // editable source of truth — re-export to WebP after artwork changes.
+  map_image_url: '/assets/park-map.webp',
   map_width: '2000',
   map_height: '1400',
   grid_cell: '100',
@@ -122,6 +124,12 @@ async function migrate() {
       [key, value]
     );
   }
+  // Existing installs still have the SVG path from the original default.
+  // Move them onto the raster asset without clobbering a custom URL.
+  await db.run(
+    `UPDATE settings SET value = ? WHERE "key" = 'map_image_url' AND value = ?`,
+    ['/assets/park-map.webp', '/assets/park-map.svg']
+  );
   return now;
 }
 
