@@ -80,6 +80,10 @@ router.get('/state', async (req, res) => {
         hunts.map((h) => h.id)
       )
     : [];
+  const touchpoints = await db.all(
+    'SELECT * FROM touchpoints WHERE adventure_id = ? ORDER BY sort_order, created_at',
+    [adventure.id]
+  );
 
   res.json({
     tree: await listTree(),
@@ -95,9 +99,13 @@ router.get('/state', async (req, res) => {
       map_width: adventure.map_width || '2000',
       map_height: adventure.map_height || '1400',
       grid_cell: adventure.grid_cell || '100',
+      badge_title: adventure.badge_title || '',
+      badge_body: adventure.badge_body || '',
+      badge_redemption: adventure.badge_redemption || '',
     },
     pois,
     hunts: hunts.map((h) => ({ ...h, stops: stops.filter((s) => s.hunt_id === h.id) })),
+    touchpoints,
   });
 });
 
@@ -197,6 +205,9 @@ router.put('/settings', async (req, res) => {
     map_width: patch.map_width,
     map_height: patch.map_height,
     grid_cell: patch.grid_cell,
+    badge_title: patch.badge_title,
+    badge_body: patch.badge_body,
+    badge_redemption: patch.badge_redemption,
   });
   if (!adventure) return res.status(404).json({ error: 'not_found' });
 
@@ -227,6 +238,9 @@ router.put('/settings', async (req, res) => {
     map_width: fresh.map_width || '2000',
     map_height: fresh.map_height || '1400',
     grid_cell: fresh.grid_cell || '100',
+    badge_title: fresh.badge_title || '',
+    badge_body: fresh.badge_body || '',
+    badge_redemption: fresh.badge_redemption || '',
   });
 });
 
@@ -496,6 +510,102 @@ router.delete('/stops/:id', async (req, res) => {
 
 router.get('/challenge-types', (_req, res) => {
   res.json({ types: CHALLENGE_TYPES });
+});
+
+/* ------------------------------ journey touchpoints ---------------------- */
+
+const TOUCH_TYPES = ['threshold', 'guardian', 'monument', 'heart'];
+
+async function uniqueTouchSlug(adventureId, title, ignoreId = null) {
+  let base = slugify(title, 'stop');
+  let candidate = base;
+  for (let i = 2; i < 200; i++) {
+    const clash = await db.get(
+      'SELECT id FROM touchpoints WHERE adventure_id = ? AND slug = ?',
+      [adventureId, candidate]
+    );
+    if (!clash || clash.id === ignoreId) return candidate;
+    candidate = `${base}-${i}`;
+  }
+  return `${base}-${shortCode(4).toLowerCase()}`;
+}
+
+router.post('/touchpoints', async (req, res) => {
+  const b = req.body || {};
+  const adventureId = clean(b.adventure_id, 80);
+  if (!adventureId) return res.status(400).json({ error: 'missing_adventure' });
+  const type = TOUCH_TYPES.includes(b.type) ? b.type : 'guardian';
+  const title = clean(b.title, 120) || 'Untitled stop';
+  const id = uuid();
+  const ts = now();
+  await db.run(
+    `INSERT INTO touchpoints
+       (id, adventure_id, type, slug, title, subtitle, body, element, image_url, audio_url,
+        poi_id, sort_order, published, config, created_at, updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [
+      id,
+      adventureId,
+      type,
+      await uniqueTouchSlug(adventureId, b.slug || title),
+      title,
+      clean(b.subtitle, 200),
+      clean(b.body, 8000),
+      clean(b.element, 40),
+      clean(b.image_url, 500),
+      clean(b.audio_url, 500),
+      clean(b.poi_id, 80),
+      num(b.sort_order, 0),
+      bool(b.published === undefined ? true : b.published),
+      b.config ? (typeof b.config === 'string' ? b.config : JSON.stringify(b.config)) : null,
+      ts,
+      ts,
+    ]
+  );
+  res.status(201).json(await db.get('SELECT * FROM touchpoints WHERE id = ?', [id]));
+});
+
+router.patch('/touchpoints/:id', async (req, res) => {
+  const existing = await db.get('SELECT * FROM touchpoints WHERE id = ?', [req.params.id]);
+  if (!existing) return res.status(404).json({ error: 'not_found' });
+  const b = req.body || {};
+  const title = b.title !== undefined ? clean(b.title, 120) || existing.title : existing.title;
+  const type = b.type !== undefined && TOUCH_TYPES.includes(b.type) ? b.type : existing.type;
+  await db.run(
+    `UPDATE touchpoints SET type=?, slug=?, title=?, subtitle=?, body=?, element=?,
+       image_url=?, audio_url=?, poi_id=?, sort_order=?, published=?, config=?, updated_at=?
+     WHERE id=?`,
+    [
+      type,
+      b.slug !== undefined
+        ? await uniqueTouchSlug(existing.adventure_id, b.slug || title, existing.id)
+        : existing.slug,
+      title,
+      b.subtitle !== undefined ? clean(b.subtitle, 200) : existing.subtitle,
+      b.body !== undefined ? clean(b.body, 8000) : existing.body,
+      b.element !== undefined ? clean(b.element, 40) : existing.element,
+      b.image_url !== undefined ? clean(b.image_url, 500) : existing.image_url,
+      b.audio_url !== undefined ? clean(b.audio_url, 500) : existing.audio_url,
+      b.poi_id !== undefined ? clean(b.poi_id, 80) : existing.poi_id,
+      b.sort_order !== undefined ? num(b.sort_order, existing.sort_order) : existing.sort_order,
+      b.published !== undefined ? bool(b.published) : existing.published,
+      b.config !== undefined
+        ? b.config
+          ? typeof b.config === 'string'
+            ? b.config
+            : JSON.stringify(b.config)
+          : null
+        : existing.config,
+      now(),
+      existing.id,
+    ]
+  );
+  res.json(await db.get('SELECT * FROM touchpoints WHERE id = ?', [existing.id]));
+});
+
+router.delete('/touchpoints/:id', async (req, res) => {
+  await db.run('DELETE FROM touchpoints WHERE id = ?', [req.params.id]);
+  res.json({ ok: true });
 });
 
 /* --------------------------------- QR codes ------------------------------ */

@@ -22,7 +22,7 @@ const escapeHtml = (value) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 let token = sessionStorage.getItem(KEY) || '';
-let state = { settings: {}, pois: [], hunts: [], tree: [], adventure: null };
+let state = { settings: {}, pois: [], hunts: [], touchpoints: [], tree: [], adventure: null };
 let stats = { perPoi: [], perHunt: [], guests: 0, scans: 0 };
 let selectedId = null;
 let map = null;
@@ -130,6 +130,7 @@ el('tabs').addEventListener('click', (event) => {
   });
   if (tab.dataset.tab === 'map' && map) setTimeout(() => map.invalidateSize(), 60);
   if (tab.dataset.tab === 'signs') renderSigns();
+  if (tab.dataset.tab === 'journey') renderTouchpoints();
   if (tab.dataset.tab === 'settings') loadStats();
 });
 
@@ -677,6 +678,121 @@ function openStopEditor(stopId) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* journey touchpoints                                                        */
+/* -------------------------------------------------------------------------- */
+
+const TOUCH_TYPES = [
+  { id: 'threshold', label: 'Threshold' },
+  { id: 'guardian', label: 'Guardian' },
+  { id: 'monument', label: 'Builder’s Monument' },
+  { id: 'heart', label: 'Heart of Winter' },
+];
+
+function renderTouchpoints() {
+  const list = el('touchList');
+  if (!list) return;
+  const rows = state.touchpoints || [];
+  if (!rows.length) {
+    list.innerHTML = `<p class="pane__note">No journey pages yet. Add a Threshold to greet guests on arrival.</p>`;
+    return;
+  }
+  list.innerHTML = rows.map((tp) => {
+    const poi = state.pois.find((p) => p.id === tp.poi_id);
+    return `<article class="huntCard" data-touch="${escapeHtml(tp.id)}">
+      <div class="huntCard__head">
+        <div>
+          <h3 class="huntCard__title">${escapeHtml(tp.title)}</h3>
+          <p class="huntCard__meta">${escapeHtml(tp.type)} · ${escapeHtml(tp.slug)}${poi ? ` · ${escapeHtml(poi.name)}` : ''}</p>
+        </div>
+        <button class="dangerButton" data-del-touch="${escapeHtml(tp.id)}" type="button">Delete</button>
+      </div>
+      <form class="form" data-touch-form="${escapeHtml(tp.id)}">
+        <div class="form__row">
+          <label>Type
+            <select name="type">
+              ${TOUCH_TYPES.map((t) => `<option value="${t.id}"${t.id === tp.type ? ' selected' : ''}>${t.label}</option>`).join('')}
+            </select>
+          </label>
+          <label>Element<input name="element" value="${escapeHtml(tp.element || '')}" maxlength="40" placeholder="water"></label>
+        </div>
+        <label>Title<input name="title" value="${escapeHtml(tp.title)}" maxlength="120"></label>
+        <label>Subtitle<input name="subtitle" value="${escapeHtml(tp.subtitle || '')}" maxlength="200"></label>
+        <label>Story<textarea name="body" rows="5" maxlength="8000">${escapeHtml(tp.body || '')}</textarea></label>
+        <label>Linked marker
+          <select name="poi_id">
+            <option value="">None</option>
+            ${state.pois.map((p) => `<option value="${escapeHtml(p.id)}"${p.id === tp.poi_id ? ' selected' : ''}>${escapeHtml(p.name)}</option>`).join('')}
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" name="published"${tp.published ? ' checked' : ''}><span>Visible to guests</span></label>
+        <div class="form__foot"><button class="primaryButton" type="submit">Save</button></div>
+      </form>
+    </article>`;
+  }).join('');
+}
+
+el('addTouchButton')?.addEventListener('click', async () => {
+  if (!adventureId()) return toast('Pick an adventure first.', true);
+  try {
+    const tp = await api('/touchpoints', {
+      method: 'POST',
+      body: JSON.stringify({
+        adventure_id: adventureId(),
+        type: 'guardian',
+        title: 'New touchpoint',
+        subtitle: '',
+        body: '',
+        published: false,
+      }),
+    });
+    state.touchpoints = state.touchpoints || [];
+    state.touchpoints.push(tp);
+    renderTouchpoints();
+    toast('Touchpoint added.');
+  } catch {
+    toast('Couldn’t add that touchpoint.', true);
+  }
+});
+
+el('touchList')?.addEventListener('submit', async (event) => {
+  const form = event.target.closest('[data-touch-form]');
+  if (!form) return;
+  event.preventDefault();
+  const id = form.dataset.touchForm;
+  try {
+    const updated = await api(`/touchpoints/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        type: form.type.value,
+        element: form.element.value,
+        title: form.title.value,
+        subtitle: form.subtitle.value,
+        body: form.body.value,
+        poi_id: form.poi_id.value || null,
+        published: form.published.checked,
+      }),
+    });
+    const idx = state.touchpoints.findIndex((t) => t.id === id);
+    if (idx >= 0) state.touchpoints[idx] = updated;
+    renderTouchpoints();
+    flashSaved();
+    toast('Journey page saved.');
+  } catch {
+    toast('Couldn’t save that page.', true);
+  }
+});
+
+el('touchList')?.addEventListener('click', async (event) => {
+  const del = event.target.closest('[data-del-touch]');
+  if (!del) return;
+  if (!confirm('Delete this journey page?')) return;
+  await api(`/touchpoints/${del.dataset.delTouch}`, { method: 'DELETE' }).catch(() => null);
+  state.touchpoints = state.touchpoints.filter((t) => t.id !== del.dataset.delTouch);
+  renderTouchpoints();
+  toast('Deleted.');
+});
+
+/* -------------------------------------------------------------------------- */
 /* signs                                                                      */
 /* -------------------------------------------------------------------------- */
 
@@ -782,6 +898,7 @@ async function loadAdventure(id) {
   fillSettings();
   renderHunts();
   renderTable();
+  renderTouchpoints();
   if (map) {
     map.eachLayer((layer) => {
       if (layer instanceof L.ImageOverlay) map.removeLayer(layer);
@@ -861,7 +978,7 @@ async function start() {
   const preferred = sessionStorage.getItem('ic.admin.adventure') || '';
   const q = preferred ? `?adventure_id=${encodeURIComponent(preferred)}` : '';
   const data = await api(`/state${q}`);
-  state = { settings: {}, pois: [], hunts: [], tree: [], adventure: null, ...data };
+  state = { settings: {}, pois: [], hunts: [], touchpoints: [], tree: [], adventure: null, ...data };
   if (state.adventure?.id) sessionStorage.setItem('ic.admin.adventure', state.adventure.id);
 
   el('gate').hidden = true;
@@ -872,6 +989,7 @@ async function start() {
   renderMarkers();
   renderTable();
   renderHunts();
+  renderTouchpoints();
   fillSettings();
   loadStats();
   setTimeout(() => map && map.invalidateSize(), 80);

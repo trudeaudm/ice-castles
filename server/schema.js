@@ -123,6 +123,25 @@ CREATE TABLE IF NOT EXISTS hunt_completions (
   redeem_code  TEXT
 );
 
+CREATE TABLE IF NOT EXISTS touchpoints (
+  id           TEXT PRIMARY KEY,
+  adventure_id TEXT NOT NULL REFERENCES adventures(id) ON DELETE CASCADE,
+  type         TEXT NOT NULL,
+  slug         TEXT NOT NULL,
+  title        TEXT NOT NULL,
+  subtitle     TEXT,
+  body         TEXT,
+  element      TEXT,
+  image_url    TEXT,
+  audio_url    TEXT,
+  poi_id       TEXT REFERENCES pois(id) ON DELETE SET NULL,
+  sort_order   INTEGER NOT NULL DEFAULT 0,
+  published    INTEGER NOT NULL DEFAULT 1,
+  config       TEXT,
+  created_at   TEXT NOT NULL,
+  updated_at   TEXT NOT NULL
+);
+
 CREATE UNIQUE INDEX IF NOT EXISTS ux_scan_guest_poi   ON guest_scans (guest_id, poi_id);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_token_guest_stop ON guest_tokens (guest_id, hunt_stop_id);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_done_guest_hunt  ON hunt_completions (guest_id, hunt_id);
@@ -135,6 +154,8 @@ CREATE INDEX IF NOT EXISTS ix_pois_adv     ON pois (adventure_id, sort_order);
 CREATE INDEX IF NOT EXISTS ix_hunts_adv    ON hunts (adventure_id, sort_order);
 CREATE INDEX IF NOT EXISTS ix_adv_loc      ON adventures (location_id, year);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_adv_loc_year ON adventures (location_id, year);
+CREATE INDEX IF NOT EXISTS ix_touch_adv ON touchpoints (adventure_id, sort_order);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_touch_adv_slug ON touchpoints (adventure_id, slug);
 `;
 
 const DEFAULT_SETTINGS = {
@@ -249,6 +270,9 @@ async function migrate() {
   await ensureColumn('hunts', 'adventure_id', 'adventure_id TEXT');
   await ensureColumn('hunt_stops', 'challenge_type', "challenge_type TEXT NOT NULL DEFAULT 'scan'");
   await ensureColumn('hunt_stops', 'challenge_config', 'challenge_config TEXT');
+  await ensureColumn('adventures', 'badge_title', 'badge_title TEXT');
+  await ensureColumn('adventures', 'badge_body', 'badge_body TEXT');
+  await ensureColumn('adventures', 'badge_redemption', 'badge_redemption TEXT');
 
   await db.exec(INDEX_DDL);
 

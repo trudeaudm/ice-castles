@@ -107,6 +107,9 @@ function parkFromAdventure(row) {
     welcomeBody: row.welcome_body,
     hoursNote: row.hours_note,
     safetyNote: row.safety_note,
+    badgeTitle: row.badge_title || 'Winter Keeper',
+    badgeBody: row.badge_body || 'You completed the journey.',
+    badgeRedemption: row.badge_redemption || 'Show this badge at the Warming Hut to claim your pin.',
   };
 }
 
@@ -213,7 +216,8 @@ async function updateAdventure(id, patch = {}) {
   await db.run(
     `UPDATE adventures SET
        name=?, year=?, welcome_headline=?, welcome_body=?, hours_note=?, safety_note=?,
-       map_image_url=?, map_width=?, map_height=?, grid_cell=?, updated_at=?
+       map_image_url=?, map_width=?, map_height=?, grid_cell=?,
+       badge_title=?, badge_body=?, badge_redemption=?, updated_at=?
      WHERE id=?`,
     [
       pick('name', 120) || existing.name,
@@ -226,6 +230,9 @@ async function updateAdventure(id, patch = {}) {
       patch.map_width !== undefined ? String(patch.map_width) : existing.map_width,
       patch.map_height !== undefined ? String(patch.map_height) : existing.map_height,
       patch.grid_cell !== undefined ? String(patch.grid_cell) : existing.grid_cell,
+      pick('badge_title', 120) || existing.badge_title,
+      pick('badge_body', 1000) || existing.badge_body,
+      pick('badge_redemption', 1000) || existing.badge_redemption,
       now(),
       id,
     ]

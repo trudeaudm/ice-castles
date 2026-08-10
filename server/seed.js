@@ -223,13 +223,28 @@ async function seed() {
   }
 
   if (force) {
-    for (const table of ['hunt_completions', 'guest_tokens', 'guest_scans', 'hunt_stops', 'hunts', 'pois']) {
+    for (const table of [
+      'hunt_completions', 'guest_tokens', 'guest_scans', 'hunt_stops', 'hunts', 'touchpoints', 'pois',
+    ]) {
       await db.run(`DELETE FROM ${table}`);
     }
     console.log('Cleared existing content.');
   }
 
   const adventure = await ensureNhAdventure();
+  await db.run(
+    `UPDATE adventures SET badge_title=?, badge_body=?, badge_redemption=?,
+       welcome_headline=?, welcome_body=?, updated_at=? WHERE id=?`,
+    [
+      'Winter Keeper',
+      'You walked the Threshold, met the Guardians, and carried light to the Heart of Winter.',
+      'Show this badge at the Warming Hut to claim your Winter Keeper pin.',
+      'Welcome, Winter Keeper',
+      'Begin at the Threshold. Visit the five Guardians, learn the craft at the Builder’s Monument, and finish at the Heart of Winter.',
+      now(),
+      adventure.id,
+    ]
+  );
   const ts = now();
   const idByName = {};
 
@@ -271,11 +286,112 @@ async function seed() {
     );
   }
 
+  const TOUCHPOINTS = [
+    {
+      type: 'threshold',
+      slug: 'threshold',
+      title: 'The Threshold',
+      subtitle: 'Where the Winter Keeper tradition begins',
+      body:
+        'Every castle has a Threshold — the place where cold air meets warm courage. Cross it and the journey opens: five Guardians keep the realms, the builders leave their mark in ice, and the Heart of Winter waits for those who finish the path.',
+      sort_order: 0,
+      poi: 'Entrance & Ticketing',
+    },
+    {
+      type: 'guardian',
+      slug: 'cascade',
+      title: 'Cascade',
+      subtitle: 'Guardian of Water',
+      element: 'water',
+      body:
+        'Cascade watches the moving ice — currents frozen mid-pour, light shifting like a river under the surface. Find the water realm and listen for the current.',
+      sort_order: 1,
+      poi: 'Mystic Forest — Water',
+    },
+    {
+      type: 'guardian',
+      slug: 'granite',
+      title: 'Granite',
+      subtitle: 'Guardian of Earth',
+      element: 'earth',
+      body:
+        'Granite keeps the roots and the weight of the forest. Stone-shouldered figures and carved runes mark this realm. Answer Granite’s question to carry Rootglow.',
+      sort_order: 2,
+      poi: 'Mystic Forest — Earth',
+    },
+    {
+      type: 'guardian',
+      slug: 'ember',
+      title: 'Ember',
+      subtitle: 'Guardian of Fire',
+      element: 'fire',
+      body:
+        'Ember is warm light through cold silk — flicker without flame. Stand still in the fire realm and the heat is almost believable.',
+      sort_order: 3,
+      poi: 'Mystic Forest — Fire',
+    },
+    {
+      type: 'guardian',
+      slug: 'summit',
+      title: 'Summit',
+      subtitle: 'Guardian of Air',
+      element: 'air',
+      body:
+        'Summit lifts the gaze. Wings overhead, wind in the silk, paths that ask you to look up more than once.',
+      sort_order: 4,
+      poi: 'Bird Aviary',
+    },
+    {
+      type: 'guardian',
+      slug: 'aurora',
+      title: 'Aurora',
+      subtitle: 'Guardian of Spirit',
+      element: 'spirit',
+      body:
+        'Aurora holds the quiet between lights — the moment your eyes adjust and the field comes up out of the dark.',
+      sort_order: 5,
+      poi: 'Polar Tundra',
+    },
+    {
+      type: 'monument',
+      slug: 'builders',
+      title: 'Builder’s Monument',
+      subtitle: 'The First Winter Keeper and the craft of ice',
+      body:
+        'Brent Christensen, First Winter Keeper, began growing castles from water, cold, and patience. Icicles are harvested, placed by hand, and sprayed until they fuse. Lighting, carving, and overnight growth turn a field into a castle that can hold more than twenty million pounds of ice. This monument is for the builders who return each winter.',
+      sort_order: 6,
+      poi: 'The Ice Castle',
+    },
+    {
+      type: 'heart',
+      slug: 'heart',
+      title: 'Heart of Winter',
+      subtitle: 'Recognition at the end of the path',
+      body:
+        'When the Guardians are visited and the trail lights are gathered, the Heart of Winter opens. Reflect, claim your Winter Keeper badge, and redeem your pin at the Warming Hut.',
+      sort_order: 7,
+      poi: 'Warming Hut',
+    },
+  ];
+
+  for (const tp of TOUCHPOINTS) {
+    await db.run(
+      `INSERT INTO touchpoints
+         (id, adventure_id, type, slug, title, subtitle, body, element, image_url, audio_url,
+          poi_id, sort_order, published, config, created_at, updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [
+        uuid(), adventure.id, tp.type, tp.slug, tp.title, tp.subtitle, tp.body,
+        tp.element || null, null, null, idByName[tp.poi] || null, tp.sort_order, 1, null, ts, ts,
+      ]
+    );
+  }
+
   const codes = await db.all(
     'SELECT name, scan_code FROM pois WHERE adventure_id = ? ORDER BY sort_order',
     [adventure.id]
   );
-  console.log(`\nSeeded ${POIS.length} markers and 1 hunt under /NHAdventure (${HUNT.stops.length} stops).\n`);
+  console.log(`\nSeeded ${POIS.length} markers, 1 hunt, and ${TOUCHPOINTS.length} journey touchpoints under /NHAdventure.\n`);
   console.log('Guest app: http://localhost:3000/NHAdventure');
   console.log('Test codes — paste any of these into the app\'s "Enter code" box:');
   for (const c of codes) console.log(`  ${c.scan_code}   ${c.name}`);

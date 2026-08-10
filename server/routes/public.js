@@ -103,6 +103,32 @@ function publicStop(s) {
   };
 }
 
+function publicTouchpoint(row) {
+  return {
+    id: row.id,
+    type: row.type,
+    slug: row.slug,
+    title: row.title,
+    subtitle: row.subtitle,
+    body: row.body,
+    element: row.element,
+    imageUrl: row.image_url,
+    audioUrl: row.audio_url,
+    poiId: row.poi_id,
+    sortOrder: row.sort_order,
+  };
+}
+
+async function loadTouchpoints(adventureId) {
+  const rows = await db.all(
+    `SELECT * FROM touchpoints
+      WHERE adventure_id = ? AND published = 1
+      ORDER BY sort_order, created_at`,
+    [adventureId]
+  );
+  return rows.map(publicTouchpoint);
+}
+
 async function loadHunts(adventureId) {
   const hunts = await db.all(
     'SELECT * FROM hunts WHERE adventure_id = ? AND active = 1 ORDER BY sort_order, created_at',
@@ -159,6 +185,7 @@ router.get('/bootstrap', async (req, res) => {
     guest: { token: guest.id, nickname: guest.nickname },
     pois: poiRows.map(publicPoi),
     hunts: await loadHunts(adventure.id),
+    touchpoints: await loadTouchpoints(adventure.id),
     progress: await progressFor(guest.id, adventure.id),
   });
 });

@@ -24,11 +24,16 @@ const dom = {
   progressButton: el('progressButton'),
   sheet: el('sheet'), sheetBody: el('sheetBody'), sheetGrip: el('sheetGrip'),
   huntPanel: el('huntPanel'), huntBody: el('huntBody'),
+  journeyPanel: el('journeyPanel'), journeyBody: el('journeyBody'), journeyTitle: el('journeyTitle'),
   passportPanel: el('passportPanel'), passportBody: el('passportBody'),
   toast: el('toast'), splash: el('bootSplash'),
   scanFab: el('scanFab'), recenter: el('recenterButton'),
   filterButton: el('filterButton'), legend: el('legend'), legendRows: el('legendRows'),
   journeyButton: el('journeyButton'),
+  threshold: el('threshold'), thresholdEyebrow: el('thresholdEyebrow'),
+  thresholdTitle: el('thresholdTitle'), thresholdSubtitle: el('thresholdSubtitle'),
+  thresholdBody: el('thresholdBody'), thresholdStart: el('thresholdStart'),
+  thresholdMap: el('thresholdMap'),
   award: el('award'), awardGlyph: el('awardGlyph'), awardTitle: el('awardTitle'),
   awardMeta: el('awardMeta'), awardKicker: el('awardKicker'), awardPips: el('awardPips'),
   awardDone: el('awardDone'),
@@ -161,6 +166,7 @@ function openSheet(poi) {
     .join('');
 
   const needsScan = stops.some((stop) => !earned.has(stop.id) && (!stop.challengeType || stop.challengeType === 'scan'));
+  const touch = Store.touchForPoi(poi.id);
 
   const detail = scanned || !stops.length
     ? `${poi.description ? `<p class="poi__body">${escapeHtml(poi.description)}</p>` : ''}
@@ -175,6 +181,7 @@ function openSheet(poi) {
       ${poi.blurb ? `<p class="poi__blurb">${escapeHtml(poi.blurb)}</p>` : ''}
       ${poi.imageUrl ? `<img class="poi__img" src="${escapeHtml(poi.imageUrl)}" alt="${escapeHtml(poi.name)}">` : ''}
       ${chips.length ? `<div class="chipRow">${chips.join('')}</div>` : ''}
+      ${touch ? `<button class="textButton" data-open-touch="${escapeHtml(touch.slug)}" type="button">Open ${escapeHtml(touch.title)}</button>` : ''}
       ${detail}
       ${pendingChallenges}
     </div>`;
@@ -195,8 +202,32 @@ function closeSheet() {
 
 function renderHunts() {
   const hunts = Store.state.hunts;
+  const touchpoints = Store.state.touchpoints || [];
+  const earned = Store.tokenIds();
+  const scanned = Store.scannedIds();
 
-  if (!hunts.length) {
+  const journeyList = touchpoints.length
+    ? `<p class="sectionLabel">Winter Keeper journey</p>
+       <ul class="stopList" style="margin-bottom:22px">
+         ${touchpoints.map((tp) => {
+           const done = tp.poiId
+             ? (Store.stopsForPoi(tp.poiId).some((s) => earned.has(s.id)) || scanned.has(tp.poiId))
+             : false;
+           const complete = tp.type === 'heart' ? Store.journeyComplete() : done;
+           return `<li>
+             <button class="stop ${complete ? 'is-found' : 'is-secret'}" data-open-touch="${escapeHtml(tp.slug)}" type="button">
+               <span class="stop__token" style="font-size:17px">${tp.type === 'heart' ? '❤' : tp.type === 'monument' ? '▣' : tp.type === 'threshold' ? '◇' : '✦'}</span>
+               <span style="min-width:0">
+                 <p class="stop__name">${escapeHtml(tp.title)}</p>
+                 <p class="stop__hint">${escapeHtml(tp.subtitle || tp.type)}</p>
+               </span>
+             </button>
+           </li>`;
+         }).join('')}
+       </ul>`
+    : '';
+
+  if (!hunts.length && !touchpoints.length) {
     dom.huntBody.innerHTML = `
       <div class="empty">
         <p class="empty__mark">✦</p>
@@ -206,9 +237,7 @@ function renderHunts() {
     return;
   }
 
-  const earned = Store.tokenIds();
-
-  dom.huntBody.innerHTML = hunts.map((hunt) => {
+  const huntCards = hunts.map((hunt) => {
     const { found, total, done, redeemCode } = Store.huntProgress(hunt);
     const pct = total ? Math.round((found / total) * 100) : 0;
 
@@ -255,6 +284,82 @@ function renderHunts() {
         ${reward}
       </article>`;
   }).join('');
+
+  dom.huntBody.innerHTML = `${journeyList}${huntCards}`;
+}
+
+function badgeHtml(park) {
+  const adventure = Store.state.adventure || {};
+  const name = Store.state.park?.name || 'Ice Castles';
+  const when = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  return `<div class="badgeCard" id="badgeCard">
+    <p class="badgeCard__seal">Winter Keeper</p>
+    <h3 class="badgeCard__title">${escapeHtml(park.badgeTitle || 'Winter Keeper')}</h3>
+    <p class="badgeCard__meta">${escapeHtml(name)} · ${escapeHtml(String(adventure.year || ''))}</p>
+    <p class="badgeCard__date">${escapeHtml(when)}</p>
+    <p class="badgeCard__body">${escapeHtml(park.badgeBody || '')}</p>
+  </div>`;
+}
+
+function openTouchpoint(slug) {
+  const tp = Store.touchBySlug(slug);
+  if (!tp) return;
+  closeSheet();
+  hideThreshold();
+
+  const park = Store.state.park || {};
+  const earned = Store.tokenIds();
+  const stops = tp.poiId ? Store.stopsForPoi(tp.poiId) : [];
+  const pending = stops
+    .filter((s) => !earned.has(s.id) && s.challengeType && s.challengeType !== 'scan')
+    .map(challengeFormHtml)
+    .join('');
+
+  let footer = '';
+  if (tp.type === 'heart') {
+    const complete = Store.journeyComplete();
+    footer = complete
+      ? `${badgeHtml(park)}
+         <p class="fineprint">${escapeHtml(park.badgeRedemption || '')}</p>
+         <button class="textButton" data-open-passport type="button">Open passport</button>`
+      : `<div class="reward reward--locked">
+           <p class="reward__title">Not finished yet</p>
+           <p class="reward__body">Visit the Guardians and collect the trail lights. Come back when the path is complete — nothing here is a dead end.</p>
+         </div>
+         <button class="textButton" data-view="hunt" type="button">See what remains</button>`;
+  } else if (tp.poiId) {
+    footer = `<button class="textButton" data-focus-poi="${escapeHtml(tp.poiId)}" type="button">Show on map</button>${pending}`;
+  }
+
+  dom.journeyTitle.textContent = tp.title;
+  dom.journeyBody.innerHTML = `
+    <p class="poi__eyebrow" style="--pin-color: var(--aurora)"><span class="dot"></span>${escapeHtml(tp.subtitle || tp.type)}</p>
+    ${tp.element ? `<p class="chip chip--target" style="display:inline-flex;margin:8px 0 14px">${escapeHtml(tp.element)}</p>` : ''}
+    <p class="poi__body" style="white-space:pre-wrap">${escapeHtml(tp.body || '')}</p>
+    ${tp.audioUrl ? `<audio class="journeyAudio" controls preload="none" src="${escapeHtml(tp.audioUrl)}"></audio>` : ''}
+    ${footer}`;
+
+  openPanel('journey');
+  if (tp.poiId) ParkMap.focusOn(tp.poiId, Store.state.pois);
+}
+
+function showThreshold() {
+  const tp = Store.touchByType('threshold')[0];
+  if (!tp || !dom.threshold) return;
+  const park = Store.state.park || {};
+  dom.thresholdEyebrow.textContent = park.adventureName || 'Winter Keeper';
+  dom.thresholdTitle.textContent = tp.title;
+  dom.thresholdSubtitle.textContent = tp.subtitle || '';
+  dom.thresholdBody.textContent = tp.body || park.welcomeBody || '';
+  dom.threshold.hidden = false;
+  requestAnimationFrame(() => dom.threshold.classList.add('is-open'));
+}
+
+function hideThreshold() {
+  if (!dom.threshold) return;
+  dom.threshold.classList.remove('is-open');
+  setTimeout(() => { dom.threshold.hidden = true; }, 320);
+  Store.markThresholdSeen();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -310,12 +415,19 @@ function renderPassport() {
     </div>`;
   }).join('');
 
+  const park = Store.state.park || {};
+  const badge = Store.journeyComplete()
+    ? `<p class="sectionLabel">Winter Keeper badge</p>${badgeHtml(park)}
+       <p class="fineprint" style="margin-bottom:18px">${escapeHtml(park.badgeRedemption || '')}</p>`
+    : '';
+
   dom.passportBody.innerHTML = `
     <div class="statRow">
       <div class="stat"><span class="stat__n">${totals.tokens}</span><span class="stat__l">Lights</span></div>
       <div class="stat"><span class="stat__n">${totals.visited}</span><span class="stat__l">Places</span></div>
       <div class="stat"><span class="stat__n">${totals.rewards}</span><span class="stat__l">Rewards</span></div>
     </div>
+    ${badge}
     ${rewards ? `<p class="sectionLabel">Ready to redeem</p>${rewards}` : ''}
     ${tokens}
     ${visitedList}
@@ -355,16 +467,17 @@ function openInfo() {
 
 function openPanel(name) {
   closeSheet();
-  ['huntPanel', 'passportPanel'].forEach((key) => {
+  ['huntPanel', 'passportPanel', 'journeyPanel'].forEach((key) => {
+    if (!dom[key]) return;
     dom[key].hidden = true;
     dom[key].classList.remove('is-open');
   });
 
-  if (name === 'hunt') { renderHunts(); showPanel(dom.huntPanel); }
-  else if (name === 'passport') { renderPassport(); showPanel(dom.passportPanel); }
+  if (name === 'hunt') { renderHunts(); showPanel(dom.huntPanel); setActiveNav('hunt'); }
+  else if (name === 'passport') { renderPassport(); showPanel(dom.passportPanel); setActiveNav('passport'); }
+  else if (name === 'journey') { showPanel(dom.journeyPanel); setActiveNav('hunt'); }
   currentPanel = name;
   document.body.classList.add('panel-open');
-  setActiveNav(name);
 }
 
 function showPanel(panel) {
@@ -374,7 +487,8 @@ function showPanel(panel) {
 }
 
 function closePanels() {
-  ['huntPanel', 'passportPanel'].forEach((key) => {
+  ['huntPanel', 'passportPanel', 'journeyPanel'].forEach((key) => {
+    if (!dom[key]) return;
     dom[key].classList.remove('is-open');
     setTimeout(() => { dom[key].hidden = true; }, 440);
   });
@@ -552,18 +666,35 @@ function route() {
 
   if (section === 'poi' && param) {
     closePanels();
+    hideThreshold();
     const poi = Store.poiBySlug(param);
     if (poi) openSheet(poi);
     return;
   }
   if (section === 'scan' && param) {
+    hideThreshold();
     history.replaceState(null, '', '#/map');
     handleCode(param);
     return;
   }
-  if (section === 'trails') { openPanel('hunt'); return; }
-  if (section === 'passport') { openPanel('passport'); return; }
-  if (section === 'info') { closePanels(); openInfo(); return; }
+  if (section === 'journey' && param) {
+    hideThreshold();
+    openTouchpoint(param);
+    return;
+  }
+  if (section === 'threshold') {
+    showThreshold();
+    return;
+  }
+  if (section === 'heart') {
+    hideThreshold();
+    const heart = Store.touchByType('heart')[0];
+    if (heart) openTouchpoint(heart.slug);
+    return;
+  }
+  if (section === 'trails') { hideThreshold(); openPanel('hunt'); return; }
+  if (section === 'passport') { hideThreshold(); openPanel('passport'); return; }
+  if (section === 'info') { hideThreshold(); closePanels(); openInfo(); return; }
 
   closePanels();
   closeSheet();
@@ -656,6 +787,19 @@ function wire() {
 
   // Delegated actions that appear inside rendered panels.
   document.addEventListener('click', (event) => {
+    const touchBtn = event.target.closest('[data-open-touch]');
+    if (touchBtn) {
+      location.hash = `#/journey/${touchBtn.dataset.openTouch}`;
+      return;
+    }
+    if (event.target.closest('[data-open-passport]')) {
+      location.hash = '#/passport';
+      return;
+    }
+    if (event.target.closest('[data-view="hunt"]')) {
+      location.hash = '#/trails';
+      return;
+    }
     const focus = event.target.closest('[data-focus-poi]');
     if (focus) {
       const poi = Store.poiById(focus.dataset.focusPoi);
@@ -699,6 +843,19 @@ function wire() {
       else handleChallenge(stopId, { code });
     }
   });
+
+  if (dom.thresholdStart) {
+    dom.thresholdStart.addEventListener('click', () => {
+      hideThreshold();
+      location.hash = '#/trails';
+    });
+  }
+  if (dom.thresholdMap) {
+    dom.thresholdMap.addEventListener('click', () => {
+      hideThreshold();
+      location.hash = '#/map';
+    });
+  }
 
   window.addEventListener('hashchange', route);
 
@@ -778,6 +935,11 @@ async function boot() {
   }
 
   route();
+
+  if (!Store.hasSeenThreshold() && Store.touchByType('threshold').length && !location.hash.includes('scan')) {
+    showThreshold();
+  }
+
   Store.flushQueue().then((results) => {
     results.forEach(presentScanResult);
     if (results.length) afterSync();

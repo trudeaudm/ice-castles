@@ -46,6 +46,7 @@
       <button class="tab is-active" data-tab="map" type="button">Map</button>
       <button class="tab" data-tab="markers" type="button">Markers</button>
       <button class="tab" data-tab="trails" type="button">Trails</button>
+      <button class="tab" data-tab="journey" type="button">Journey</button>
       <button class="tab" data-tab="signs" type="button">Signs</button>
       <button class="tab" data-tab="settings" type="button">Settings</button>
     </nav>
@@ -158,6 +159,21 @@
     </div>
   </section>
 
+  <!-- ----------------------------- JOURNEY TAB ----------------------------- -->
+  <section class="view" data-view="journey">
+    <div class="pane">
+      <div class="pane__head">
+        <h2>Journey</h2>
+        <button class="primaryButton" id="addTouchButton" type="button">Add touchpoint</button>
+      </div>
+      <p class="pane__note">
+        Threshold, Guardians, Builder’s Monument, and Heart of Winter. Link a marker so the story
+        opens from the map. Guests see these under Trails.
+      </p>
+      <div id="touchList"></div>
+    </div>
+  </section>
+
   <!-- ------------------------------- SIGNS TAB ----------------------------- -->
   <section class="view" data-view="signs">
     <div class="pane">
@@ -185,6 +201,11 @@
         <label>Welcome text<textarea name="welcome_body" rows="3" maxlength="1000"></textarea></label>
         <label>Hours note<textarea name="hours_note" rows="2" maxlength="600"></textarea></label>
         <label>Safety note<textarea name="safety_note" rows="2" maxlength="600"></textarea></label>
+
+        <h3 class="form__section">Winter Keeper badge</h3>
+        <label>Badge title<input name="badge_title" maxlength="120"></label>
+        <label>Badge body<textarea name="badge_body" rows="2" maxlength="1000"></textarea></label>
+        <label>Redemption instructions<textarea name="badge_redemption" rows="2" maxlength="1000"></textarea></label>
 
         <h3 class="form__section">Map artwork</h3>
         <p class="pane__note" style="margin:0 0 14px">

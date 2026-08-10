@@ -46,6 +46,7 @@ const Store = (() => {
     map: null,
     pois: [],
     hunts: [],
+    touchpoints: [],
     progress: { scans: [], tokens: [], completions: [] },
     hiddenCategories: new Set(read(KEY_SEEN, {}).hidden || []),
     journeyMode: Boolean(read(KEY_JOURNEY, false)),
@@ -96,6 +97,7 @@ const Store = (() => {
     state.map = data.map;
     state.pois = data.pois;
     state.hunts = data.hunts;
+    state.touchpoints = data.touchpoints || [];
     state.progress = data.progress;
     if (data.guest?.token) setGuestToken(data.guest.token);
     write(cacheKey(), data);
@@ -151,6 +153,31 @@ const Store = (() => {
   const poiById = (id) => state.pois.find((p) => p.id === id) || null;
   const stopById = (id) =>
     state.hunts.flatMap((h) => h.stops).find((s) => s.id === id) || null;
+  const touchBySlug = (slug) => state.touchpoints.find((t) => t.slug === slug) || null;
+  const touchByType = (type) => state.touchpoints.filter((t) => t.type === type);
+  const touchForPoi = (poiId) => state.touchpoints.find((t) => t.poiId === poiId) || null;
+
+  function thresholdSeenKey() {
+    return `ic.threshold.v1:${state.adventure?.id || 'default'}`;
+  }
+  function hasSeenThreshold() {
+    return Boolean(read(thresholdSeenKey(), false));
+  }
+  function markThresholdSeen() {
+    write(thresholdSeenKey(), true);
+  }
+
+  /** Journey complete when the primary hunt is done, or all guardian tokens earned. */
+  function journeyComplete() {
+    if (state.progress.completions.length) return true;
+    const guardians = touchByType('guardian');
+    if (!guardians.length) return false;
+    const earned = tokenIds();
+    return guardians.every((g) => {
+      const stops = stopsForPoi(g.poiId);
+      return stops.length && stops.every((s) => earned.has(s.id));
+    });
+  }
 
   /** POI ids that appear on any active trail (journey map focus). */
   function journeyPoiIds() {
@@ -296,6 +323,7 @@ const Store = (() => {
   return {
     state, subscribe, load, scan, completeChallenge, flushQueue, refreshProgress, resetGuest,
     scannedIds, tokenIds, huntProgress, stopsForPoi, poiBySlug, poiById, stopById,
+    touchBySlug, touchByType, touchForPoi, hasSeenThreshold, markThresholdSeen, journeyComplete,
     journeyPoiIds, totals, toggleCategory, setJourneyMode, toggleJourneyMode, queue, pathContext,
   };
 })();
