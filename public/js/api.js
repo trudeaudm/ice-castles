@@ -2,19 +2,15 @@
 /**
  * Store + API client.
  *
- * Identity: a single opaque guest token in localStorage. No account, no email,
- * no personal data. The server keeps progress against that token so a guest
- * can close the tab, come back tomorrow night, and pick up where they left off.
- *
- * Scan codes are never sent to the client. That is deliberate — if the app knew
- * every code, a guest could collect the whole hunt from the parking lot. The
- * only way to earn a token is to physically reach the sign.
+ * Identity: a single opaque guest token in localStorage. Progress is scoped
+ * server-side to the adventure package currently loaded.
  */
 const Store = (() => {
   const KEY_GUEST = 'ic.guest.v1';
   const KEY_CACHE = 'ic.cache.v1';
   const KEY_QUEUE = 'ic.queue.v1';
   const KEY_SEEN = 'ic.seen.v1';
+  const KEY_JOURNEY = 'ic.journey.v1';
 
   const read = (key, fallback) => {
     try {
@@ -28,19 +24,34 @@ const Store = (() => {
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch {
-      /* private mode or full quota — the app still works, just without memory */
+      /* private mode or full quota */
     }
   };
 
+  /** Parse /NHAdventure or /NHAdventure/2026 from the URL. */
+  function pathContext() {
+    const parts = location.pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+    const reserved = new Set(['admin', 'api', 'assets', 'vendor', 'js', 's']);
+    if (!parts.length || reserved.has(parts[0].toLowerCase())) {
+      return { locationSlug: null, year: null };
+    }
+    const locationSlug = parts[0];
+    const year = parts[1] && /^\d{4}$/.test(parts[1]) ? Number(parts[1]) : null;
+    return { locationSlug, year };
+  }
+
   const state = {
+    adventure: null,
     park: null,
     map: null,
     pois: [],
     hunts: [],
     progress: { scans: [], tokens: [], completions: [] },
     hiddenCategories: new Set(read(KEY_SEEN, {}).hidden || []),
+    journeyMode: Boolean(read(KEY_JOURNEY, false)),
     online: navigator.onLine,
     loadedFromCache: false,
+    path: pathContext(),
   };
 
   const listeners = new Set();
@@ -49,6 +60,20 @@ const Store = (() => {
 
   const guestToken = () => read(KEY_GUEST, null);
   const setGuestToken = (token) => write(KEY_GUEST, token);
+
+  function bootstrapQuery() {
+    const { locationSlug, year } = state.path;
+    const params = new URLSearchParams();
+    if (locationSlug) params.set('location', locationSlug);
+    if (year) params.set('year', String(year));
+    const q = params.toString();
+    return q ? `?${q}` : '';
+  }
+
+  function cacheKey() {
+    const { locationSlug, year } = state.path;
+    return `${KEY_CACHE}:${locationSlug || 'default'}:${year || 'active'}`;
+  }
 
   async function request(path, options = {}) {
     const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
@@ -66,25 +91,36 @@ const Store = (() => {
   }
 
   function applyBootstrap(data) {
+    state.adventure = data.adventure || null;
     state.park = data.park;
     state.map = data.map;
     state.pois = data.pois;
     state.hunts = data.hunts;
     state.progress = data.progress;
     if (data.guest?.token) setGuestToken(data.guest.token);
-    write(KEY_CACHE, data);
+    write(cacheKey(), data);
+
+    // Canonicalize short URL onto the location slug when we resolved a default.
+    if (state.adventure?.locationSlug && !state.path.locationSlug) {
+      const target = state.path.year
+        ? `/${state.adventure.locationSlug}/${state.path.year}`
+        : `/${state.adventure.locationSlug}`;
+      if (location.pathname !== target) {
+        history.replaceState(null, '', `${target}${location.hash || '#/map'}`);
+        state.path = pathContext();
+      }
+    }
   }
 
   async function load() {
+    state.path = pathContext();
     try {
-      const data = await request('/api/bootstrap');
+      const data = await request(`/api/bootstrap${bootstrapQuery()}`);
       applyBootstrap(data);
       state.online = true;
       state.loadedFromCache = false;
     } catch (err) {
-      // Cell service in the park is unreliable. Fall back to whatever we
-      // cached on the last good load so the map still works.
-      const cached = read(KEY_CACHE, null);
+      const cached = read(cacheKey(), null) || read(KEY_CACHE, null);
       if (!cached) throw err;
       applyBootstrap(cached);
       state.online = false;
@@ -93,8 +129,6 @@ const Store = (() => {
     emit();
     return state;
   }
-
-  /* ------------------------------ derived views --------------------------- */
 
   const scannedIds = () => new Set(state.progress.scans.map((s) => s.poiId));
   const tokenIds = () => new Set(state.progress.tokens.map((t) => t.stopId));
@@ -108,7 +142,6 @@ const Store = (() => {
     return { found, total, done, redeemCode: completion?.redeemCode || null };
   }
 
-  /** Every stop across all active hunts that maps to this POI. */
   const stopsForPoi = (poiId) =>
     state.hunts.flatMap((h) =>
       h.stops.filter((s) => s.poiId === poiId).map((s) => ({ ...s, hunt: h }))
@@ -116,6 +149,13 @@ const Store = (() => {
 
   const poiBySlug = (slug) => state.pois.find((p) => p.slug === slug) || null;
   const poiById = (id) => state.pois.find((p) => p.id === id) || null;
+  const stopById = (id) =>
+    state.hunts.flatMap((h) => h.stops).find((s) => s.id === id) || null;
+
+  /** POI ids that appear on any active trail (journey map focus). */
+  function journeyPoiIds() {
+    return new Set(state.hunts.flatMap((h) => h.stops.map((s) => s.poiId)));
+  }
 
   function totals() {
     const earned = tokenIds();
@@ -129,24 +169,17 @@ const Store = (() => {
     };
   }
 
-  /* -------------------------------- scanning ------------------------------ */
-
   const queue = () => read(KEY_QUEUE, []);
   const setQueue = (items) => write(KEY_QUEUE, items);
 
-  /**
-   * Resolve a code. When offline we can't verify it, so we park it in a queue
-   * and replay it the moment we're back on the network — the guest keeps
-   * walking instead of standing still waiting for a bar of signal.
-   */
   async function scan(code) {
-    const clean = String(code).trim().toUpperCase().replace(/^.*\/S\//, '');
-    if (!clean) return { status: 'invalid' };
+    const cleanCode = String(code).trim().toUpperCase().replace(/^.*\/S\//, '');
+    if (!cleanCode) return { status: 'invalid' };
 
     try {
       const data = await request('/api/scan', {
         method: 'POST',
-        body: JSON.stringify({ code: clean }),
+        body: JSON.stringify({ code: cleanCode }),
       });
       if (data.guestToken) setGuestToken(data.guestToken);
       state.progress = data.progress;
@@ -159,19 +192,43 @@ const Store = (() => {
         completed: data.completed,
       };
     } catch (err) {
-      if (err.status === 404) return { status: 'unknown', code: clean };
+      if (err.status === 404) return { status: 'unknown', code: cleanCode };
       const pending = queue();
-      if (!pending.includes(clean)) {
-        pending.push(clean);
+      if (!pending.includes(cleanCode)) {
+        pending.push(cleanCode);
         setQueue(pending);
       }
       state.online = false;
       emit();
-      return { status: 'queued', code: clean, queued: pending.length };
+      return { status: 'queued', code: cleanCode, queued: pending.length };
     }
   }
 
-  /** Replay anything captured while offline. Returns everything earned. */
+  async function completeChallenge(stopId, answer) {
+    try {
+      const data = await request('/api/challenge', {
+        method: 'POST',
+        body: JSON.stringify({ stopId, answer }),
+      });
+      if (data.guestToken) setGuestToken(data.guestToken);
+      state.progress = data.progress;
+      state.online = true;
+      emit();
+      return {
+        status: data.alreadyCompleted ? 'repeat' : 'new',
+        poi: data.poi,
+        awards: data.awards,
+        completed: data.completed,
+        error: null,
+      };
+    } catch (err) {
+      return {
+        status: 'error',
+        error: err.body?.error || err.message,
+      };
+    }
+  }
+
   async function flushQueue() {
     const pending = queue();
     if (!pending.length) return [];
@@ -198,16 +255,16 @@ const Store = (() => {
 
   async function refreshProgress() {
     try {
-      state.progress = await request('/api/progress');
+      state.progress = await request(`/api/progress${bootstrapQuery()}`);
       emit();
-    } catch { /* keep the cached copy */ }
+    } catch { /* keep cached */ }
   }
 
   async function resetGuest() {
     try {
       const data = await request('/api/guest', { method: 'POST' });
       setGuestToken(data.token);
-    } catch { /* offline: clear locally and let the next load mint a token */
+    } catch {
       localStorage.removeItem(KEY_GUEST);
     }
     setQueue([]);
@@ -222,13 +279,24 @@ const Store = (() => {
     emit();
   }
 
+  function setJourneyMode(on) {
+    state.journeyMode = Boolean(on);
+    write(KEY_JOURNEY, state.journeyMode);
+    emit();
+  }
+
+  function toggleJourneyMode() {
+    setJourneyMode(!state.journeyMode);
+    return state.journeyMode;
+  }
+
   window.addEventListener('online', () => { state.online = true; emit(); });
   window.addEventListener('offline', () => { state.online = false; emit(); });
 
   return {
-    state, subscribe, load, scan, flushQueue, refreshProgress, resetGuest,
-    scannedIds, tokenIds, huntProgress, stopsForPoi, poiBySlug, poiById,
-    totals, toggleCategory, queue,
+    state, subscribe, load, scan, completeChallenge, flushQueue, refreshProgress, resetGuest,
+    scannedIds, tokenIds, huntProgress, stopsForPoi, poiBySlug, poiById, stopById,
+    journeyPoiIds, totals, toggleCategory, setJourneyMode, toggleJourneyMode, queue, pathContext,
   };
 })();
 

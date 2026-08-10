@@ -1,4 +1,5 @@
 const db = require('./db');
+const { uuid, now } = require('./helpers');
 
 /**
  * Schema notes
@@ -6,40 +7,68 @@ const db = require('./db');
  * - All primary keys are TEXT uuids so the same DDL works on SQLite and Postgres.
  * - Timestamps are ISO-8601 strings.
  * - Booleans are 0 / 1 integers.
- * - Map coordinates (x, y) are in *map image pixel space*, not lat/lng. The
- *   client renders the park map with Leaflet's CRS.Simple, so a POI at
- *   x=1200 y=800 sits at that pixel of the map artwork at any zoom level.
- *   Swapping in new artwork of the same aspect ratio keeps every pin correct.
+ * - Map coordinates (x, y) are in *map image pixel space*, not lat/lng.
+ * - Content is scoped: Location → Adventure (year). One adventure per location
+ *   may be marked active; public short URLs resolve to that active package.
  */
 const DDL = `
+CREATE TABLE IF NOT EXISTS locations (
+  id          TEXT PRIMARY KEY,
+  name        TEXT NOT NULL,
+  slug        TEXT NOT NULL UNIQUE,
+  region      TEXT,
+  created_at  TEXT NOT NULL,
+  updated_at  TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS adventures (
+  id               TEXT PRIMARY KEY,
+  location_id      TEXT NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+  name             TEXT NOT NULL,
+  year             INTEGER NOT NULL,
+  is_active        INTEGER NOT NULL DEFAULT 0,
+  welcome_headline TEXT,
+  welcome_body     TEXT,
+  hours_note       TEXT,
+  safety_note      TEXT,
+  map_image_url    TEXT,
+  map_width        TEXT,
+  map_height       TEXT,
+  grid_cell        TEXT,
+  created_at       TEXT NOT NULL,
+  updated_at       TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS settings (
   "key"   TEXT PRIMARY KEY,
   "value" TEXT
 );
 
 CREATE TABLE IF NOT EXISTS pois (
-  id          TEXT PRIMARY KEY,
-  name        TEXT NOT NULL,
-  slug        TEXT NOT NULL UNIQUE,
-  category    TEXT NOT NULL DEFAULT 'landmark',
-  zone        TEXT,
-  blurb       TEXT,
-  description TEXT,
-  fun_fact    TEXT,
-  image_url   TEXT,
-  x           REAL NOT NULL DEFAULT 0,
-  y           REAL NOT NULL DEFAULT 0,
-  scan_code   TEXT UNIQUE,
-  published   INTEGER NOT NULL DEFAULT 1,
-  sort_order  INTEGER NOT NULL DEFAULT 0,
-  created_at  TEXT NOT NULL,
-  updated_at  TEXT NOT NULL
+  id           TEXT PRIMARY KEY,
+  adventure_id TEXT REFERENCES adventures(id) ON DELETE CASCADE,
+  name         TEXT NOT NULL,
+  slug         TEXT NOT NULL,
+  category     TEXT NOT NULL DEFAULT 'landmark',
+  zone         TEXT,
+  blurb        TEXT,
+  description  TEXT,
+  fun_fact     TEXT,
+  image_url    TEXT,
+  x            REAL NOT NULL DEFAULT 0,
+  y            REAL NOT NULL DEFAULT 0,
+  scan_code    TEXT UNIQUE,
+  published    INTEGER NOT NULL DEFAULT 1,
+  sort_order   INTEGER NOT NULL DEFAULT 0,
+  created_at   TEXT NOT NULL,
+  updated_at   TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS hunts (
   id           TEXT PRIMARY KEY,
+  adventure_id TEXT REFERENCES adventures(id) ON DELETE CASCADE,
   title        TEXT NOT NULL,
-  slug         TEXT NOT NULL UNIQUE,
+  slug         TEXT NOT NULL,
   tagline      TEXT,
   description  TEXT,
   reward_title TEXT,
@@ -52,13 +81,15 @@ CREATE TABLE IF NOT EXISTS hunts (
 );
 
 CREATE TABLE IF NOT EXISTS hunt_stops (
-  id          TEXT PRIMARY KEY,
-  hunt_id     TEXT NOT NULL REFERENCES hunts(id) ON DELETE CASCADE,
-  poi_id      TEXT NOT NULL REFERENCES pois(id) ON DELETE CASCADE,
-  token_name  TEXT NOT NULL,
-  token_glyph TEXT NOT NULL DEFAULT 'crystal',
-  hint        TEXT,
-  position    INTEGER NOT NULL DEFAULT 0
+  id               TEXT PRIMARY KEY,
+  hunt_id          TEXT NOT NULL REFERENCES hunts(id) ON DELETE CASCADE,
+  poi_id           TEXT NOT NULL REFERENCES pois(id) ON DELETE CASCADE,
+  token_name       TEXT NOT NULL,
+  token_glyph      TEXT NOT NULL DEFAULT 'crystal',
+  hint             TEXT,
+  position         INTEGER NOT NULL DEFAULT 0,
+  challenge_type   TEXT NOT NULL DEFAULT 'scan',
+  challenge_config TEXT
 );
 
 CREATE TABLE IF NOT EXISTS guests (
@@ -99,14 +130,20 @@ CREATE INDEX IF NOT EXISTS ix_stops_hunt   ON hunt_stops (hunt_id, position);
 CREATE INDEX IF NOT EXISTS ix_pois_pub     ON pois (published, sort_order);
 `;
 
+const INDEX_DDL = `
+CREATE INDEX IF NOT EXISTS ix_pois_adv     ON pois (adventure_id, sort_order);
+CREATE INDEX IF NOT EXISTS ix_hunts_adv    ON hunts (adventure_id, sort_order);
+CREATE INDEX IF NOT EXISTS ix_adv_loc      ON adventures (location_id, year);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_adv_loc_year ON adventures (location_id, year);
+`;
+
 const DEFAULT_SETTINGS = {
+  // Legacy / global fallbacks only — adventure rows own live park copy.
   park_name: 'Ice Castles',
   location_name: 'North Woodstock, New Hampshire',
   welcome_headline: 'Find your way through the ice',
   welcome_body:
     'Tap any marker to learn what you are looking at. Scan the codes you find on the trail to collect light and unlock the reward at the Warming Hut.',
-  // WebP is what ships (grain + shadow baked in). park-map.svg remains the
-  // editable source of truth — re-export to WebP after artwork changes.
   map_image_url: '/assets/park-map.webp',
   map_width: '2000',
   map_height: '1400',
@@ -115,22 +152,121 @@ const DEFAULT_SETTINGS = {
   safety_note: 'Ice is uneven and slippery. Walk, don’t run, and keep little ones in reach.',
 };
 
+async function columnExists(table, column) {
+  if (db.usingPostgres) {
+    const row = await db.get(
+      `SELECT 1 AS ok FROM information_schema.columns
+        WHERE table_name = ? AND column_name = ?`,
+      [table, column]
+    );
+    return Boolean(row);
+  }
+  const rows = await db.all(`PRAGMA table_info(${table})`);
+  return rows.some((r) => r.name === column);
+}
+
+async function ensureColumn(table, column, ddlFragment) {
+  if (await columnExists(table, column)) return;
+  await db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddlFragment}`);
+}
+
+/**
+ * Lift a pre-tree install (flat settings + unscoped pois/hunts) into
+ * Location → Adventure so existing parks keep working after deploy.
+ */
+async function ensureDefaultAdventure() {
+  const existing = await db.get('SELECT id FROM locations LIMIT 1');
+  if (existing) {
+    // Attach any orphaned content left without an adventure_id.
+    const active = await db.get(
+      'SELECT id FROM adventures WHERE is_active = 1 ORDER BY year DESC LIMIT 1'
+    );
+    const fallback =
+      active || (await db.get('SELECT id FROM adventures ORDER BY year DESC LIMIT 1'));
+    if (fallback) {
+      await db.run('UPDATE pois SET adventure_id = ? WHERE adventure_id IS NULL', [fallback.id]);
+      await db.run('UPDATE hunts SET adventure_id = ? WHERE adventure_id IS NULL', [fallback.id]);
+    }
+    return fallback;
+  }
+
+  const settingsRows = await db.all('SELECT "key", "value" FROM settings');
+  const settings = Object.fromEntries(settingsRows.map((r) => [r.key, r.value]));
+  const ts = now();
+  const locationId = uuid();
+  const adventureId = uuid();
+  const year = new Date().getFullYear();
+
+  await db.run(
+    `INSERT INTO locations (id, name, slug, region, created_at, updated_at)
+     VALUES (?,?,?,?,?,?)`,
+    [
+      locationId,
+      settings.park_name || 'Ice Castles',
+      'NHAdventure',
+      settings.location_name || 'North Woodstock, New Hampshire',
+      ts,
+      ts,
+    ]
+  );
+
+  await db.run(
+    `INSERT INTO adventures
+       (id, location_id, name, year, is_active,
+        welcome_headline, welcome_body, hours_note, safety_note,
+        map_image_url, map_width, map_height, grid_cell,
+        created_at, updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [
+      adventureId,
+      locationId,
+      `${year} NH Adventure`,
+      year,
+      1,
+      settings.welcome_headline || DEFAULT_SETTINGS.welcome_headline,
+      settings.welcome_body || DEFAULT_SETTINGS.welcome_body,
+      settings.hours_note || DEFAULT_SETTINGS.hours_note,
+      settings.safety_note || DEFAULT_SETTINGS.safety_note,
+      settings.map_image_url || DEFAULT_SETTINGS.map_image_url,
+      settings.map_width || DEFAULT_SETTINGS.map_width,
+      settings.map_height || DEFAULT_SETTINGS.map_height,
+      settings.grid_cell || DEFAULT_SETTINGS.grid_cell,
+      ts,
+      ts,
+    ]
+  );
+
+  await db.run('UPDATE pois SET adventure_id = ? WHERE adventure_id IS NULL', [adventureId]);
+  await db.run('UPDATE hunts SET adventure_id = ? WHERE adventure_id IS NULL', [adventureId]);
+  return { id: adventureId };
+}
+
 async function migrate() {
   await db.exec(DDL);
-  const now = new Date().toISOString();
+
+  // Upgrades from the pre-tree schema — columns before indexes that need them.
+  await ensureColumn('pois', 'adventure_id', 'adventure_id TEXT');
+  await ensureColumn('hunts', 'adventure_id', 'adventure_id TEXT');
+  await ensureColumn('hunt_stops', 'challenge_type', "challenge_type TEXT NOT NULL DEFAULT 'scan'");
+  await ensureColumn('hunt_stops', 'challenge_config', 'challenge_config TEXT');
+
+  await db.exec(INDEX_DDL);
+
+  const ts = now();
   for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
     await db.run(
       'INSERT INTO settings ("key", "value") VALUES (?, ?) ON CONFLICT ("key") DO NOTHING',
       [key, value]
     );
   }
-  // Existing installs still have the SVG path from the original default.
-  // Move them onto the raster asset without clobbering a custom URL.
+
   await db.run(
     `UPDATE settings SET value = ? WHERE "key" = 'map_image_url' AND value = ?`,
     ['/assets/park-map.webp', '/assets/park-map.svg']
   );
-  return now;
+
+  await ensureDefaultAdventure();
+  return ts;
 }
 
 module.exports = { migrate, DEFAULT_SETTINGS };

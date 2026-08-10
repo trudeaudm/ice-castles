@@ -2,20 +2,24 @@ const express = require('express');
 const QRCode = require('qrcode');
 const db = require('../db');
 const { uuid, shortCode, slugify, now, num, bool, clean } = require('../helpers');
+const {
+  listTree,
+  createLocation,
+  createAdventure,
+  updateAdventure,
+  setActiveAdventure,
+  adventureById,
+  serializeConfig,
+  normalizeChallengeType,
+  CHALLENGE_TYPES,
+} = require('../adventures');
 
 const router = express.Router();
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'letmein';
 
-/**
- * Single shared password, sent as a bearer token. Deliberately simple: this
- * dashboard is for one small ops team, not the public. Set ADMIN_PASSWORD in
- * Render's environment before anyone can reach it over the internet.
- */
 function requireAdmin(req, res, next) {
   const header = req.get('authorization') || '';
-  // Header for fetch() calls; query param for things opened in a new tab
-  // (the printable sign sheet and QR downloads) where headers aren't possible.
   const token = header.replace(/^Bearer\s+/i, '') || String(req.query.token || '');
   if (token && token === ADMIN_PASSWORD) return next();
   res.status(401).json({ error: 'unauthorized' });
@@ -30,33 +34,101 @@ router.post('/login', (req, res) => {
 
 router.use(requireAdmin);
 
-/* ---------------------------- read everything ---------------------------- */
+async function requireAdventureId(req) {
+  const id = clean(req.query.adventure_id || req.body?.adventure_id, 80);
+  if (!id) return null;
+  return adventureById(id);
+}
 
-router.get('/state', async (_req, res) => {
-  const settingRows = await db.all('SELECT "key", "value" FROM settings');
-  const pois = await db.all('SELECT * FROM pois ORDER BY sort_order, name');
-  const hunts = await db.all('SELECT * FROM hunts ORDER BY sort_order, created_at');
-  const stops = await db.all('SELECT * FROM hunt_stops ORDER BY position');
+/* ---------------------------- tree + state ---------------------------- */
+
+router.get('/tree', async (_req, res) => {
+  res.json({ locations: await listTree() });
+});
+
+router.get('/state', async (req, res) => {
+  const adventureId = clean(req.query.adventure_id, 80);
+  let adventure = adventureId ? await adventureById(adventureId) : null;
+  if (!adventure) {
+    adventure = await db.get(
+      `SELECT a.*, l.name AS location_name, l.slug AS location_slug, l.region
+         FROM adventures a JOIN locations l ON l.id = a.location_id
+        WHERE a.is_active = 1 ORDER BY a.year DESC LIMIT 1`
+    );
+  }
+  if (!adventure) {
+    return res.json({
+      tree: await listTree(),
+      adventure: null,
+      settings: {},
+      pois: [],
+      hunts: [],
+    });
+  }
+
+  const pois = await db.all(
+    'SELECT * FROM pois WHERE adventure_id = ? ORDER BY sort_order, name',
+    [adventure.id]
+  );
+  const hunts = await db.all(
+    'SELECT * FROM hunts WHERE adventure_id = ? ORDER BY sort_order, created_at',
+    [adventure.id]
+  );
+  const stops = hunts.length
+    ? await db.all(
+        `SELECT * FROM hunt_stops WHERE hunt_id IN (${hunts.map(() => '?').join(',')}) ORDER BY position`,
+        hunts.map((h) => h.id)
+      )
+    : [];
+
   res.json({
-    settings: Object.fromEntries(settingRows.map((r) => [r.key, r.value])),
+    tree: await listTree(),
+    adventure,
+    settings: {
+      park_name: adventure.location_name,
+      location_name: adventure.region || '',
+      welcome_headline: adventure.welcome_headline || '',
+      welcome_body: adventure.welcome_body || '',
+      hours_note: adventure.hours_note || '',
+      safety_note: adventure.safety_note || '',
+      map_image_url: adventure.map_image_url || '/assets/park-map.webp',
+      map_width: adventure.map_width || '2000',
+      map_height: adventure.map_height || '1400',
+      grid_cell: adventure.grid_cell || '100',
+    },
     pois,
     hunts: hunts.map((h) => ({ ...h, stops: stops.filter((s) => s.hunt_id === h.id) })),
   });
 });
 
-router.get('/stats', async (_req, res) => {
+router.get('/stats', async (req, res) => {
+  const adventureId = clean(req.query.adventure_id, 80);
+  const poiFilter = adventureId ? 'WHERE p.adventure_id = ?' : '';
+  const huntFilter = adventureId ? 'WHERE h.adventure_id = ?' : '';
+  const poiParams = adventureId ? [adventureId] : [];
+  const huntParams = adventureId ? [adventureId] : [];
+
   const [guests, scans, perPoi, perHunt] = await Promise.all([
     db.get('SELECT COUNT(*) AS n FROM guests'),
-    db.get('SELECT COUNT(*) AS n FROM guest_scans'),
+    adventureId
+      ? db.get(
+          `SELECT COUNT(*) AS n FROM guest_scans s JOIN pois p ON p.id = s.poi_id WHERE p.adventure_id = ?`,
+          [adventureId]
+        )
+      : db.get('SELECT COUNT(*) AS n FROM guest_scans'),
     db.all(
       `SELECT p.id, p.name, COUNT(s.id) AS scans
          FROM pois p LEFT JOIN guest_scans s ON s.poi_id = p.id
-        GROUP BY p.id, p.name ORDER BY scans DESC, p.name`
+        ${poiFilter}
+        GROUP BY p.id, p.name ORDER BY scans DESC, p.name`,
+      poiParams
     ),
     db.all(
       `SELECT h.id, h.title, COUNT(c.id) AS completions
          FROM hunts h LEFT JOIN hunt_completions c ON c.hunt_id = h.id
-        GROUP BY h.id, h.title ORDER BY completions DESC, h.title`
+        ${huntFilter}
+        GROUP BY h.id, h.title ORDER BY completions DESC, h.title`,
+      huntParams
     ),
   ]);
   res.json({
@@ -67,29 +139,107 @@ router.get('/stats', async (_req, res) => {
   });
 });
 
+/* ------------------------- locations / adventures ------------------------- */
+
+router.post('/locations', async (req, res) => {
+  const loc = await createLocation(req.body || {});
+  res.status(201).json(loc);
+});
+
+router.patch('/locations/:id', async (req, res) => {
+  const existing = await db.get('SELECT * FROM locations WHERE id = ?', [req.params.id]);
+  if (!existing) return res.status(404).json({ error: 'not_found' });
+  const b = req.body || {};
+  const name = b.name !== undefined ? clean(b.name, 120) || existing.name : existing.name;
+  const slug =
+    b.slug !== undefined
+      ? slugify(b.slug || name, 'location')
+      : existing.slug;
+  await db.run(
+    'UPDATE locations SET name=?, slug=?, region=?, updated_at=? WHERE id=?',
+    [name, slug, b.region !== undefined ? clean(b.region, 160) : existing.region, now(), existing.id]
+  );
+  res.json(await db.get('SELECT * FROM locations WHERE id = ?', [existing.id]));
+});
+
+router.post('/locations/:id/adventures', async (req, res) => {
+  const adventure = await createAdventure(req.params.id, req.body || {});
+  if (!adventure) return res.status(404).json({ error: 'location_not_found' });
+  res.status(201).json(adventure);
+});
+
+router.patch('/adventures/:id', async (req, res) => {
+  const adventure = await updateAdventure(req.params.id, req.body || {});
+  if (!adventure) return res.status(404).json({ error: 'not_found' });
+  res.json(adventure);
+});
+
+router.post('/adventures/:id/activate', async (req, res) => {
+  const adventure = await setActiveAdventure(req.params.id);
+  if (!adventure) return res.status(404).json({ error: 'not_found' });
+  res.json(adventure);
+});
+
 /* -------------------------------- settings ------------------------------- */
 
 router.put('/settings', async (req, res) => {
-  const patch = req.body || {};
-  for (const [key, value] of Object.entries(patch)) {
-    if (!/^[a-z0-9_]{1,60}$/.test(key)) continue;
-    const str = value === null || value === undefined ? '' : String(value).slice(0, 4000);
-    const updated = await db.run('UPDATE settings SET "value" = ? WHERE "key" = ?', [str, key]);
-    if (!updated.changes) {
-      await db.run('INSERT INTO settings ("key", "value") VALUES (?, ?)', [key, str]);
+  const adventureId = clean(req.body?.adventure_id, 80);
+  if (!adventureId) return res.status(400).json({ error: 'missing_adventure' });
+  const patch = { ...req.body };
+  delete patch.adventure_id;
+
+  const adventure = await updateAdventure(adventureId, {
+    welcome_headline: patch.welcome_headline,
+    welcome_body: patch.welcome_body,
+    hours_note: patch.hours_note,
+    safety_note: patch.safety_note,
+    map_image_url: patch.map_image_url,
+    map_width: patch.map_width,
+    map_height: patch.map_height,
+    grid_cell: patch.grid_cell,
+  });
+  if (!adventure) return res.status(404).json({ error: 'not_found' });
+
+  if (patch.park_name !== undefined || patch.location_name !== undefined) {
+    const loc = await db.get('SELECT * FROM locations WHERE id = ?', [adventure.location_id]);
+    if (loc) {
+      await db.run(
+        'UPDATE locations SET name=?, region=?, updated_at=? WHERE id=?',
+        [
+          patch.park_name !== undefined ? clean(patch.park_name, 120) || loc.name : loc.name,
+          patch.location_name !== undefined ? clean(patch.location_name, 160) : loc.region,
+          now(),
+          loc.id,
+        ]
+      );
     }
   }
-  const rows = await db.all('SELECT "key", "value" FROM settings');
-  res.json(Object.fromEntries(rows.map((r) => [r.key, r.value])));
+
+  const fresh = await adventureById(adventureId);
+  res.json({
+    park_name: fresh.location_name,
+    location_name: fresh.region || '',
+    welcome_headline: fresh.welcome_headline || '',
+    welcome_body: fresh.welcome_body || '',
+    hours_note: fresh.hours_note || '',
+    safety_note: fresh.safety_note || '',
+    map_image_url: fresh.map_image_url || '/assets/park-map.webp',
+    map_width: fresh.map_width || '2000',
+    map_height: fresh.map_height || '1400',
+    grid_cell: fresh.grid_cell || '100',
+  });
 });
 
 /* ------------------------------ points of interest ----------------------- */
 
-async function uniqueSlug(name, ignoreId = null) {
+async function uniqueSlug(adventureId, name, ignoreId = null) {
   let base = slugify(name, 'poi');
   let candidate = base;
   for (let i = 2; i < 200; i++) {
-    const clash = await db.get('SELECT id FROM pois WHERE slug = ?', [candidate]);
+    const clash = await db.get(
+      'SELECT id FROM pois WHERE adventure_id = ? AND slug = ?',
+      [adventureId, candidate]
+    );
     if (!clash || clash.id === ignoreId) return candidate;
     candidate = `${base}-${i}`;
   }
@@ -107,18 +257,24 @@ async function uniqueScanCode() {
 
 router.post('/pois', async (req, res) => {
   const b = req.body || {};
+  const adventureId = clean(b.adventure_id, 80);
+  if (!adventureId) return res.status(400).json({ error: 'missing_adventure' });
+  const adventure = await adventureById(adventureId);
+  if (!adventure) return res.status(404).json({ error: 'adventure_not_found' });
+
   const name = clean(b.name, 120) || 'Untitled marker';
   const id = uuid();
   const ts = now();
   await db.run(
     `INSERT INTO pois
-       (id, name, slug, category, zone, blurb, description, fun_fact, image_url,
+       (id, adventure_id, name, slug, category, zone, blurb, description, fun_fact, image_url,
         x, y, scan_code, published, sort_order, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       id,
+      adventureId,
       name,
-      await uniqueSlug(name),
+      await uniqueSlug(adventureId, name),
       clean(b.category, 40) || 'landmark',
       clean(b.zone, 80),
       clean(b.blurb, 300),
@@ -145,7 +301,7 @@ router.patch('/pois/:id', async (req, res) => {
   const name = b.name !== undefined ? clean(b.name, 120) || existing.name : existing.name;
   const slug =
     b.name !== undefined && name !== existing.name
-      ? await uniqueSlug(name, existing.id)
+      ? await uniqueSlug(existing.adventure_id, name, existing.id)
       : existing.slug;
 
   const pick = (key, fallback, max) =>
@@ -175,7 +331,6 @@ router.patch('/pois/:id', async (req, res) => {
   res.json(await db.get('SELECT * FROM pois WHERE id = ?', [existing.id]));
 });
 
-/** Dedicated lightweight endpoint so map dragging doesn't ship the whole record. */
 router.patch('/pois/:id/position', async (req, res) => {
   const updated = await db.run('UPDATE pois SET x = ?, y = ?, updated_at = ? WHERE id = ?', [
     num(req.body?.x, 0),
@@ -187,7 +342,6 @@ router.patch('/pois/:id/position', async (req, res) => {
   res.json({ ok: true });
 });
 
-/** Rotate a scan code if a physical sign is compromised or reprinted. */
 router.post('/pois/:id/rotate-code', async (req, res) => {
   const code = await uniqueScanCode();
   const updated = await db.run('UPDATE pois SET scan_code = ?, updated_at = ? WHERE id = ?', [
@@ -208,15 +362,18 @@ router.delete('/pois/:id', async (req, res) => {
 
 router.post('/hunts', async (req, res) => {
   const b = req.body || {};
+  const adventureId = clean(b.adventure_id, 80);
+  if (!adventureId) return res.status(400).json({ error: 'missing_adventure' });
   const title = clean(b.title, 120) || 'Untitled hunt';
   const id = uuid();
   const ts = now();
   await db.run(
-    `INSERT INTO hunts (id, title, slug, tagline, description, reward_title, reward_body,
+    `INSERT INTO hunts (id, adventure_id, title, slug, tagline, description, reward_title, reward_body,
        reward_code, active, sort_order, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       id,
+      adventureId,
       title,
       slugify(title, 'hunt'),
       clean(b.tagline, 200),
@@ -264,10 +421,13 @@ router.delete('/hunts/:id', async (req, res) => {
 });
 
 router.post('/hunts/:id/stops', async (req, res) => {
-  const hunt = await db.get('SELECT id FROM hunts WHERE id = ?', [req.params.id]);
+  const hunt = await db.get('SELECT id, adventure_id FROM hunts WHERE id = ?', [req.params.id]);
   if (!hunt) return res.status(404).json({ error: 'hunt_not_found' });
-  const poi = await db.get('SELECT id, name FROM pois WHERE id = ?', [req.body?.poi_id]);
+  const poi = await db.get('SELECT id, name, adventure_id FROM pois WHERE id = ?', [req.body?.poi_id]);
   if (!poi) return res.status(400).json({ error: 'poi_not_found' });
+  if (poi.adventure_id !== hunt.adventure_id) {
+    return res.status(400).json({ error: 'poi_wrong_adventure' });
+  }
 
   const dupe = await db.get('SELECT id FROM hunt_stops WHERE hunt_id = ? AND poi_id = ?', [
     hunt.id,
@@ -280,9 +440,11 @@ router.post('/hunts/:id/stops', async (req, res) => {
     [hunt.id]
   );
   const id = uuid();
+  const challengeType = normalizeChallengeType(req.body?.challenge_type);
   await db.run(
-    `INSERT INTO hunt_stops (id, hunt_id, poi_id, token_name, token_glyph, hint, position)
-     VALUES (?,?,?,?,?,?,?)`,
+    `INSERT INTO hunt_stops
+       (id, hunt_id, poi_id, token_name, token_glyph, hint, position, challenge_type, challenge_config)
+     VALUES (?,?,?,?,?,?,?,?,?)`,
     [
       id,
       hunt.id,
@@ -291,6 +453,8 @@ router.post('/hunts/:id/stops', async (req, res) => {
       clean(req.body?.token_glyph, 30) || 'crystal',
       clean(req.body?.hint, 400),
       num(last?.p, -1) + 1,
+      challengeType,
+      serializeConfig(req.body?.challenge_config),
     ]
   );
   res.status(201).json(await db.get('SELECT * FROM hunt_stops WHERE id = ?', [id]));
@@ -300,13 +464,25 @@ router.patch('/stops/:id', async (req, res) => {
   const existing = await db.get('SELECT * FROM hunt_stops WHERE id = ?', [req.params.id]);
   if (!existing) return res.status(404).json({ error: 'not_found' });
   const b = req.body || {};
+  const challengeType =
+    b.challenge_type !== undefined
+      ? normalizeChallengeType(b.challenge_type)
+      : existing.challenge_type || 'scan';
+  const challengeConfig =
+    b.challenge_config !== undefined
+      ? serializeConfig(b.challenge_config)
+      : existing.challenge_config;
+
   await db.run(
-    'UPDATE hunt_stops SET token_name=?, token_glyph=?, hint=?, position=? WHERE id=?',
+    `UPDATE hunt_stops SET token_name=?, token_glyph=?, hint=?, position=?,
+       challenge_type=?, challenge_config=? WHERE id=?`,
     [
       b.token_name !== undefined ? clean(b.token_name, 80) || existing.token_name : existing.token_name,
       b.token_glyph !== undefined ? clean(b.token_glyph, 30) || 'crystal' : existing.token_glyph,
       b.hint !== undefined ? clean(b.hint, 400) : existing.hint,
       b.position !== undefined ? num(b.position, existing.position) : existing.position,
+      challengeType,
+      challengeConfig,
       existing.id,
     ]
   );
@@ -318,18 +494,30 @@ router.delete('/stops/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
+router.get('/challenge-types', (_req, res) => {
+  res.json({ types: CHALLENGE_TYPES });
+});
+
 /* --------------------------------- QR codes ------------------------------ */
 
-function scanUrl(req, code) {
+function scanUrl(req, code, locationSlug) {
   const base = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
-  return `${base.replace(/\/$/, '')}/s/${code}`;
+  const root = base.replace(/\/$/, '');
+  if (locationSlug) return `${root}/${locationSlug}/s/${code}`;
+  return `${root}/s/${code}`;
 }
 
-/** SVG so signs print crisply at any size. */
 router.get('/qr/:id.svg', async (req, res) => {
-  const poi = await db.get('SELECT * FROM pois WHERE id = ?', [req.params.id]);
+  const poi = await db.get(
+    `SELECT p.*, l.slug AS location_slug
+       FROM pois p
+       LEFT JOIN adventures a ON a.id = p.adventure_id
+       LEFT JOIN locations l ON l.id = a.location_id
+      WHERE p.id = ?`,
+    [req.params.id]
+  );
   if (!poi || !poi.scan_code) return res.status(404).send('Not found');
-  const svg = await QRCode.toString(scanUrl(req, poi.scan_code), {
+  const svg = await QRCode.toString(scanUrl(req, poi.scan_code, poi.location_slug), {
     type: 'svg',
     margin: 1,
     errorCorrectionLevel: 'M',
@@ -337,17 +525,25 @@ router.get('/qr/:id.svg', async (req, res) => {
   res.type('image/svg+xml').send(svg);
 });
 
-/**
- * GET /api/admin/qr-sheet?token=...  — printable signs, one per page.
- * Opened in a new tab, so the password rides along as a query param.
- */
 router.get('/qr-sheet', async (req, res) => {
-  const pois = await db.all(
-    'SELECT * FROM pois WHERE published = 1 AND scan_code IS NOT NULL ORDER BY sort_order, name'
-  );
+  const adventureId = clean(req.query.adventure_id, 80);
+  const params = [];
+  let sql =
+    `SELECT p.*, l.slug AS location_slug
+       FROM pois p
+       LEFT JOIN adventures a ON a.id = p.adventure_id
+       LEFT JOIN locations l ON l.id = a.location_id
+      WHERE p.published = 1 AND p.scan_code IS NOT NULL`;
+  if (adventureId) {
+    sql += ' AND p.adventure_id = ?';
+    params.push(adventureId);
+  }
+  sql += ' ORDER BY p.sort_order, p.name';
+  const pois = await db.all(sql, params);
+
   const cards = await Promise.all(
     pois.map(async (p) => {
-      const svg = await QRCode.toString(scanUrl(req, p.scan_code), {
+      const svg = await QRCode.toString(scanUrl(req, p.scan_code, p.location_slug), {
         type: 'svg',
         margin: 0,
         errorCorrectionLevel: 'M',

@@ -7,6 +7,7 @@
 const db = require('./db');
 const { migrate } = require('./schema');
 const { uuid, shortCode, slugify, now } = require('./helpers');
+const { createLocation, createAdventure, setActiveAdventure } = require('./adventures');
 
 const POIS = [
   {
@@ -160,14 +161,55 @@ const HUNT = {
   reward_body:
     'Show this screen at the Warming Hut counter to claim your Lantern Keeper pin and a free hot chocolate.',
   stops: [
-    ['Fairy Village', 'Doorlight', 'lantern', 'Crouch to kid height. The code is beside the blue door.'],
-    ['Bird Aviary', 'Wingflame', 'wing', 'Look up, then look at the post you have been leaning on.'],
-    ['Dragon Roost', 'Dragonspark', 'flame', 'The roost has three dragons. The code sits under the smallest one.'],
-    ['Butterfly Garden', 'Wingdust', 'wing', 'Near the centre of the canopy, at eye level for a grown-up.'],
-    ['Mystic Forest — Earth', 'Rootglow', 'rune', 'Read the runes on the low wall. One of them is not a rune.'],
-    ['Polar Tundra', 'Coldfire', 'crystal', 'Wait for your eyes to adjust. It is on the far side of the field.'],
+    ['Fairy Village', 'Doorlight', 'lantern', 'Crouch to kid height. The code is beside the blue door.', 'scan', null],
+    ['Bird Aviary', 'Wingflame', 'wing', 'Look up, then look at the post you have been leaning on.', 'scan', null],
+    ['Dragon Roost', 'Dragonspark', 'flame', 'The roost has three dragons. The code sits under the smallest one.', 'scan', null],
+    ['Butterfly Garden', 'Wingdust', 'wing', 'Near the centre of the canopy, at eye level for a grown-up.', 'scan', null],
+    ['Mystic Forest — Earth', 'Rootglow', 'rune', 'Read the runes on the low wall. One of them is not a rune.', 'multiple_choice', {
+      question: 'What keeps watch over the roots here?',
+      choices: ['A dragon', 'The Female Golem', 'A yeti', 'A horse'],
+      correctIndex: 1,
+    }],
+    ['Polar Tundra', 'Coldfire', 'crystal', 'Wait for your eyes to adjust. It is on the far side of the field.', 'scan', null],
   ],
 };
+
+async function ensureNhAdventure() {
+  let location = await db.get('SELECT * FROM locations WHERE slug = ?', ['NHAdventure']);
+  if (!location) {
+    location = await createLocation({
+      name: 'Ice Castles',
+      slug: 'NHAdventure',
+      region: 'North Woodstock, New Hampshire',
+    });
+  }
+
+  const year = new Date().getFullYear();
+  let adventure = await db.get(
+    'SELECT * FROM adventures WHERE location_id = ? AND year = ?',
+    [location.id, year]
+  );
+  if (!adventure) {
+    adventure = await createAdventure(location.id, {
+      name: `${year} NH Adventure`,
+      year,
+      is_active: true,
+      welcome_headline: 'Find your way through the ice',
+      welcome_body:
+        'Tap any marker to learn what you are looking at. Follow a trail to collect light and unlock the reward at the Warming Hut.',
+      hours_note: 'Open nightly, weather permitting. Check the front gate for tonight’s closing time.',
+      safety_note: 'Ice is uneven and slippery. Walk, don’t run, and keep little ones in reach.',
+      map_image_url: '/assets/park-map.webp',
+      map_width: 2000,
+      map_height: 1400,
+      grid_cell: 100,
+    });
+  } else {
+    await setActiveAdventure(adventure.id);
+    adventure = await db.get('SELECT * FROM adventures WHERE id = ?', [adventure.id]);
+  }
+  return adventure;
+}
 
 async function seed() {
   await migrate();
@@ -187,6 +229,7 @@ async function seed() {
     console.log('Cleared existing content.');
   }
 
+  const adventure = await ensureNhAdventure();
   const ts = now();
   const idByName = {};
 
@@ -194,11 +237,11 @@ async function seed() {
     const id = uuid();
     idByName[p.name] = id;
     await db.run(
-      `INSERT INTO pois (id, name, slug, category, zone, blurb, description, fun_fact,
+      `INSERT INTO pois (id, adventure_id, name, slug, category, zone, blurb, description, fun_fact,
          image_url, x, y, scan_code, published, sort_order, created_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
-        id, p.name, slugify(p.name), p.category, p.zone, p.blurb, p.description,
+        id, adventure.id, p.name, slugify(p.name), p.category, p.zone, p.blurb, p.description,
         p.fun_fact || null, null, p.x, p.y, shortCode(6), 1, i, ts, ts,
       ]
     );
@@ -206,28 +249,37 @@ async function seed() {
 
   const huntId = uuid();
   await db.run(
-    `INSERT INTO hunts (id, title, slug, tagline, description, reward_title, reward_body,
+    `INSERT INTO hunts (id, adventure_id, title, slug, tagline, description, reward_title, reward_body,
        reward_code, active, sort_order, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
-      huntId, HUNT.title, slugify(HUNT.title), HUNT.tagline, HUNT.description,
+      huntId, adventure.id, HUNT.title, slugify(HUNT.title), HUNT.tagline, HUNT.description,
       HUNT.reward_title, HUNT.reward_body, shortCode(5), 1, 0, ts, ts,
     ]
   );
 
-  for (const [i, [poiName, tokenName, glyph, hint]] of HUNT.stops.entries()) {
+  for (const [i, [poiName, tokenName, glyph, hint, challengeType, challengeConfig]] of HUNT.stops.entries()) {
     await db.run(
-      `INSERT INTO hunt_stops (id, hunt_id, poi_id, token_name, token_glyph, hint, position)
-       VALUES (?,?,?,?,?,?,?)`,
-      [uuid(), huntId, idByName[poiName], tokenName, glyph, hint, i]
+      `INSERT INTO hunt_stops
+         (id, hunt_id, poi_id, token_name, token_glyph, hint, position, challenge_type, challenge_config)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
+      [
+        uuid(), huntId, idByName[poiName], tokenName, glyph, hint, i,
+        challengeType || 'scan',
+        challengeConfig ? JSON.stringify(challengeConfig) : null,
+      ]
     );
   }
 
-  const codes = await db.all('SELECT name, scan_code FROM pois ORDER BY sort_order');
-  console.log(`\nSeeded ${POIS.length} markers and 1 hunt (${HUNT.stops.length} stops).\n`);
+  const codes = await db.all(
+    'SELECT name, scan_code FROM pois WHERE adventure_id = ? ORDER BY sort_order',
+    [adventure.id]
+  );
+  console.log(`\nSeeded ${POIS.length} markers and 1 hunt under /NHAdventure (${HUNT.stops.length} stops).\n`);
+  console.log('Guest app: http://localhost:3000/NHAdventure');
   console.log('Test codes — paste any of these into the app\'s "Enter code" box:');
   for (const c of codes) console.log(`  ${c.scan_code}   ${c.name}`);
-  console.log('');
+  console.log('\nOne stop uses a multiple-choice challenge (Mystic Forest — Earth) instead of a scan.\n');
 }
 
 seed()

@@ -12,7 +12,6 @@ const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '256kb' }));
 
-// Never cache the shells; the service worker handles offline copies instead.
 app.use((req, res, next) => {
   if (req.path === '/' || req.path.endsWith('.html') || req.path === '/sw.js') {
     res.set('Cache-Control', 'no-cache');
@@ -33,22 +32,38 @@ app.get('/healthz', async (_req, res) => {
 });
 
 /**
- * Physical QR codes encode /s/CODE. That means a guest can scan with their
- * phone's built-in camera and still land in the app with the scan already
- * applied — no "please install our app" step, which is the whole point.
+ * Physical QR codes encode /s/CODE or /{locationSlug}/s/CODE.
+ * Resolve the POI → adventure path so the guest lands in the right package.
  */
-app.get('/s/:code', (req, res) => {
+async function redirectScan(req, res, preferredSlug) {
   const code = String(req.params.code).replace(/[^A-Za-z0-9-]/g, '').toUpperCase();
-  res.redirect(302, `/#/scan/${code}`);
-});
+  const poi = await db.get(
+    `SELECT p.scan_code, l.slug AS location_slug
+       FROM pois p
+       LEFT JOIN adventures a ON a.id = p.adventure_id
+       LEFT JOIN locations l ON l.id = a.location_id
+      WHERE p.scan_code = ?`,
+    [code]
+  );
+  const slug = preferredSlug || poi?.location_slug;
+  const base = slug ? `/${slug}` : '';
+  res.redirect(302, `${base}/#/scan/${code}`);
+}
+
+app.get('/s/:code', (req, res) => redirectScan(req, res, null));
+app.get('/:locationSlug/s/:code', (req, res) => redirectScan(req, res, req.params.locationSlug));
 
 app.use(express.static(PUBLIC_DIR, { maxAge: '1h', extensions: ['html'] }));
 
 app.get('/admin', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin', 'index.html')));
+app.get('/admin/*', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin', 'index.html')));
 
-// Hash routing means everything else is the guest shell.
-app.get('*', (req, res, next) => {
+// Adventure paths and the root all serve the guest shell.
+app.get(['/', '/:locationSlug', '/:locationSlug/:year'], (req, res, next) => {
   if (req.path.startsWith('/api/')) return next();
+  if (req.path.startsWith('/admin')) return next();
+  // Don't hijack static assets that somehow missed express.static.
+  if (/\.[a-z0-9]+$/i.test(req.path)) return next();
   res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 

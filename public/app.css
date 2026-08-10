@@ -317,6 +317,52 @@ body.map-moving .aurora__band { animation-play-state: paused; }
 .mapTool:active { transform: scale(0.92); }
 .mapTool.is-on { color: var(--aurora); border-color: rgba(93, 240, 207, 0.45); }
 
+.challenge {
+  margin-top: 18px;
+  padding: 14px 14px 16px;
+  border-radius: 16px;
+  background: rgba(7, 28, 48, 0.72);
+  border: 1px solid rgba(93, 240, 207, 0.18);
+  display: grid;
+  gap: 12px;
+}
+.challenge__prompt {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--frost-100);
+}
+.challenge__row {
+  display: flex;
+  gap: 8px;
+}
+.challenge__input {
+  width: 100%;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.28);
+  color: var(--frost-100);
+  border-radius: 12px;
+  padding: 11px 12px;
+  font: inherit;
+  font-size: 15px;
+}
+.challenge__choices {
+  display: grid;
+  gap: 8px;
+}
+.challenge__choice {
+  text-align: left;
+  border: 1px solid rgba(93, 240, 207, 0.22);
+  background: rgba(93, 240, 207, 0.06);
+  color: var(--frost-100);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+}
+.challenge__choice:active { transform: scale(0.98); }
+
 body.sheet-open .mapTools,
 body.panel-open .mapTools { opacity: 0; transform: translateY(10px); pointer-events: none; }
 

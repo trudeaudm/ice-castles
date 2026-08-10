@@ -1,25 +1,22 @@
 const express = require('express');
 const db = require('../db');
 const { uuid, now, clean } = require('../helpers');
+const {
+  resolveAdventure,
+  publicAdventure,
+  parkFromAdventure,
+  mapFromAdventure,
+  awardStop,
+  normalizeChallengeType,
+  validateChallengeAnswer,
+  publicChallengeConfig,
+} = require('../adventures');
 
 const router = express.Router();
 
 /* ------------------------------------------------------------------ *
  * Anonymous guests
- *
- * There are no accounts. On first load the client asks for a guest
- * token, stores it in localStorage, and sends it as `x-guest-token`
- * from then on. Progress lives server-side against that token, so a
- * guest can close the browser, come back the next night, and still
- * have their tokens. Losing the token (cleared storage, new phone)
- * just starts a fresh visit — which is the right trade for not making
- * families create logins in the cold.
  * ------------------------------------------------------------------ */
-
-async function loadSettings() {
-  const rows = await db.all('SELECT "key", "value" FROM settings');
-  return Object.fromEntries(rows.map((r) => [r.key, r.value]));
-}
 
 async function touchGuest(token) {
   if (!token) return null;
@@ -39,13 +36,28 @@ async function createGuest() {
   return db.get('SELECT * FROM guests WHERE id = ?', [id]);
 }
 
-/** Everything the guest app needs to know about a guest's progress. */
-async function progressFor(guestId) {
-  if (!guestId) return { scans: [], tokens: [], completions: [] };
+/** Progress scoped to one adventure's POIs and hunts. */
+async function progressFor(guestId, adventureId) {
+  if (!guestId || !adventureId) return { scans: [], tokens: [], completions: [] };
   const [scans, tokens, completions] = await Promise.all([
-    db.all('SELECT poi_id, scanned_at FROM guest_scans WHERE guest_id = ?', [guestId]),
-    db.all('SELECT hunt_id, hunt_stop_id, earned_at FROM guest_tokens WHERE guest_id = ?', [guestId]),
-    db.all('SELECT hunt_id, completed_at, redeem_code FROM hunt_completions WHERE guest_id = ?', [guestId]),
+    db.all(
+      `SELECT s.poi_id, s.scanned_at FROM guest_scans s
+         JOIN pois p ON p.id = s.poi_id
+        WHERE s.guest_id = ? AND p.adventure_id = ?`,
+      [guestId, adventureId]
+    ),
+    db.all(
+      `SELECT t.hunt_id, t.hunt_stop_id, t.earned_at FROM guest_tokens t
+         JOIN hunts h ON h.id = t.hunt_id
+        WHERE t.guest_id = ? AND h.adventure_id = ?`,
+      [guestId, adventureId]
+    ),
+    db.all(
+      `SELECT c.hunt_id, c.completed_at, c.redeem_code FROM hunt_completions c
+         JOIN hunts h ON h.id = c.hunt_id
+        WHERE c.guest_id = ? AND h.adventure_id = ?`,
+      [guestId, adventureId]
+    ),
   ]);
   return {
     scans: scans.map((s) => ({ poiId: s.poi_id, at: s.scanned_at })),
@@ -74,15 +86,35 @@ function publicPoi(row) {
   };
 }
 
-async function loadHunts() {
+function publicStop(s) {
+  const type = normalizeChallengeType(s.challenge_type);
+  return {
+    id: s.id,
+    poiId: s.poi_id,
+    poiName: s.poi_name,
+    zone: s.poi_zone,
+    tokenName: s.token_name,
+    tokenGlyph: s.token_glyph,
+    hint: s.hint,
+    x: s.x,
+    y: s.y,
+    challengeType: type,
+    challenge: type === 'scan' ? null : publicChallengeConfig(type, s.challenge_config),
+  };
+}
+
+async function loadHunts(adventureId) {
   const hunts = await db.all(
-    'SELECT * FROM hunts WHERE active = 1 ORDER BY sort_order, created_at'
+    'SELECT * FROM hunts WHERE adventure_id = ? AND active = 1 ORDER BY sort_order, created_at',
+    [adventureId]
   );
   if (!hunts.length) return [];
   const stops = await db.all(
     `SELECT s.*, p.name AS poi_name, p.slug AS poi_slug, p.zone AS poi_zone, p.x, p.y, p.published
        FROM hunt_stops s JOIN pois p ON p.id = s.poi_id
-      ORDER BY s.position`
+      WHERE s.hunt_id IN (${hunts.map(() => '?').join(',')})
+      ORDER BY s.position`,
+    hunts.map((h) => h.id)
   );
   return hunts.map((h) => ({
     id: h.id,
@@ -94,58 +126,55 @@ async function loadHunts() {
     rewardBody: h.reward_body,
     stops: stops
       .filter((s) => s.hunt_id === h.id && s.published === 1)
-      .map((s) => ({
-        id: s.id,
-        poiId: s.poi_id,
-        poiName: s.poi_name,
-        zone: s.poi_zone,
-        tokenName: s.token_name,
-        tokenGlyph: s.token_glyph,
-        hint: s.hint,
-        x: s.x,
-        y: s.y,
-      })),
+      .map(publicStop),
   }));
 }
 
-/** GET /api/bootstrap — single round trip that boots the whole app. */
+async function resolveFromQuery(req) {
+  const locationSlug = clean(req.query.location || req.query.adventure, 80);
+  const year = req.query.year ? Number(req.query.year) : null;
+  return resolveAdventure({
+    locationSlug: locationSlug || null,
+    year: Number.isFinite(year) ? year : null,
+  });
+}
+
+/** GET /api/bootstrap — boots the guest app for one adventure package. */
 router.get('/bootstrap', async (req, res) => {
-  const settings = await loadSettings();
+  const adventure = await resolveFromQuery(req);
+  if (!adventure) return res.status(404).json({ error: 'adventure_not_found' });
+
   let guest = await touchGuest(req.get('x-guest-token'));
   if (!guest) guest = await createGuest();
 
   const poiRows = await db.all(
-    'SELECT * FROM pois WHERE published = 1 ORDER BY sort_order, name'
+    'SELECT * FROM pois WHERE adventure_id = ? AND published = 1 ORDER BY sort_order, name',
+    [adventure.id]
   );
 
   res.json({
-    park: {
-      name: settings.park_name,
-      locationName: settings.location_name,
-      welcomeHeadline: settings.welcome_headline,
-      welcomeBody: settings.welcome_body,
-      hoursNote: settings.hours_note,
-      safetyNote: settings.safety_note,
-    },
-    map: {
-      imageUrl: settings.map_image_url,
-      width: Number(settings.map_width) || 2000,
-      height: Number(settings.map_height) || 1400,
-    },
+    adventure: publicAdventure(adventure),
+    park: parkFromAdventure(adventure),
+    map: mapFromAdventure(adventure),
     guest: { token: guest.id, nickname: guest.nickname },
     pois: poiRows.map(publicPoi),
-    hunts: await loadHunts(),
-    progress: await progressFor(guest.id),
+    hunts: await loadHunts(adventure.id),
+    progress: await progressFor(guest.id, adventure.id),
   });
 });
 
-/** POST /api/guest — mint a fresh anonymous guest (also used by "start over"). */
+/** GET /api/adventures/resolve — used by the shell to map a path to a package. */
+router.get('/adventures/resolve', async (req, res) => {
+  const adventure = await resolveFromQuery(req);
+  if (!adventure) return res.status(404).json({ error: 'adventure_not_found' });
+  res.json(publicAdventure(adventure));
+});
+
 router.post('/guest', async (_req, res) => {
   const guest = await createGuest();
   res.json({ token: guest.id, nickname: null });
 });
 
-/** PATCH /api/guest — optional nickname, purely cosmetic. */
 router.patch('/guest', async (req, res) => {
   const guest = await touchGuest(req.get('x-guest-token'));
   if (!guest) return res.status(404).json({ error: 'unknown_guest' });
@@ -155,23 +184,14 @@ router.patch('/guest', async (req, res) => {
 });
 
 /* ------------------------------------------------------------------ *
- * Scanning — the core game verb
+ * Scanning — awards scan-type hunt stops only
  * ------------------------------------------------------------------ */
 
-/**
- * POST /api/scan  { code }
- *
- * Idempotent on purpose. Re-scanning a code a guest already has returns
- * the same POI with `alreadyScanned: true` and awards nothing, so a kid
- * mashing the same code doesn't farm tokens, and a flaky connection that
- * retries doesn't double-count.
- */
 router.post('/scan', async (req, res) => {
   const raw = String(req.body?.code || '').trim();
   if (!raw) return res.status(400).json({ error: 'missing_code' });
 
-  // Accept a bare code, or a full URL from a phone's native camera app.
-  const code = raw.replace(/^.*\/s\//, '').replace(/[?#].*$/, '').toUpperCase();
+  const code = raw.replace(/^.*\/s\//i, '').replace(/[?#].*$/, '').toUpperCase();
 
   let guest = await touchGuest(req.get('x-guest-token'));
   if (!guest) guest = await createGuest();
@@ -199,62 +219,20 @@ router.post('/scan', async (req, res) => {
   const completed = [];
 
   if (!existing) {
-    // Any active hunt that includes this POI hands over its token.
     const stops = await db.all(
-      `SELECT s.*, h.title AS hunt_title, h.reward_title, h.reward_body, h.reward_code
+      `SELECT s.*, h.title AS hunt_title, h.reward_title, h.reward_body, h.reward_code, h.adventure_id
          FROM hunt_stops s JOIN hunts h ON h.id = s.hunt_id
-        WHERE s.poi_id = ? AND h.active = 1`,
-      [poi.id]
+        WHERE s.poi_id = ? AND h.active = 1 AND h.adventure_id = ?`,
+      [poi.id, poi.adventure_id]
     );
 
     for (const stop of stops) {
-      await db.run(
-        'INSERT INTO guest_tokens (id, guest_id, hunt_id, hunt_stop_id, earned_at) VALUES (?, ?, ?, ?, ?)',
-        [uuid(), guest.id, stop.hunt_id, stop.id, ts]
-      );
-
-      const total = await db.get(
-        `SELECT COUNT(*) AS n FROM hunt_stops s JOIN pois p ON p.id = s.poi_id
-          WHERE s.hunt_id = ? AND p.published = 1`,
-        [stop.hunt_id]
-      );
-      const earned = await db.get(
-        'SELECT COUNT(*) AS n FROM guest_tokens WHERE guest_id = ? AND hunt_id = ?',
-        [guest.id, stop.hunt_id]
-      );
-
-      const earnedCount = Number(earned.n);
-      const totalCount = Number(total.n);
-
-      awards.push({
-        huntId: stop.hunt_id,
-        huntTitle: stop.hunt_title,
-        stopId: stop.id,
-        tokenName: stop.token_name,
-        tokenGlyph: stop.token_glyph,
-        earnedCount,
-        totalCount,
-      });
-
-      if (totalCount > 0 && earnedCount >= totalCount) {
-        const already = await db.get(
-          'SELECT id, redeem_code FROM hunt_completions WHERE guest_id = ? AND hunt_id = ?',
-          [guest.id, stop.hunt_id]
-        );
-        const redeemCode = already?.redeem_code || stop.reward_code || null;
-        if (!already) {
-          await db.run(
-            'INSERT INTO hunt_completions (id, guest_id, hunt_id, completed_at, redeem_code) VALUES (?, ?, ?, ?, ?)',
-            [uuid(), guest.id, stop.hunt_id, ts, redeemCode]
-          );
-        }
-        completed.push({
-          huntId: stop.hunt_id,
-          huntTitle: stop.hunt_title,
-          rewardTitle: stop.reward_title,
-          rewardBody: stop.reward_body,
-          redeemCode,
-        });
+      const type = normalizeChallengeType(stop.challenge_type);
+      if (type !== 'scan') continue;
+      const result = await awardStop(guest.id, stop, ts);
+      if (!result.already) {
+        awards.push(...result.awards);
+        completed.push(...result.completed);
       }
     }
   }
@@ -265,15 +243,72 @@ router.post('/scan', async (req, res) => {
     alreadyScanned: Boolean(existing),
     awards,
     completed,
-    progress: await progressFor(guest.id),
+    progress: await progressFor(guest.id, poi.adventure_id),
   });
 });
 
-/** GET /api/progress — used when the app resumes after being backgrounded. */
+/**
+ * POST /api/challenge  { stopId, answer }
+ * Completes non-scan activations (acknowledge, code entry, quiz, reflection).
+ */
+router.post('/challenge', async (req, res) => {
+  const stopId = clean(req.body?.stopId, 80);
+  if (!stopId) return res.status(400).json({ error: 'missing_stop' });
+
+  let guest = await touchGuest(req.get('x-guest-token'));
+  if (!guest) guest = await createGuest();
+
+  const stop = await db.get(
+    `SELECT s.*, h.title AS hunt_title, h.reward_title, h.reward_body, h.reward_code,
+            h.active, h.adventure_id, p.published, p.id AS poi_row_id
+       FROM hunt_stops s
+       JOIN hunts h ON h.id = s.hunt_id
+       JOIN pois p ON p.id = s.poi_id
+      WHERE s.id = ?`,
+    [stopId]
+  );
+  if (!stop || !stop.active || stop.published !== 1) {
+    return res.status(404).json({ error: 'stop_not_found' });
+  }
+
+  const type = normalizeChallengeType(stop.challenge_type);
+  if (type === 'scan') {
+    return res.status(400).json({ error: 'requires_scan' });
+  }
+
+  const check = validateChallengeAnswer(type, stop.challenge_config, req.body?.answer);
+  if (!check.ok) return res.status(400).json({ error: check.error || 'invalid_answer' });
+
+  const ts = now();
+  const visit = await db.get(
+    'SELECT id FROM guest_scans WHERE guest_id = ? AND poi_id = ?',
+    [guest.id, stop.poi_id]
+  );
+  if (!visit) {
+    await db.run(
+      'INSERT INTO guest_scans (id, guest_id, poi_id, scanned_at) VALUES (?, ?, ?, ?)',
+      [uuid(), guest.id, stop.poi_id, ts]
+    );
+  }
+
+  const result = await awardStop(guest.id, stop, ts);
+  const poi = await db.get('SELECT * FROM pois WHERE id = ?', [stop.poi_id]);
+
+  res.json({
+    guestToken: guest.id,
+    poi: publicPoi(poi),
+    alreadyCompleted: result.already,
+    awards: result.awards,
+    completed: result.completed,
+    progress: await progressFor(guest.id, stop.adventure_id),
+  });
+});
+
 router.get('/progress', async (req, res) => {
   const guest = await touchGuest(req.get('x-guest-token'));
-  if (!guest) return res.json({ scans: [], tokens: [], completions: [] });
-  res.json(await progressFor(guest.id));
+  const adventure = await resolveFromQuery(req);
+  if (!guest || !adventure) return res.json({ scans: [], tokens: [], completions: [] });
+  res.json(await progressFor(guest.id, adventure.id));
 });
 
 module.exports = router;

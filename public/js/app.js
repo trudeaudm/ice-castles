@@ -28,6 +28,7 @@ const dom = {
   toast: el('toast'), splash: el('bootSplash'),
   scanFab: el('scanFab'), recenter: el('recenterButton'),
   filterButton: el('filterButton'), legend: el('legend'), legendRows: el('legendRows'),
+  journeyButton: el('journeyButton'),
   award: el('award'), awardGlyph: el('awardGlyph'), awardTitle: el('awardTitle'),
   awardMeta: el('awardMeta'), awardKicker: el('awardKicker'), awardPips: el('awardPips'),
   awardDone: el('awardDone'),
@@ -70,7 +71,17 @@ function renderMap() {
     scanned: Store.scannedIds(),
     targets: targetPoiIds(),
     hidden: Store.state.hiddenCategories,
+    journeyOnly: Store.state.journeyMode,
+    journeyIds: Store.journeyPoiIds(),
   });
+  if (dom.journeyButton) {
+    dom.journeyButton.classList.toggle('is-on', Store.state.journeyMode);
+    dom.journeyButton.setAttribute('aria-pressed', String(Store.state.journeyMode));
+    dom.journeyButton.setAttribute(
+      'aria-label',
+      Store.state.journeyMode ? 'Show full park map' : 'Show trail stops only'
+    );
+  }
 }
 
 function renderProgressRing() {
@@ -90,6 +101,46 @@ function renderProgressRing() {
 /* POI sheet                                                                  */
 /* -------------------------------------------------------------------------- */
 
+function challengeFormHtml(stop) {
+  const type = stop.challengeType || 'scan';
+  const challenge = stop.challenge || {};
+  if (type === 'scan') return '';
+
+  if (type === 'acknowledge') {
+    return `<div class="challenge" data-challenge-stop="${escapeHtml(stop.id)}">
+      <p class="challenge__prompt">${escapeHtml(challenge.prompt || 'Found it? Mark this stop complete.')}</p>
+      <button class="textButton" data-challenge-ack type="button">I found it</button>
+    </div>`;
+  }
+  if (type === 'reflection') {
+    return `<div class="challenge" data-challenge-stop="${escapeHtml(stop.id)}">
+      <p class="challenge__prompt">${escapeHtml(challenge.prompt || 'What will you remember?')}</p>
+      <textarea class="challenge__input" data-challenge-text rows="3" maxlength="400" placeholder="A sentence is enough"></textarea>
+      <button class="textButton" data-challenge-submit type="button">Save &amp; collect</button>
+    </div>`;
+  }
+  if (type === 'code_entry') {
+    return `<div class="challenge" data-challenge-stop="${escapeHtml(stop.id)}">
+      <p class="challenge__prompt">${escapeHtml(challenge.prompt || 'Enter the code at this stop.')}</p>
+      <div class="challenge__row">
+        <input class="challenge__input" data-challenge-code inputmode="latin" autocapitalize="characters"
+               autocomplete="off" spellcheck="false" maxlength="24" placeholder="CODE">
+        <button class="textButton" data-challenge-submit type="button">Go</button>
+      </div>
+    </div>`;
+  }
+  if (type === 'multiple_choice') {
+    const choices = (challenge.choices || []).map((choice, index) =>
+      `<button class="challenge__choice" data-challenge-choice="${index}" type="button">${escapeHtml(choice)}</button>`
+    ).join('');
+    return `<div class="challenge" data-challenge-stop="${escapeHtml(stop.id)}">
+      <p class="challenge__prompt">${escapeHtml(challenge.question || 'Choose the right answer.')}</p>
+      <div class="challenge__choices">${choices}</div>
+    </div>`;
+  }
+  return '';
+}
+
 function openSheet(poi) {
   const scanned = Store.scannedIds().has(poi.id);
   const stops = Store.stopsForPoi(poi.id);
@@ -104,12 +155,17 @@ function openSheet(poi) {
     );
   });
 
-  // Un-scanned markers get a nudge toward the physical sign rather than the
-  // full write-up: the reward for walking there should be the story.
+  const pendingChallenges = stops
+    .filter((stop) => !earned.has(stop.id) && stop.challengeType && stop.challengeType !== 'scan')
+    .map(challengeFormHtml)
+    .join('');
+
+  const needsScan = stops.some((stop) => !earned.has(stop.id) && (!stop.challengeType || stop.challengeType === 'scan'));
+
   const detail = scanned || !stops.length
     ? `${poi.description ? `<p class="poi__body">${escapeHtml(poi.description)}</p>` : ''}
        ${poi.funFact ? `<div class="poi__fact"><strong>Did you know</strong>${escapeHtml(poi.funFact)}</div>` : ''}`
-    : `<div class="poi__fact"><strong>There's a code here</strong>Find the sign at this stop and scan it to collect ${escapeHtml(stops.map((s) => s.tokenName).join(' and '))}.</div>
+    : `${needsScan ? `<div class="poi__fact"><strong>There's a code here</strong>Find the sign at this stop and scan it to collect ${escapeHtml(stops.filter((s) => !s.challengeType || s.challengeType === 'scan').map((s) => s.tokenName).join(' and ') || 'this light')}.</div>` : ''}
        ${poi.description ? `<p class="poi__body">${escapeHtml(poi.description)}</p>` : ''}`;
 
   dom.sheetBody.innerHTML = `
@@ -120,6 +176,7 @@ function openSheet(poi) {
       ${poi.imageUrl ? `<img class="poi__img" src="${escapeHtml(poi.imageUrl)}" alt="${escapeHtml(poi.name)}">` : ''}
       ${chips.length ? `<div class="chipRow">${chips.join('')}</div>` : ''}
       ${detail}
+      ${pendingChallenges}
     </div>`;
 
   document.body.classList.add('sheet-open');
@@ -157,6 +214,10 @@ function renderHunts() {
 
     const stops = hunt.stops.map((stop) => {
       const has = earned.has(stop.id);
+      const type = stop.challengeType || 'scan';
+      const typeNote = !has && type !== 'scan'
+        ? `<p class="stop__zone">${type === 'multiple_choice' ? 'Answer on the map' : type === 'code_entry' ? 'Enter a code' : type === 'reflection' ? 'Leave a note' : 'Tap to complete'}</p>`
+        : '';
       return `
         <li>
           <button class="stop ${has ? 'is-found' : 'is-secret'}" data-focus-poi="${escapeHtml(stop.poiId)}" type="button">
@@ -164,7 +225,7 @@ function renderHunts() {
             <span style="min-width:0">
               <p class="stop__name">${has ? escapeHtml(stop.tokenName) : 'Not found yet'}</p>
               ${stop.hint ? `<p class="stop__hint">${escapeHtml(stop.hint)}</p>` : ''}
-              ${has ? `<p class="stop__zone">${escapeHtml(stop.poiName)}</p>` : ''}
+              ${has ? `<p class="stop__zone">${escapeHtml(stop.poiName)}</p>` : typeNote}
             </span>
           </button>
         </li>`;
@@ -178,7 +239,7 @@ function renderHunts() {
          </div>`
       : `<div class="reward reward--locked">
            <p class="reward__title">🔒 ${escapeHtml(hunt.rewardTitle || 'Reward')}</p>
-           <p class="reward__body">${total - found} more to go. Keep scanning.</p>
+           <p class="reward__body">${total - found} more to go. Keep exploring.</p>
          </div>`;
 
     return `
@@ -413,7 +474,7 @@ async function handleCode(code) {
 
 function presentScanResult(result) {
   const { poi, awards = [], completed = [] } = result;
-  ParkMap.celebrate(poi.id);
+  if (poi?.id) ParkMap.celebrate(poi.id);
 
   awards.forEach((award) => {
     enqueueAward({
@@ -439,10 +500,36 @@ function presentScanResult(result) {
     });
   });
 
-  if (!awards.length && !completed.length) {
+  if (!awards.length && !completed.length && poi) {
     toast(`Found ${poi.name}.`, { warm: true });
   }
-  showPoiBySlug(poi.slug, { silent: Boolean(awards.length || completed.length) });
+  if (poi?.slug) showPoiBySlug(poi.slug, { silent: Boolean(awards.length || completed.length) });
+}
+
+async function handleChallenge(stopId, answer) {
+  const result = await Store.completeChallenge(stopId, answer);
+  if (result.status === 'error') {
+    const messages = {
+      bad_code: 'That code isn’t right. Try again.',
+      bad_choice: 'Not quite — try another answer.',
+      empty_reflection: 'Write a short note first.',
+      requires_scan: 'This stop needs a QR scan.',
+    };
+    toast(messages[result.error] || 'Couldn’t complete that stop.');
+    return;
+  }
+
+  renderMap();
+  renderProgressRing();
+  if (currentPanel) openPanel(currentPanel);
+
+  if (result.status === 'repeat') {
+    toast('You’ve already collected this one.');
+    if (result.poi) showPoiBySlug(result.poi.slug);
+    return;
+  }
+
+  presentScanResult(result);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -522,6 +609,14 @@ function wire() {
     toast('Whole park in view');
   });
 
+  if (dom.journeyButton) {
+    dom.journeyButton.addEventListener('click', () => {
+      const on = Store.toggleJourneyMode();
+      renderMap();
+      toast(on ? 'Trail mode — only stop markers' : 'Full park map');
+    });
+  }
+
   dom.filterButton.addEventListener('click', () => {
     const showing = !dom.legend.hidden;
     dom.legend.hidden = showing;
@@ -581,6 +676,27 @@ function wire() {
           toast('Passport cleared.');
         });
       }
+      return;
+    }
+
+    const challengeRoot = event.target.closest('[data-challenge-stop]');
+    if (!challengeRoot) return;
+    const stopId = challengeRoot.dataset.challengeStop;
+
+    if (event.target.closest('[data-challenge-ack]')) {
+      handleChallenge(stopId, {});
+      return;
+    }
+    if (event.target.closest('[data-challenge-choice]')) {
+      const choice = event.target.closest('[data-challenge-choice]');
+      handleChallenge(stopId, { choiceIndex: Number(choice.dataset.challengeChoice) });
+      return;
+    }
+    if (event.target.closest('[data-challenge-submit]')) {
+      const text = challengeRoot.querySelector('[data-challenge-text]')?.value;
+      const code = challengeRoot.querySelector('[data-challenge-code]')?.value;
+      if (text !== undefined) handleChallenge(stopId, { text });
+      else handleChallenge(stopId, { code });
     }
   });
 
@@ -636,8 +752,10 @@ async function boot() {
   }
 
   const park = Store.state.park || {};
+  const adventure = Store.state.adventure || {};
   dom.parkName.textContent = park.name || 'Ice Castles';
-  dom.parkLocation.textContent = park.locationName || '';
+  dom.parkLocation.textContent = park.locationName
+    || (adventure.year ? `${adventure.year} adventure` : '');
   document.title = `${park.name || 'Ice Castles'} — Park Guide`;
 
   ParkMap.init(document.getElementById('map'), Store.state.map, {
@@ -665,7 +783,9 @@ async function boot() {
     if (results.length) afterSync();
   });
 
-  Store.subscribe(renderProgressRing);
+  Store.subscribe(() => {
+    renderProgressRing();
+  });
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});

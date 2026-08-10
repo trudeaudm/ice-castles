@@ -98,14 +98,21 @@ const ParkMap = (() => {
     return L.divIcon({ html: el.outerHTML, className: '', iconSize: [34, 34], iconAnchor: [17, 17] });
   }
 
-  /** Re-render all markers. Cheap enough at park scale, and keeps state simple. */
-  function render(pois, { scanned, targets, hidden }) {
+  /**
+   * Re-render all markers.
+   * journeyOnly + journeyIds: when journey mode is on, hide amenity/guide pins
+   * that aren't part of an active trail so guests can focus the game loop.
+   */
+  function render(pois, { scanned, targets, hidden, journeyOnly = false, journeyIds = null }) {
     if (!map) return;
     markers.forEach((m) => map.removeLayer(m));
     markers = new Map();
 
+    const journeySet = journeyIds instanceof Set ? journeyIds : null;
+
     pois
       .filter((p) => !hidden.has(p.category))
+      .filter((p) => !journeyOnly || !journeySet || journeySet.has(p.id))
       .forEach((poi) => {
         const visited = scanned.has(poi.id);
         const isTarget = targets.has(poi.id);

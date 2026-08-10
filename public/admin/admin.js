@@ -22,11 +22,23 @@ const escapeHtml = (value) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 let token = sessionStorage.getItem(KEY) || '';
-let state = { settings: {}, pois: [], hunts: [] };
+let state = { settings: {}, pois: [], hunts: [], tree: [], adventure: null };
 let stats = { perPoi: [], perHunt: [], guests: 0, scans: 0 };
 let selectedId = null;
 let map = null;
 let markers = new Map();
+let mapOverlay = null;
+
+const adventureId = () => state.adventure?.id || null;
+const locationSlug = () => state.adventure?.location_slug || 'NHAdventure';
+
+const CHALLENGE_TYPES = [
+  { id: 'scan', label: 'QR scan' },
+  { id: 'acknowledge', label: 'Acknowledge' },
+  { id: 'code_entry', label: 'Code entry' },
+  { id: 'multiple_choice', label: 'Multiple choice' },
+  { id: 'reflection', label: 'Reflection' },
+];
 
 /* -------------------------------------------------------------------------- */
 /* plumbing                                                                   */
@@ -181,7 +193,7 @@ function initMap() {
     attributionControl: false,
   });
   const bounds = L.latLngBounds(toLatLng(0, height), toLatLng(width, 0));
-  L.imageOverlay(state.settings.map_image_url || '/assets/park-map.webp', bounds).addTo(map);
+  mapOverlay = L.imageOverlay(state.settings.map_image_url || '/assets/park-map.webp', bounds).addTo(map);
   map.setMaxBounds(bounds.pad(0.25));
   map.fitBounds(bounds);
 
@@ -189,10 +201,11 @@ function initMap() {
   // because a stale cached shell omitted grid.js), marker placement still works.
   map.on('click', async (event) => {
     const { x, y } = fromLatLng(event.latlng);
+    if (!adventureId()) return toast('Pick an adventure first.', true);
     try {
       const poi = await api('/pois', {
         method: 'POST',
-        body: JSON.stringify({ name: 'New marker', x, y, published: false }),
+        body: JSON.stringify({ name: 'New marker', x, y, published: false, adventure_id: adventureId() }),
       });
       state.pois.push(poi);
       renderMarkers();
@@ -393,10 +406,17 @@ el('poiTable').addEventListener('click', async (event) => {
 
 el('addPoiButton').addEventListener('click', async () => {
   const { width, height } = mapDims();
+  if (!adventureId()) return toast('Pick an adventure first.', true);
   try {
     const poi = await api('/pois', {
       method: 'POST',
-      body: JSON.stringify({ name: 'New marker', x: Math.round(width / 2), y: Math.round(height / 2), published: false }),
+      body: JSON.stringify({
+        name: 'New marker',
+        x: Math.round(width / 2),
+        y: Math.round(height / 2),
+        published: false,
+        adventure_id: adventureId(),
+      }),
     });
     state.pois.push(poi);
     renderMarkers();
@@ -427,12 +447,13 @@ function renderHunts() {
 
     const stops = hunt.stops.map((stop) => {
       const poi = state.pois.find((p) => p.id === stop.poi_id);
+      const type = stop.challenge_type || 'scan';
       return `
         <div class="stopRow" data-stop="${escapeHtml(stop.id)}">
           <span class="stopRow__glyph">${GLYPH_CHARS[stop.token_glyph] || '❄️'}</span>
           <div class="stopRow__body">
             <p class="stopRow__name">${escapeHtml(poi ? poi.name : 'Missing marker')}</p>
-            <p class="stopRow__hint">${escapeHtml(stop.token_name)}</p>
+            <p class="stopRow__hint">${escapeHtml(stop.token_name)} · ${escapeHtml(type)}</p>
           </div>
           <button class="iconButton" data-edit-stop="${escapeHtml(stop.id)}" type="button">Edit</button>
           <button class="iconButton" data-del-stop="${escapeHtml(stop.id)}" type="button">Remove</button>
@@ -481,6 +502,7 @@ function renderHunts() {
 }
 
 el('addHuntButton').addEventListener('click', async () => {
+  if (!adventureId()) return toast('Pick an adventure first.', true);
   try {
     const hunt = await api('/hunts', {
       method: 'POST',
@@ -490,6 +512,7 @@ el('addHuntButton').addEventListener('click', async () => {
         reward_title: 'Reward unlocked',
         reward_body: 'Show this screen at the Warming Hut to claim it.',
         active: false,
+        adventure_id: adventureId(),
       }),
     });
     hunt.stops = [];
@@ -599,11 +622,14 @@ el('huntList').addEventListener('click', async (event) => {
   if (editStop) openStopEditor(editStop.dataset.editStop);
 });
 
-/** Inline editor for a stop: what the token is called, its glyph, and the hint. */
+/** Inline editor for a stop: token, glyph, hint, and challenge activation. */
 function openStopEditor(stopId) {
   const hunt = state.hunts.find((h) => h.stops.some((s) => s.id === stopId));
   const stop = hunt.stops.find((s) => s.id === stopId);
   const row = el('huntList').querySelector(`[data-stop="${stopId}"]`);
+  let config = {};
+  try { config = stop.challenge_config ? JSON.parse(stop.challenge_config) : {}; } catch { config = {}; }
+  const type = stop.challenge_type || 'scan';
 
   row.innerHTML = `
     <div style="flex:1;display:grid;gap:8px">
@@ -612,6 +638,13 @@ function openStopEditor(stopId) {
       <select data-field="token_glyph">
         ${GLYPHS.map((g) => `<option value="${g}"${g === stop.token_glyph ? ' selected' : ''}>${GLYPH_CHARS[g]} ${g}</option>`).join('')}
       </select>
+      <label style="display:grid;gap:4px;font-size:12px;color:var(--frost-500)">
+        Activation
+        <select data-field="challenge_type">
+          ${CHALLENGE_TYPES.map((t) => `<option value="${t.id}"${t.id === type ? ' selected' : ''}>${t.label}</option>`).join('')}
+        </select>
+      </label>
+      <textarea data-field="challenge_config" rows="4" placeholder='Config JSON — e.g. {"code":"SPARK"} or {"question":"...","choices":["A","B"],"correctIndex":0}'>${escapeHtml(stop.challenge_config || (Object.keys(config).length ? JSON.stringify(config, null, 2) : ''))}</textarea>
       <div style="display:flex;gap:7px">
         <button class="primaryButton" data-save-stop="${escapeHtml(stopId)}" type="button">Save stop</button>
         <button class="iconButton" data-cancel-stop type="button">Cancel</button>
@@ -622,6 +655,15 @@ function openStopEditor(stopId) {
   row.querySelector('[data-save-stop]').addEventListener('click', async () => {
     const payload = {};
     row.querySelectorAll('[data-field]').forEach((input) => { payload[input.dataset.field] = input.value; });
+    if (payload.challenge_config) {
+      try {
+        payload.challenge_config = JSON.parse(payload.challenge_config);
+      } catch {
+        return toast('Challenge config must be valid JSON.', true);
+      }
+    } else {
+      payload.challenge_config = null;
+    }
     try {
       const updated = await api(`/stops/${stopId}`, { method: 'PATCH', body: JSON.stringify(payload) });
       Object.assign(stop, updated);
@@ -640,7 +682,7 @@ function openStopEditor(stopId) {
 
 function renderSigns() {
   const live = state.pois.filter((poi) => poi.published && poi.scan_code);
-  el('baseUrlSample').textContent = `${location.origin}/s/CODE`;
+  el('baseUrlSample').textContent = `${location.origin}/${locationSlug()}/s/CODE`;
   el('signGrid').innerHTML = live.length
     ? live.map((poi) => `
         <div class="signCard">
@@ -656,7 +698,8 @@ function renderSigns() {
 }
 
 el('printSheet').addEventListener('click', () => {
-  window.open(`/api/admin/qr-sheet?token=${encodeURIComponent(token)}`, '_blank', 'noopener');
+  const q = adventureId() ? `&adventure_id=${encodeURIComponent(adventureId())}` : '';
+  window.open(`/api/admin/qr-sheet?token=${encodeURIComponent(token)}${q}`, '_blank', 'noopener');
 });
 
 /* -------------------------------------------------------------------------- */
@@ -672,8 +715,9 @@ function fillSettings() {
 
 el('settingsForm').addEventListener('submit', async (event) => {
   event.preventDefault();
+  if (!adventureId()) return toast('Pick an adventure first.', true);
   const form = event.target;
-  const payload = {};
+  const payload = { adventure_id: adventureId() };
   [...form.elements].forEach((input) => {
     if (input.name) payload[input.name] = input.value;
   });
@@ -681,7 +725,7 @@ el('settingsForm').addEventListener('submit', async (event) => {
     state.settings = await api('/settings', { method: 'PUT', body: JSON.stringify(payload) });
     rebuildGrid();
     flashSaved();
-    toast('Settings saved. Reload to see new map artwork.');
+    toast('Settings saved. Reload the map tab if artwork changed.');
   } catch {
     toast('Couldn’t save settings.', true);
   }
@@ -689,7 +733,8 @@ el('settingsForm').addEventListener('submit', async (event) => {
 
 async function loadStats() {
   try {
-    stats = await api('/stats');
+    const q = adventureId() ? `?adventure_id=${encodeURIComponent(adventureId())}` : '';
+    stats = await api(`/stats${q}`);
     const busiest = stats.perPoi[0];
     el('statRow').innerHTML = `
       <div class="stat"><span class="stat__n">${stats.guests}</span><span class="stat__l">Guests</span></div>
@@ -697,25 +742,139 @@ async function loadStats() {
       <div class="stat"><span class="stat__n">${stats.perHunt.reduce((sum, h) => sum + h.completions, 0)}</span><span class="stat__l">Rewards earned</span></div>
       <div class="stat"><span class="stat__n" style="font-size:16px;line-height:1.3">${escapeHtml(busiest?.name || '—')}</span><span class="stat__l">Most scanned</span></div>`;
     renderTable();
-  } catch { /* stats are a nice-to-have; never block the dashboard on them */ }
+  } catch { /* stats are a nice-to-have */ }
 }
+
+function fillAdventureSelects() {
+  const locations = state.tree || [];
+  const locSelect = el('locationSelect');
+  const advSelect = el('adventureSelect');
+  if (!locSelect || !advSelect) return;
+
+  const currentLocId = state.adventure?.location_id || locations[0]?.id;
+  locSelect.innerHTML = locations.map((loc) =>
+    `<option value="${escapeHtml(loc.id)}"${loc.id === currentLocId ? ' selected' : ''}>${escapeHtml(loc.name)} (${escapeHtml(loc.slug)})</option>`
+  ).join('');
+
+  const location = locations.find((l) => l.id === (locSelect.value || currentLocId)) || locations[0];
+  const adventures = location?.adventures || [];
+  const currentAdvId = state.adventure?.id || adventures.find((a) => a.is_active)?.id || adventures[0]?.id;
+  advSelect.innerHTML = adventures.map((adv) =>
+    `<option value="${escapeHtml(adv.id)}"${adv.id === currentAdvId ? ' selected' : ''}>${escapeHtml(String(adv.year))} — ${escapeHtml(adv.name)}${adv.is_active ? ' ●' : ''}</option>`
+  ).join('');
+
+  const link = el('guestAppLink');
+  if (link) link.href = `/${locationSlug()}`;
+}
+
+async function loadAdventure(id) {
+  if (!id) return;
+  const data = await api(`/state?adventure_id=${encodeURIComponent(id)}`);
+  state = {
+    ...state,
+    ...data,
+    tree: data.tree || state.tree,
+    adventure: data.adventure,
+  };
+  if (state.adventure?.id) sessionStorage.setItem('ic.admin.adventure', state.adventure.id);
+  selectedId = null;
+  fillAdventureSelects();
+  fillSettings();
+  renderHunts();
+  renderTable();
+  if (map) {
+    map.eachLayer((layer) => {
+      if (layer instanceof L.ImageOverlay) map.removeLayer(layer);
+    });
+    const { width, height } = mapDims();
+    const bounds = L.latLngBounds(toLatLng(0, height), toLatLng(width, 0));
+    mapOverlay = L.imageOverlay(state.settings.map_image_url || '/assets/park-map.webp', bounds).addTo(map);
+    map.setMaxBounds(bounds.pad(0.25));
+    map.fitBounds(bounds);
+    rebuildGrid();
+    renderMarkers();
+    select(null);
+    setTimeout(() => map.invalidateSize(), 60);
+  }
+  loadStats();
+}
+
+el('locationSelect').addEventListener('change', async () => {
+  const loc = (state.tree || []).find((l) => l.id === el('locationSelect').value);
+  const next = loc?.adventures?.find((a) => a.is_active) || loc?.adventures?.[0];
+  if (next) await loadAdventure(next.id);
+  else fillAdventureSelects();
+});
+
+el('adventureSelect').addEventListener('change', async () => {
+  await loadAdventure(el('adventureSelect').value);
+});
+
+el('activateAdventure').addEventListener('click', async () => {
+  if (!adventureId()) return;
+  try {
+    state.adventure = await api(`/adventures/${adventureId()}/activate`, { method: 'POST' });
+    const tree = await api('/tree');
+    state.tree = tree.locations;
+    fillAdventureSelects();
+    toast('This adventure is now live for its short URL.');
+  } catch {
+    toast('Couldn’t activate that adventure.', true);
+  }
+});
+
+el('newAdventure').addEventListener('click', async () => {
+  const locId = el('locationSelect')?.value || state.adventure?.location_id;
+  if (!locId) return toast('Create a location first.', true);
+  const year = Number(prompt('Year for the new adventure?', String(new Date().getFullYear() + 1)));
+  if (!Number.isFinite(year)) return;
+  try {
+    const adventure = await api(`/locations/${locId}/adventures`, {
+      method: 'POST',
+      body: JSON.stringify({
+        year,
+        name: `${year} Adventure`,
+        is_active: false,
+        map_image_url: state.settings.map_image_url,
+        map_width: state.settings.map_width,
+        map_height: state.settings.map_height,
+        welcome_headline: state.settings.welcome_headline,
+        welcome_body: state.settings.welcome_body,
+        hours_note: state.settings.hours_note,
+        safety_note: state.settings.safety_note,
+      }),
+    });
+    const tree = await api('/tree');
+    state.tree = tree.locations;
+    await loadAdventure(adventure.id);
+    toast(`Created ${year} adventure. Build the map, then Set active when ready.`);
+  } catch {
+    toast('Couldn’t create that year (it may already exist).', true);
+  }
+});
 
 /* -------------------------------------------------------------------------- */
 /* boot                                                                       */
 /* -------------------------------------------------------------------------- */
 
 async function start() {
-  state = await api('/state');
+  const preferred = sessionStorage.getItem('ic.admin.adventure') || '';
+  const q = preferred ? `?adventure_id=${encodeURIComponent(preferred)}` : '';
+  const data = await api(`/state${q}`);
+  state = { settings: {}, pois: [], hunts: [], tree: [], adventure: null, ...data };
+  if (state.adventure?.id) sessionStorage.setItem('ic.admin.adventure', state.adventure.id);
+
   el('gate').hidden = true;
   el('shell').hidden = false;
 
+  fillAdventureSelects();
   if (!map) initMap();
   renderMarkers();
   renderTable();
   renderHunts();
   fillSettings();
   loadStats();
-  setTimeout(() => map.invalidateSize(), 80);
+  setTimeout(() => map && map.invalidateSize(), 80);
 }
 
 if (token) {
