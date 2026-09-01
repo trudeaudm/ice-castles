@@ -1,5 +1,6 @@
 const db = require('./db');
 const { uuid, now } = require('./helpers');
+const { ensureQuestStationsAll } = require('./questStations');
 
 /**
  * Schema notes
@@ -325,11 +326,16 @@ async function migrate() {
   await db.exec(INDEX_DDL);
 
   const nh = await db.get('SELECT id FROM locations WHERE slug = ?', ['NHAdventure']);
-  if (nh) {
-    await db.run(
-      `UPDATE locations SET venue_code = ? WHERE id = ? AND (venue_code IS NULL OR venue_code = '')`,
-      ['nh', nh.id]
-    );
+  const nhTaken = await db.get(`SELECT id FROM locations WHERE venue_code = 'nh'`);
+  if (nh && !nhTaken) {
+    await db.run('UPDATE locations SET venue_code = ? WHERE id = ?', ['nh', nh.id]);
+  } else if (nh && nhTaken && nhTaken.id === nh.id) {
+    /* already nh */
+  } else if (!nhTaken) {
+    const first = await db.get('SELECT id FROM locations ORDER BY created_at LIMIT 1');
+    if (first) {
+      await db.run('UPDATE locations SET venue_code = ? WHERE id = ?', ['nh', first.id]);
+    }
   }
   const uncoded = await db.all(
     `SELECT id, slug FROM locations WHERE venue_code IS NULL OR venue_code = ''`
@@ -357,6 +363,7 @@ async function migrate() {
   );
 
   await ensureDefaultAdventure();
+  await ensureQuestStationsAll();
   return ts;
 }
 

@@ -52,10 +52,19 @@ async function resolveAdventure({ venueCode, locationSlug, year } = {}) {
   }
 
   const key = venueCode || locationSlug;
-  const location = await db.get(
+  let location = await db.get(
     'SELECT * FROM locations WHERE venue_code = ? OR slug = ?',
     [String(key).toLowerCase(), key]
   );
+  if (!location && String(key).toLowerCase() === 'nh') {
+    location = await db.get(`SELECT * FROM locations WHERE slug = 'NHAdventure'`);
+    if (!location) {
+      const only = await db.get('SELECT COUNT(*) AS n FROM locations');
+      if (Number(only.n) === 1) {
+        location = await db.get('SELECT * FROM locations LIMIT 1');
+      }
+    }
+  }
   if (!location) return null;
 
   if (year) {
