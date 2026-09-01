@@ -51,7 +51,7 @@ router.get('/state', async (req, res) => {
   let adventure = adventureId ? await adventureById(adventureId) : null;
   if (!adventure) {
     adventure = await db.get(
-      `SELECT a.*, l.name AS location_name, l.slug AS location_slug, l.region
+      `SELECT a.*, l.name AS location_name, l.slug AS location_slug, l.venue_code, l.region
          FROM adventures a JOIN locations l ON l.id = a.location_id
         WHERE a.is_active = 1 ORDER BY a.year DESC LIMIT 1`
     );
@@ -163,9 +163,12 @@ router.patch('/locations/:id', async (req, res) => {
     b.slug !== undefined
       ? slugify(b.slug || name, 'location')
       : existing.slug;
+  const venueCode = b.venue_code !== undefined
+    ? slugify(b.venue_code || slug, 'nh').replace(/-/g, '').slice(0, 8)
+    : existing.venue_code;
   await db.run(
-    'UPDATE locations SET name=?, slug=?, region=?, updated_at=? WHERE id=?',
-    [name, slug, b.region !== undefined ? clean(b.region, 160) : existing.region, now(), existing.id]
+    'UPDATE locations SET name=?, slug=?, venue_code=?, region=?, updated_at=? WHERE id=?',
+    [name, slug, venueCode, b.region !== undefined ? clean(b.region, 160) : existing.region, now(), existing.id]
   );
   res.json(await db.get('SELECT * FROM locations WHERE id = ?', [existing.id]));
 });
@@ -516,16 +519,19 @@ router.get('/challenge-types', (_req, res) => {
 
 const TOUCH_TYPES = ['threshold', 'guardian', 'monument', 'heart'];
 
-async function uniqueTouchSlug(adventureId, title, ignoreId = null) {
-  let base = slugify(title, 'stop');
-  let candidate = base;
+async function uniqueTouchSlug(adventureId, raw, ignoreId = null) {
+  const explicit = String(raw || '').trim();
+  let candidate = explicit
+    ? slugify(explicit, 'stop')
+    : shortCode(8).toLowerCase();
+  const base = candidate;
   for (let i = 2; i < 200; i++) {
     const clash = await db.get(
       'SELECT id FROM touchpoints WHERE adventure_id = ? AND slug = ?',
       [adventureId, candidate]
     );
     if (!clash || clash.id === ignoreId) return candidate;
-    candidate = `${base}-${i}`;
+    candidate = explicit ? `${base}-${i}` : shortCode(8).toLowerCase();
   }
   return `${base}-${shortCode(4).toLowerCase()}`;
 }
@@ -540,23 +546,25 @@ router.post('/touchpoints', async (req, res) => {
   const ts = now();
   await db.run(
     `INSERT INTO touchpoints
-       (id, adventure_id, type, slug, title, subtitle, body, element, image_url, audio_url,
-        poi_id, sort_order, published, config, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       (id, adventure_id, type, slug, title, subtitle, body, discover_body, element, image_url, audio_url,
+        poi_id, sort_order, published, challenge_type, config, created_at, updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       id,
       adventureId,
       type,
-      await uniqueTouchSlug(adventureId, b.slug || title),
+      await uniqueTouchSlug(adventureId, b.slug || null),
       title,
       clean(b.subtitle, 200),
       clean(b.body, 8000),
+      clean(b.discover_body, 8000),
       clean(b.element, 40),
       clean(b.image_url, 500),
       clean(b.audio_url, 500),
       clean(b.poi_id, 80),
       num(b.sort_order, 0),
       bool(b.published === undefined ? true : b.published),
+      clean(b.challenge_type, 40),
       b.config ? (typeof b.config === 'string' ? b.config : JSON.stringify(b.config)) : null,
       ts,
       ts,
@@ -572,23 +580,25 @@ router.patch('/touchpoints/:id', async (req, res) => {
   const title = b.title !== undefined ? clean(b.title, 120) || existing.title : existing.title;
   const type = b.type !== undefined && TOUCH_TYPES.includes(b.type) ? b.type : existing.type;
   await db.run(
-    `UPDATE touchpoints SET type=?, slug=?, title=?, subtitle=?, body=?, element=?,
-       image_url=?, audio_url=?, poi_id=?, sort_order=?, published=?, config=?, updated_at=?
+    `UPDATE touchpoints SET type=?, slug=?, title=?, subtitle=?, body=?, discover_body=?, element=?,
+       image_url=?, audio_url=?, poi_id=?, sort_order=?, published=?, challenge_type=?, config=?, updated_at=?
      WHERE id=?`,
     [
       type,
       b.slug !== undefined
-        ? await uniqueTouchSlug(existing.adventure_id, b.slug || title, existing.id)
+        ? await uniqueTouchSlug(existing.adventure_id, b.slug || null, existing.id)
         : existing.slug,
       title,
       b.subtitle !== undefined ? clean(b.subtitle, 200) : existing.subtitle,
       b.body !== undefined ? clean(b.body, 8000) : existing.body,
+      b.discover_body !== undefined ? clean(b.discover_body, 8000) : existing.discover_body,
       b.element !== undefined ? clean(b.element, 40) : existing.element,
       b.image_url !== undefined ? clean(b.image_url, 500) : existing.image_url,
       b.audio_url !== undefined ? clean(b.audio_url, 500) : existing.audio_url,
       b.poi_id !== undefined ? clean(b.poi_id, 80) : existing.poi_id,
       b.sort_order !== undefined ? num(b.sort_order, existing.sort_order) : existing.sort_order,
       b.published !== undefined ? bool(b.published) : existing.published,
+      b.challenge_type !== undefined ? clean(b.challenge_type, 40) : existing.challenge_type,
       b.config !== undefined
         ? b.config
           ? typeof b.config === 'string'
@@ -610,11 +620,19 @@ router.delete('/touchpoints/:id', async (req, res) => {
 
 /* --------------------------------- QR codes ------------------------------ */
 
-function scanUrl(req, code, locationSlug) {
+function originOf(req) {
   const base = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
-  const root = base.replace(/\/$/, '');
+  return base.replace(/\/$/, '');
+}
+
+function scanUrl(req, code, locationSlug) {
+  const root = originOf(req);
   if (locationSlug) return `${root}/${locationSlug}/s/${code}`;
   return `${root}/s/${code}`;
+}
+
+function stationUrl(req, venueCode, slug) {
+  return `${originOf(req)}/${venueCode || 'nh'}/${slug}`;
 }
 
 router.get('/qr/:id.svg', async (req, res) => {
@@ -685,6 +703,72 @@ router.get('/qr-sheet', async (req, res) => {
   @media screen { body { padding: 24px; background: #eef2f6; } .card { background:#fff; margin: 0 auto 24px; width: 8.5in; box-shadow: 0 2px 12px rgba(0,0,0,.15); } }
 </style>
 ${cards.join('\n') || '<p style="padding:2rem">No published markers with scan codes yet.</p>'}`);
+});
+
+router.get('/station-qr/:id.svg', async (req, res) => {
+  const row = await db.get(
+    `SELECT t.*, l.venue_code
+       FROM touchpoints t
+       JOIN adventures a ON a.id = t.adventure_id
+       JOIN locations l ON l.id = a.location_id
+      WHERE t.id = ?`,
+    [req.params.id]
+  );
+  if (!row) return res.status(404).send('Not found');
+  const svg = await QRCode.toString(stationUrl(req, row.venue_code, row.slug), {
+    type: 'svg',
+    margin: 1,
+    errorCorrectionLevel: 'M',
+  });
+  res.type('image/svg+xml').send(svg);
+});
+
+router.get('/station-sheet', async (req, res) => {
+  const adventureId = clean(req.query.adventure_id, 80);
+  if (!adventureId) return res.status(400).send('missing adventure');
+  const rows = await db.all(
+    `SELECT t.*, l.venue_code
+       FROM touchpoints t
+       JOIN adventures a ON a.id = t.adventure_id
+       JOIN locations l ON l.id = a.location_id
+      WHERE t.adventure_id = ? AND t.published = 1
+      ORDER BY t.sort_order, t.title`,
+    [adventureId]
+  );
+  const cards = await Promise.all(
+    rows.map(async (t) => {
+      const url = stationUrl(req, t.venue_code, t.slug);
+      const svg = await QRCode.toString(url, {
+        type: 'svg',
+        margin: 0,
+        errorCorrectionLevel: 'M',
+      });
+      return `<section class="card">
+        <div class="zone">${escapeHtml(t.type)}</div>
+        <h1>${escapeHtml(t.title)}</h1>
+        <div class="qr">${svg}</div>
+        <p class="hint">Scan with your phone camera</p>
+        <p class="code">/${escapeHtml(t.venue_code || 'nh')}/${escapeHtml(t.slug)}</p>
+      </section>`;
+    })
+  );
+  res.type('html').send(`<!doctype html><meta charset="utf-8">
+<title>Castle Quest signs</title>
+<style>
+  @page { size: letter; margin: 0.5in; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; background: #fff; color: #000; }
+  .card { page-break-after: always; height: 10in; display: flex; flex-direction: column;
+          align-items: center; justify-content: center; text-align: center; gap: 0.25in; }
+  .zone { letter-spacing: .28em; text-transform: uppercase; font-size: 13pt; color: #444; }
+  h1 { font-size: 34pt; margin: 0; max-width: 6.5in; line-height: 1.05; }
+  .qr { width: 4.6in; height: 4.6in; }
+  .qr svg { width: 100%; height: 100%; display: block; }
+  .hint { font-size: 15pt; margin: 0; color: #333; }
+  .code { font-family: ui-monospace, monospace; font-size: 16pt; letter-spacing: .08em; margin: 0; }
+  @media screen { body { padding: 24px; background: #eef2f6; } .card { background:#fff; margin: 0 auto 24px; width: 8.5in; box-shadow: 0 2px 12px rgba(0,0,0,.15); } }
+</style>
+${cards.join('\n') || '<p style="padding:2rem">No published quest stations yet.</p>'}`);
 });
 
 function escapeHtml(s) {

@@ -1,17 +1,12 @@
 /* global window, document, Store, ParkMap, Scanner */
 
-const GLYPHS = {
-  crystal: '❄️', lantern: '🏮', flame: '🔥', wing: '🦋', rune: 'ᚦ',
-  star: '✦', paw: '🐾', feather: '🪶', key: '🗝️', antler: '🦌',
-  dragon: '🐉', bird: '🕊️', bear: '🐻‍❄️', horse: '🐴', tree: '🌲',
+const REALM_META = {
+  water: { label: 'Water', glyph: '💧' },
+  earth: { label: 'Earth', glyph: '🪨' },
+  fire: { label: 'Fire', glyph: '🔥' },
+  air: { label: 'Air', glyph: '🌬️' },
+  spirit: { label: 'Spirit', glyph: '✦' },
 };
-const glyph = (name) => GLYPHS[name] || GLYPHS.crystal;
-
-const CATEGORY_LABELS = {
-  landmark: 'Landmark', sculpture: 'Ice sculpture', lantern: 'Lantern display',
-  'photo-op': 'Photo spot', ride: 'Ride', amenity: 'Facilities',
-};
-const categoryLabel = (key) => CATEGORY_LABELS[key] || key;
 
 const el = (id) => document.getElementById(id);
 const escapeHtml = (value) =>
@@ -22,9 +17,11 @@ const dom = {
   parkName: el('parkName'), parkLocation: el('parkLocation'),
   progressFill: el('progressFill'), progressLabel: el('progressLabel'),
   progressButton: el('progressButton'),
+  questProgress: el('questProgress'), realmPips: el('realmPips'),
+  stationView: el('stationView'),
+  guideToggle: el('guideToggle'), headerMap: el('headerMap'), guide: el('guide'),
   sheet: el('sheet'), sheetBody: el('sheetBody'), sheetGrip: el('sheetGrip'),
-  huntPanel: el('huntPanel'), huntBody: el('huntBody'),
-  journeyPanel: el('journeyPanel'), journeyBody: el('journeyBody'), journeyTitle: el('journeyTitle'),
+  journeyPanel: el('journeyPanel'), journeyBody: el('journeyBody'),
   passportPanel: el('passportPanel'), passportBody: el('passportBody'),
   toast: el('toast'), splash: el('bootSplash'),
   scanFab: el('scanFab'), recenter: el('recenterButton'),
@@ -33,7 +30,7 @@ const dom = {
   threshold: el('threshold'), thresholdEyebrow: el('thresholdEyebrow'),
   thresholdTitle: el('thresholdTitle'), thresholdSubtitle: el('thresholdSubtitle'),
   thresholdBody: el('thresholdBody'), thresholdStart: el('thresholdStart'),
-  thresholdMap: el('thresholdMap'),
+  finale: el('finale'), finaleCard: el('finaleCard'),
   award: el('award'), awardGlyph: el('awardGlyph'), awardTitle: el('awardTitle'),
   awardMeta: el('awardMeta'), awardKicker: el('awardKicker'), awardPips: el('awardPips'),
   awardDone: el('awardDone'),
@@ -42,440 +39,411 @@ const dom = {
 let currentPanel = null;
 let awardQueue = [];
 let awardShowing = false;
+let mapReady = false;
+let selectedImages = new Set();
+let sequenceBuffer = [];
+let shrineFocus = null;
+let shrineSlug = null;
 
-/* -------------------------------------------------------------------------- */
-/* toast                                                                      */
-/* -------------------------------------------------------------------------- */
+const ICON_HANDSHAKE = `<svg viewBox="0 0 64 64" aria-hidden="true">
+  <path d="M12 30c3-8 10-12 18-10l4 2"/>
+  <path d="M52 30c-3-8-10-12-18-10l-4 2"/>
+  <path d="M16 32c4 1 7 6 8 10 2-5 6-8 11-8s9 3 11 8c1-4 4-9 8-10"/>
+  <path d="M22 42c3 6 8 9 10 9s7-3 10-9"/>
+  <path d="M20 28l6 3M44 28l-6 3"/>
+</svg>`;
+const ICON_COMPASS = `<svg viewBox="0 0 64 64" aria-hidden="true">
+  <circle cx="32" cy="32" r="20"/>
+  <circle cx="32" cy="32" r="3"/>
+  <path d="M32 12v6M32 46v6M12 32h6M46 32h6"/>
+  <path d="M32 18l7 18-7-3-7 3z"/>
+  <path d="M32 46l-4-12 4 2 4-2z"/>
+</svg>`;
+const ICON_PLAY = `<svg viewBox="0 0 64 64" aria-hidden="true">
+  <circle cx="32" cy="32" r="22"/>
+  <path d="M27 20l20 12-20 12z" fill="currentColor" stroke="none"/>
+</svg>`;
 
-let toastTimer = null;
+function setShrineFocus(key, { spin = true } = {}) {
+  shrineFocus = key;
+  const gate = document.querySelector('.shrineGate');
+  if (!gate) return;
+  gate.dataset.focus = key;
+  gate.classList.add('is-focus');
+  if (spin) {
+    gate.classList.remove('is-spinning');
+    void gate.offsetWidth;
+    gate.classList.add('is-spinning');
+  }
+  gate.querySelectorAll('[data-shrine-focus]').forEach((btn) => {
+    btn.classList.toggle('is-on', btn.dataset.shrineFocus === key);
+  });
+  document.querySelectorAll('.shrinePanel').forEach((panel) => {
+    panel.classList.toggle('is-open', panel.dataset.panel === key);
+  });
+}
+
 function toast(message, { warm = false, ms = 3200 } = {}) {
   dom.toast.textContent = message;
   dom.toast.classList.toggle('is-warm', warm);
   dom.toast.classList.add('is-on');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => dom.toast.classList.remove('is-on'), ms);
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => dom.toast.classList.remove('is-on'), ms);
+}
+
+function goStation(slug) {
+  const path = Store.stationPath(slug);
+  if (`${location.pathname}` !== path) history.pushState({ station: slug }, '', path);
+  Store.state.path = Store.pathContext();
+  route();
 }
 
 /* -------------------------------------------------------------------------- */
-/* map rendering                                                              */
+/* progress                                                                   */
 /* -------------------------------------------------------------------------- */
 
-function targetPoiIds() {
-  const earned = Store.tokenIds();
-  const ids = new Set();
-  Store.state.hunts.forEach((hunt) => {
-    hunt.stops.forEach((stop) => {
-      if (!earned.has(stop.id)) ids.add(stop.poiId);
-    });
-  });
-  return ids;
-}
-
-function renderMap() {
-  ParkMap.render(Store.state.pois, {
-    scanned: Store.scannedIds(),
-    targets: targetPoiIds(),
-    hidden: Store.state.hiddenCategories,
-    journeyOnly: Store.state.journeyMode,
-    journeyIds: Store.journeyPoiIds(),
-  });
-  if (dom.journeyButton) {
-    dom.journeyButton.classList.toggle('is-on', Store.state.journeyMode);
-    dom.journeyButton.setAttribute('aria-pressed', String(Store.state.journeyMode));
-    dom.journeyButton.setAttribute(
-      'aria-label',
-      Store.state.journeyMode ? 'Show full park map' : 'Show trail stops only'
-    );
-  }
-}
-
-function renderProgressRing() {
-  const { tokens, tokensTotal } = Store.totals();
-  const ratio = tokensTotal ? tokens / tokensTotal : 0;
+function renderProgress() {
+  const awakened = Store.realmsAwakened();
+  const ratio = awakened / 5;
   const circumference = 2 * Math.PI * 18;
   dom.progressFill.style.strokeDasharray = String(circumference);
   dom.progressFill.style.strokeDashoffset = String(circumference * (1 - ratio));
-  dom.progressLabel.textContent = String(tokens);
-  dom.progressButton.setAttribute(
-    'aria-label',
-    `Open your passport. ${tokens} of ${tokensTotal} lights collected.`
-  );
+  dom.progressLabel.textContent = String(awakened);
+  dom.questProgress.textContent = `${awakened} of 5 Realms Awakened`;
+  const realms = Store.state.session?.realms || [];
+  dom.realmPips.innerHTML = ['water', 'earth', 'fire', 'air', 'spirit'].map((realm) => {
+    const on = realms.some((r) => r.realm === realm && r.complete);
+    return `<span class="realmPip realmPip--${realm} ${on ? 'is-on' : ''}" title="${REALM_META[realm].label}">${REALM_META[realm].glyph}</span>`;
+  }).join('');
 }
 
 /* -------------------------------------------------------------------------- */
-/* POI sheet                                                                  */
+/* shrine                                                                     */
 /* -------------------------------------------------------------------------- */
 
-function challengeFormHtml(stop) {
-  const type = stop.challengeType || 'scan';
-  const challenge = stop.challenge || {};
-  if (type === 'scan') return '';
+function challengeHtml(station) {
+  const type = station.challengeType;
+  const challenge = station.challenge || {};
+  if (!type || station.complete && station.type === 'guardian') {
+    return station.type === 'guardian' && station.complete
+      ? `<div class="challenge"><p class="challenge__prompt">This Realm is awake. Find the others, then scan The Heart.</p></div>`
+      : '';
+  }
 
-  if (type === 'acknowledge') {
-    return `<div class="challenge" data-challenge-stop="${escapeHtml(stop.id)}">
-      <p class="challenge__prompt">${escapeHtml(challenge.prompt || 'Found it? Mark this stop complete.')}</p>
-      <button class="textButton" data-challenge-ack type="button">I found it</button>
-    </div>`;
-  }
-  if (type === 'reflection') {
-    return `<div class="challenge" data-challenge-stop="${escapeHtml(stop.id)}">
-      <p class="challenge__prompt">${escapeHtml(challenge.prompt || 'What will you remember?')}</p>
-      <textarea class="challenge__input" data-challenge-text rows="3" maxlength="400" placeholder="A sentence is enough"></textarea>
-      <button class="textButton" data-challenge-submit type="button">Save &amp; collect</button>
-    </div>`;
-  }
   if (type === 'code_entry') {
-    return `<div class="challenge" data-challenge-stop="${escapeHtml(stop.id)}">
-      <p class="challenge__prompt">${escapeHtml(challenge.prompt || 'Enter the code at this stop.')}</p>
+    return `<div class="challenge" data-station="${escapeHtml(station.slug)}">
+      <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
       <div class="challenge__row">
         <input class="challenge__input" data-challenge-code inputmode="latin" autocapitalize="characters"
-               autocomplete="off" spellcheck="false" maxlength="24" placeholder="CODE">
-        <button class="textButton" data-challenge-submit type="button">Go</button>
+               autocomplete="off" spellcheck="false" maxlength="24" placeholder="WORD">
+        <button class="textButton textButton--play" data-challenge-submit type="button">Go</button>
       </div>
     </div>`;
   }
-  if (type === 'multiple_choice') {
-    const choices = (challenge.choices || []).map((choice, index) =>
-      `<button class="challenge__choice" data-challenge-choice="${index}" type="button">${escapeHtml(choice)}</button>`
+
+  if (type === 'image_select') {
+    const tiles = (challenge.images || []).map((img) =>
+      `<button class="pickTile" data-image-id="${escapeHtml(img.id)}" type="button" style="--tile:${escapeHtml(img.color || '#5df0cf')}">
+        ${img.url ? `<img src="${escapeHtml(img.url)}" alt="">` : ''}
+        <span>${escapeHtml(img.label || img.id)}</span>
+      </button>`
     ).join('');
-    return `<div class="challenge" data-challenge-stop="${escapeHtml(stop.id)}">
-      <p class="challenge__prompt">${escapeHtml(challenge.question || 'Choose the right answer.')}</p>
-      <div class="challenge__choices">${choices}</div>
+    return `<div class="challenge" data-station="${escapeHtml(station.slug)}">
+      <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
+      <div class="pickGrid">${tiles}</div>
+      <button class="textButton textButton--play" data-image-submit type="button">Check my three</button>
     </div>`;
   }
+
+  if (type === 'sequence' || type === 'multi_sequence') {
+    const opts = (challenge.options || []).map((opt) => {
+      const id = opt.id || opt;
+      const label = opt.label || opt;
+      const color = opt.color || '';
+      return `<button class="seqBtn" data-seq="${escapeHtml(id)}" type="button" style="${color ? `--tile:${escapeHtml(color)}` : ''}">${escapeHtml(label)}</button>`;
+    }).join('');
+    return `<div class="challenge" data-station="${escapeHtml(station.slug)}" data-seq-len="${challenge.length || 5}">
+      <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
+      <p class="seqReadout" data-seq-readout>Tap the sequence</p>
+      <div class="seqRow">${opts}</div>
+      <button class="textButton" data-seq-clear type="button">Clear</button>
+    </div>`;
+  }
+
+  if (type === 'quiz') {
+    const questions = (challenge.questions || []).map((q, qi) => `
+      <fieldset class="quizQ">
+        <legend>${escapeHtml(q.question)}</legend>
+        ${(q.choices || []).map((c, ci) =>
+          `<label class="quizChoice"><input type="radio" name="q${qi}" value="${ci}"> ${escapeHtml(c)}</label>`
+        ).join('')}
+      </fieldset>`).join('');
+    return `<div class="challenge" data-station="${escapeHtml(station.slug)}">
+      <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
+      ${questions}
+      <button class="textButton textButton--play" data-quiz-submit type="button">Finish quiz</button>
+    </div>`;
+  }
+
   return '';
 }
 
-function openSheet(poi) {
-  const scanned = Store.scannedIds().has(poi.id);
-  const stops = Store.stopsForPoi(poi.id);
-  const earned = Store.tokenIds();
-
-  const chips = [];
-  if (poi.zone) chips.push(`<span class="chip">${escapeHtml(poi.zone)}</span>`);
-  stops.forEach((stop) => {
-    const has = earned.has(stop.id);
-    chips.push(
-      `<span class="chip ${has ? 'chip--found' : 'chip--target'}">${glyph(stop.token_glyph || stop.tokenGlyph)} ${escapeHtml(stop.tokenName)}${has ? '' : ' — not yet'}</span>`
-    );
-  });
-
-  const pendingChallenges = stops
-    .filter((stop) => !earned.has(stop.id) && stop.challengeType && stop.challengeType !== 'scan')
-    .map(challengeFormHtml)
-    .join('');
-
-  const needsScan = stops.some((stop) => !earned.has(stop.id) && (!stop.challengeType || stop.challengeType === 'scan'));
-  const touch = Store.touchForPoi(poi.id);
-
-  const detail = scanned || !stops.length
-    ? `${poi.description ? `<p class="poi__body">${escapeHtml(poi.description)}</p>` : ''}
-       ${poi.funFact ? `<div class="poi__fact"><strong>Did you know</strong>${escapeHtml(poi.funFact)}</div>` : ''}`
-    : `${needsScan ? `<div class="poi__fact"><strong>There's a code here</strong>Find the sign at this stop and scan it to collect ${escapeHtml(stops.filter((s) => !s.challengeType || s.challengeType === 'scan').map((s) => s.tokenName).join(' and ') || 'this light')}.</div>` : ''}
-       ${poi.description ? `<p class="poi__body">${escapeHtml(poi.description)}</p>` : ''}`;
-
-  dom.sheetBody.innerHTML = `
-    <div style="--pin-color: ${ParkMap.colorFor(poi.category)}">
-      <p class="poi__eyebrow"><span class="dot"></span>${escapeHtml(categoryLabel(poi.category))}${scanned ? ' · visited' : ''}</p>
-      <h2 class="poi__name">${escapeHtml(poi.name)}</h2>
-      ${poi.blurb ? `<p class="poi__blurb">${escapeHtml(poi.blurb)}</p>` : ''}
-      ${poi.imageUrl ? `<img class="poi__img" src="${escapeHtml(poi.imageUrl)}" alt="${escapeHtml(poi.name)}">` : ''}
-      ${chips.length ? `<div class="chipRow">${chips.join('')}</div>` : ''}
-      ${touch ? `<button class="textButton" data-open-touch="${escapeHtml(touch.slug)}" type="button">Open ${escapeHtml(touch.title)}</button>` : ''}
-      ${detail}
-      ${pendingChallenges}
-    </div>`;
-
-  document.body.classList.add('sheet-open');
-  ParkMap.focusOn(poi.id, Store.state.pois);
+function shrineMeetTitle(station) {
+  if (station.type === 'guardian') return 'Meet the Guardian';
+  if (station.type === 'monument') return 'Meet the builders';
+  if (station.type === 'heart') return 'Meet the Heart';
+  return `Meet ${station.title}`;
 }
 
-function closeSheet() {
-  document.body.classList.remove('sheet-open');
-  ParkMap.highlight(null);
-  if (location.hash.startsWith('#/poi/')) history.replaceState(null, '', '#/map');
-}
-
-/* -------------------------------------------------------------------------- */
-/* trails panel                                                               */
-/* -------------------------------------------------------------------------- */
-
-function renderHunts() {
-  const hunts = Store.state.hunts;
-  const touchpoints = Store.state.touchpoints || [];
-  const earned = Store.tokenIds();
-  const scanned = Store.scannedIds();
-
-  const journeyList = touchpoints.length
-    ? `<p class="sectionLabel">Winter Keeper journey</p>
-       <ul class="stopList" style="margin-bottom:22px">
-         ${touchpoints.map((tp) => {
-           const done = tp.poiId
-             ? (Store.stopsForPoi(tp.poiId).some((s) => earned.has(s.id)) || scanned.has(tp.poiId))
-             : false;
-           const complete = tp.type === 'heart' ? Store.journeyComplete() : done;
-           return `<li>
-             <button class="stop ${complete ? 'is-found' : 'is-secret'}" data-open-touch="${escapeHtml(tp.slug)}" type="button">
-               <span class="stop__token" style="font-size:17px">${tp.type === 'heart' ? '❤' : tp.type === 'monument' ? '▣' : tp.type === 'threshold' ? '◇' : '✦'}</span>
-               <span style="min-width:0">
-                 <p class="stop__name">${escapeHtml(tp.title)}</p>
-                 <p class="stop__hint">${escapeHtml(tp.subtitle || tp.type)}</p>
-               </span>
-             </button>
-           </li>`;
-         }).join('')}
-       </ul>`
-    : '';
-
-  if (!hunts.length && !touchpoints.length) {
-    dom.huntBody.innerHTML = `
-      <div class="empty">
-        <p class="empty__mark">✦</p>
-        <h3 class="empty__title">No trails running tonight</h3>
-        <p class="empty__body">Check back on your next visit — new trails open through the season.</p>
-      </div>`;
+function renderStation(slug) {
+  const station = Store.touchBySlug(slug) || Store.touchByType('threshold')[0];
+  if (!station) {
+    dom.stationView.innerHTML = `<div class="empty"><p class="empty__title">This station isn’t on tonight’s quest.</p></div>`;
     return;
   }
 
-  const huntCards = hunts.map((hunt) => {
-    const { found, total, done, redeemCode } = Store.huntProgress(hunt);
-    const pct = total ? Math.round((found / total) * 100) : 0;
+  if (shrineSlug !== station.slug) {
+    shrineSlug = station.slug;
+    shrineFocus = null;
+  }
 
-    const stops = hunt.stops.map((stop) => {
-      const has = earned.has(stop.id);
-      const type = stop.challengeType || 'scan';
-      const typeNote = !has && type !== 'scan'
-        ? `<p class="stop__zone">${type === 'multiple_choice' ? 'Answer on the map' : type === 'code_entry' ? 'Enter a code' : type === 'reflection' ? 'Leave a note' : 'Tap to complete'}</p>`
-        : '';
-      return `
-        <li>
-          <button class="stop ${has ? 'is-found' : 'is-secret'}" data-focus-poi="${escapeHtml(stop.poiId)}" type="button">
-            <span class="stop__token" style="font-size:19px">${has ? glyph(stop.tokenGlyph) : '◇'}</span>
-            <span style="min-width:0">
-              <p class="stop__name">${has ? escapeHtml(stop.tokenName) : 'Not found yet'}</p>
-              ${stop.hint ? `<p class="stop__hint">${escapeHtml(stop.hint)}</p>` : ''}
-              ${has ? `<p class="stop__zone">${escapeHtml(stop.poiName)}</p>` : typeNote}
-            </span>
-          </button>
-        </li>`;
-    }).join('');
+  const gated = station.type === 'guardian' || station.type === 'monument';
+  const playHtml = station.challengeType ? challengeHtml(station) : '';
+  const extra = station.type === 'monument' && Store.state.session?.builderQuizAt
+    ? `<p class="fineprint">You finished the builder quiz. This stop is optional.</p>`
+    : '';
 
-    const reward = done
-      ? `<div class="reward">
-           <p class="reward__title">${escapeHtml(hunt.rewardTitle || 'Reward unlocked')}</p>
-           <p class="reward__body">${escapeHtml(hunt.rewardBody || '')}</p>
-           ${redeemCode ? `<span class="reward__code">${escapeHtml(redeemCode)}</span>` : ''}
-         </div>`
-      : `<div class="reward reward--locked">
-           <p class="reward__title">🔒 ${escapeHtml(hunt.rewardTitle || 'Reward')}</p>
-           <p class="reward__body">${total - found} more to go. Keep exploring.</p>
-         </div>`;
-
-    return `
-      <article class="hunt ${done ? 'is-complete' : ''}">
-        <p class="hunt__title">${escapeHtml(hunt.title)}</p>
-        ${hunt.tagline ? `<h3 class="hunt__tagline">${escapeHtml(hunt.tagline)}</h3>` : ''}
-        ${hunt.description ? `<p class="hunt__desc">${escapeHtml(hunt.description)}</p>` : ''}
-        <div class="tally">
-          <span class="tally__bar"><span class="tally__fill" style="width:${pct}%"></span></span>
-          <span class="tally__count">${found}/${total}</span>
-        </div>
-        <ul class="stopList">${stops}</ul>
-        ${reward}
+  if (!gated) {
+    dom.stationView.innerHTML = `
+      <article class="shrine" data-realm="${escapeHtml(station.element || '')}">
+        <p class="shrine__kicker">${escapeHtml(station.subtitle || station.type)}</p>
+        <h2 class="shrine__title">${escapeHtml(station.title)}</h2>
+        ${station.imageUrl ? `<img class="shrine__art" src="${escapeHtml(station.imageUrl)}" alt="">` : ''}
+        <section class="shrine__block">
+          <h3>${escapeHtml(shrineMeetTitle(station))}</h3>
+          <p>${escapeHtml(station.body || '')}</p>
+        </section>
+        ${station.discoverBody ? `<section class="shrine__block">
+          <h3>Discover</h3>
+          <p>${escapeHtml(station.discoverBody)}</p>
+        </section>` : ''}
+        <div id="heartSlot"></div>
       </article>`;
-  }).join('');
+    if (station.type === 'heart') renderHeartSlot();
+    return;
+  }
 
-  dom.huntBody.innerHTML = `${journeyList}${huntCards}`;
+  dom.stationView.innerHTML = `
+    <article class="shrine" data-realm="${escapeHtml(station.element || '')}">
+      <p class="shrine__kicker">${escapeHtml(station.subtitle || station.type)}</p>
+      <h2 class="shrine__title">${escapeHtml(station.title)}</h2>
+      ${station.element ? `<p class="chip chip--target">${escapeHtml(REALM_META[station.element]?.label || station.element)}</p>` : ''}
+      ${station.imageUrl ? `<img class="shrine__art shrine__art--small" src="${escapeHtml(station.imageUrl)}" alt="">` : ''}
+      <div class="shrineGate" data-focus="">
+        <button class="shrineIcon" data-shrine-focus="meet" type="button">
+          <span class="shrineIcon__orbit" aria-hidden="true"></span>
+          <span class="shrineIcon__gem">${ICON_HANDSHAKE}</span>
+          <span class="shrineIcon__label">Meet</span>
+        </button>
+        <button class="shrineIcon" data-shrine-focus="discover" type="button">
+          <span class="shrineIcon__orbit" aria-hidden="true"></span>
+          <span class="shrineIcon__gem">${ICON_COMPASS}</span>
+          <span class="shrineIcon__label">Discover</span>
+        </button>
+        <button class="shrineIcon" data-shrine-focus="play" type="button">
+          <span class="shrineIcon__orbit" aria-hidden="true"></span>
+          <span class="shrineIcon__gem shrineIcon__gem--play">${ICON_PLAY}</span>
+          <span class="shrineIcon__label">Play</span>
+        </button>
+      </div>
+      <section class="shrinePanel" data-panel="meet">
+        <h3>${escapeHtml(shrineMeetTitle(station))}</h3>
+        <p>${escapeHtml(station.body || '')}</p>
+        ${station.audioUrl ? `<audio class="journeyAudio" controls preload="none" src="${escapeHtml(station.audioUrl)}"></audio>` : ''}
+      </section>
+      <section class="shrinePanel" data-panel="discover">
+        <h3>Discover</h3>
+        <p>${escapeHtml(station.discoverBody || 'Look around this shrine. The castle keeps its own clues.')}</p>
+      </section>
+      <section class="shrinePanel" data-panel="play" id="challenge">
+        <h3>Play the challenge</h3>
+        ${playHtml}
+        ${extra}
+      </section>
+    </article>`;
+
+  selectedImages = new Set();
+  sequenceBuffer = [];
+  if (shrineFocus) setShrineFocus(shrineFocus, { spin: false });
 }
 
-function badgeHtml(park) {
-  const adventure = Store.state.adventure || {};
-  const name = Store.state.park?.name || 'Ice Castles';
-  const when = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-  return `<div class="badgeCard" id="badgeCard">
-    <p class="badgeCard__seal">Winter Keeper</p>
-    <h3 class="badgeCard__title">${escapeHtml(park.badgeTitle || 'Winter Keeper')}</h3>
-    <p class="badgeCard__meta">${escapeHtml(name)} · ${escapeHtml(String(adventure.year || ''))}</p>
-    <p class="badgeCard__date">${escapeHtml(when)}</p>
-    <p class="badgeCard__body">${escapeHtml(park.badgeBody || '')}</p>
+async function openStation(slug, { recordVisit = true } = {}) {
+  hideThreshold();
+  closePanels();
+  closeGuide();
+  Store.setIntendedStation(slug);
+  renderStation(slug);
+  if (recordVisit && Store.hasLiveSession() && slug) {
+    try { await Store.visitStation(slug); renderProgress(); } catch { /* offline */ }
+    if (slug === 'heart' || Store.touchBySlug(slug)?.type === 'heart') {
+      const result = await Store.scanHeart();
+      renderStation(slug);
+      renderHeartSlot(result);
+    }
+  }
+}
+
+function renderHeartSlot(heartResult) {
+  const slot = el('heartSlot');
+  if (!slot) return;
+  const session = Store.state.session;
+  if (!session?.live) return;
+
+  if (session.winterKeeper) {
+    slot.innerHTML = staffScreenHtml(session);
+    return;
+  }
+
+  const remaining = (heartResult?.remaining)
+    || (session.realms || []).filter((r) => !r.complete).map((r) => r.realm);
+
+  if (remaining.length) {
+    const names = remaining.map((r) => REALM_META[r]?.label || r);
+    slot.innerHTML = `<div class="challenge">
+      <p class="challenge__prompt">The Heart is still sleeping. ${names.length === 1 ? 'This Realm' : 'These Realms'} remain: <strong>${escapeHtml(names.join(', '))}</strong>.</p>
+      <button class="textButton" data-open-journey type="button">View my journey</button>
+    </div>`;
+    return;
+  }
+
+  slot.innerHTML = keepersFormHtml();
+}
+
+function keepersFormHtml() {
+  return `<form class="challenge keepers" id="keepersForm">
+    <p class="challenge__prompt">The Heart is open. Enter the Winter Keepers in your party.</p>
+    <label>How many adventurers?
+      <input class="challenge__input" name="partySize" type="number" min="1" max="20" value="1" required>
+    </label>
+    <label>First names
+      <input class="challenge__input" name="names" placeholder="Ada, Sam, Juniper" required>
+    </label>
+    <label>Email for the digital seal (optional)
+      <input class="challenge__input" name="email" type="email" autocomplete="email">
+    </label>
+    <label class="check">
+      <input type="checkbox" name="marketing">
+      <span>Also send Ice Castles news to this address. Separate from the digital reward.</span>
+    </label>
+    <button class="threshold__primary threshold__primary--earned" type="submit">Become Winter Keepers</button>
+  </form>`;
+}
+
+function staffScreenHtml(session) {
+  const names = session.keeperNames || [];
+  const park = Store.state.park || {};
+  return `<div class="staffCard">
+    <p class="staffCard__kicker">Show this at the Gear Shop</p>
+    <h3>Winter Keepers</h3>
+    <p class="staffCard__names">${escapeHtml(names.join(' · ') || 'This party')}</p>
+    <p class="staffCard__count">${session.partySize || names.length || 1} adventurer${(session.partySize || 1) === 1 ? '' : 's'}</p>
+    <p class="fineprint">${escapeHtml(park.badgeRedemption || 'One physical reward per adventurer.')}</p>
   </div>`;
 }
 
-function openTouchpoint(slug) {
-  const tp = Store.touchBySlug(slug);
-  if (!tp) return;
-  closeSheet();
-  hideThreshold();
-
+function sealHtml(session) {
+  const names = (session.keeperNames || []).join(', ') || 'Winter Keepers';
   const park = Store.state.park || {};
-  const earned = Store.tokenIds();
-  const stops = tp.poiId ? Store.stopsForPoi(tp.poiId) : [];
-  const pending = stops
-    .filter((s) => !earned.has(s.id) && s.challengeType && s.challengeType !== 'scan')
-    .map(challengeFormHtml)
-    .join('');
-
-  let footer = '';
-  if (tp.type === 'heart') {
-    const complete = Store.journeyComplete();
-    footer = complete
-      ? `${badgeHtml(park)}
-         <p class="fineprint">${escapeHtml(park.badgeRedemption || '')}</p>
-         <button class="textButton" data-open-passport type="button">Open passport</button>`
-      : `<div class="reward reward--locked">
-           <p class="reward__title">Not finished yet</p>
-           <p class="reward__body">Visit the Guardians and collect the trail lights. Come back when the path is complete — nothing here is a dead end.</p>
-         </div>
-         <button class="textButton" data-view="hunt" type="button">See what remains</button>`;
-  } else if (tp.poiId) {
-    footer = `<button class="textButton" data-focus-poi="${escapeHtml(tp.poiId)}" type="button">Show on map</button>${pending}`;
-  }
-
-  dom.journeyTitle.textContent = tp.title;
-  dom.journeyBody.innerHTML = `
-    <p class="poi__eyebrow" style="--pin-color: var(--aurora)"><span class="dot"></span>${escapeHtml(tp.subtitle || tp.type)}</p>
-    ${tp.element ? `<p class="chip chip--target" style="display:inline-flex;margin:8px 0 14px">${escapeHtml(tp.element)}</p>` : ''}
-    <p class="poi__body" style="white-space:pre-wrap">${escapeHtml(tp.body || '')}</p>
-    ${tp.audioUrl ? `<audio class="journeyAudio" controls preload="none" src="${escapeHtml(tp.audioUrl)}"></audio>` : ''}
-    ${footer}`;
-
-  openPanel('journey');
-  if (tp.poiId) ParkMap.focusOn(tp.poiId, Store.state.pois);
+  const year = Store.state.adventure?.year || '';
+  return `<div class="seal">
+    <div class="seal__ring" aria-hidden="true"></div>
+    <p class="seal__kicker">Winter Keeper Seal</p>
+    <h2 class="seal__names">${escapeHtml(names)}</h2>
+    <p class="seal__meta">${escapeHtml(park.locationName || park.name || '')} · ${escapeHtml(String(year))}</p>
+  </div>`;
 }
 
-function showThreshold() {
-  const tp = Store.touchByType('threshold')[0];
-  if (!tp || !dom.threshold) return;
-  const park = Store.state.park || {};
-  dom.thresholdEyebrow.textContent = park.adventureName || 'Winter Keeper';
-  dom.thresholdTitle.textContent = tp.title;
-  dom.thresholdSubtitle.textContent = tp.subtitle || '';
-  dom.thresholdBody.textContent = tp.body || park.welcomeBody || '';
-  dom.threshold.hidden = false;
-  requestAnimationFrame(() => dom.threshold.classList.add('is-open'));
+async function submitKeepers(form) {
+  const names = String(form.names.value || '').split(/[,;/]+/).map((n) => n.trim()).filter(Boolean);
+  const partySize = Number(form.partySize.value || names.length || 1);
+  await Store.finishQuest({
+    names,
+    partySize,
+    email: form.email.value || null,
+    marketingOptIn: form.marketing.checked,
+  });
+  renderProgress();
+  renderHeartSlot();
+  showFinale();
 }
 
-function hideThreshold() {
-  if (!dom.threshold) return;
-  dom.threshold.classList.remove('is-open');
-  setTimeout(() => { dom.threshold.hidden = true; }, 320);
-  Store.markThresholdSeen();
-}
-
-/* -------------------------------------------------------------------------- */
-/* passport panel                                                              */
-/* -------------------------------------------------------------------------- */
-
-function renderPassport() {
-  const totals = Store.totals();
-  const earned = Store.tokenIds();
-  const allStops = Store.state.hunts.flatMap((h) => h.stops.map((s) => ({ ...s, hunt: h })));
-
-  const tokens = allStops.length
-    ? `<p class="sectionLabel">Lights collected</p>
-       <div class="tokenGrid">
-         ${allStops.map((stop) => {
-           const has = earned.has(stop.id);
-           return `<div class="token ${has ? 'is-earned' : ''}">
-             <span class="token__glyph">${has ? glyph(stop.tokenGlyph) : '◇'}</span>
-             <span class="token__name">${has ? escapeHtml(stop.tokenName) : 'Locked'}</span>
-           </div>`;
-         }).join('')}
-       </div>`
-    : '';
-
-  const visited = Store.state.progress.scans
-    .map((scan) => Store.poiById(scan.poiId))
-    .filter(Boolean);
-
-  const visitedList = visited.length
-    ? `<p class="sectionLabel">Places you’ve reached</p>
-       <ul class="stopList" style="margin-bottom:24px">
-         ${visited.map((poi) => `
-           <li><button class="stop is-found" data-focus-poi="${escapeHtml(poi.id)}" type="button">
-             <span class="stop__token" style="font-size:17px">📍</span>
-             <span><p class="stop__name">${escapeHtml(poi.name)}</p>
-             ${poi.zone ? `<p class="stop__zone">${escapeHtml(poi.zone)}</p>` : ''}</span>
-           </button></li>`).join('')}
-       </ul>`
-    : `<div class="empty">
-         <p class="empty__mark">❄︎</p>
-         <h3 class="empty__title">Your passport is empty</h3>
-         <p class="empty__body">Find a code on the trail and scan it. Everything you collect shows up here, and it stays here on your next visit.</p>
-         <button class="textButton" data-open-scanner type="button">Scan your first code</button>
-       </div>`;
-
-  const rewards = Store.state.progress.completions.map((completion) => {
-    const hunt = Store.state.hunts.find((h) => h.id === completion.huntId);
-    if (!hunt) return '';
-    return `<div class="reward" style="margin-bottom:12px">
-      <p class="reward__title">${escapeHtml(hunt.rewardTitle || hunt.title)}</p>
-      <p class="reward__body">${escapeHtml(hunt.rewardBody || '')}</p>
-      ${completion.redeemCode ? `<span class="reward__code">${escapeHtml(completion.redeemCode)}</span>` : ''}
+function showFinale() {
+  const session = Store.state.session;
+  if (!session?.winterKeeper) return;
+  dom.finaleCard.innerHTML = `
+    <div class="finaleStage">
+      ${sealHtml(session)}
+      <p class="finaleStage__lead">The castle knows your names. Continue, then show the next screen at the Gear Shop.</p>
+      <button class="threshold__primary threshold__primary--earned finaleStage__btn" data-show-reward type="button">Continue</button>
     </div>`;
+  dom.finale.hidden = false;
+  requestAnimationFrame(() => dom.finale.classList.add('is-open'));
+}
+
+function showReward() {
+  const session = Store.state.session;
+  dom.finaleCard.innerHTML = `
+    <div class="finaleStage finaleStage--staff">
+      ${staffScreenHtml(session)}
+      <button class="textButton finaleStage__btn" data-close-finale type="button">Done</button>
+    </div>`;
+}
+
+function hideFinale() {
+  dom.finale.classList.remove('is-open');
+  setTimeout(() => { dom.finale.hidden = true; }, 320);
+  if (Store.state.session?.winterKeeper) renderHeartSlot();
+}
+
+/* -------------------------------------------------------------------------- */
+/* journey dashboard                                                          */
+/* -------------------------------------------------------------------------- */
+
+function renderJourney() {
+  const stations = Store.state.touchpoints || [];
+  const session = Store.state.session;
+  const rows = stations.map((tp) => {
+    let status = 'Visit';
+    if (tp.type === 'heart') status = session?.winterKeeper ? 'Complete' : session?.realmsComplete ? 'Ready to scan' : 'Final destination';
+    else if (tp.type === 'monument') status = session?.builderQuizAt ? 'Quiz done' : session?.buildersVisitedAt ? 'Visited' : 'Optional';
+    else if (tp.type === 'threshold') status = session ? 'Welcome' : 'Start here';
+    else if (tp.complete) status = 'Realm awake';
+    return `<li>
+      <button class="stop ${tp.complete || (tp.type === 'heart' && session?.winterKeeper) ? 'is-found' : 'is-secret'}" data-go-station="${escapeHtml(tp.slug)}" type="button">
+        <span class="stop__token">${tp.type === 'heart' ? '❤' : tp.type === 'monument' ? '▣' : tp.complete ? '✦' : '◇'}</span>
+        <span>
+          <p class="stop__name">${escapeHtml(tp.title)}</p>
+          <p class="stop__hint">${escapeHtml(status)}</p>
+        </span>
+      </button>
+    </li>`;
   }).join('');
 
-  const park = Store.state.park || {};
-  const badge = Store.journeyComplete()
-    ? `<p class="sectionLabel">Winter Keeper badge</p>${badgeHtml(park)}
-       <p class="fineprint" style="margin-bottom:18px">${escapeHtml(park.badgeRedemption || '')}</p>`
-    : '';
-
-  dom.passportBody.innerHTML = `
-    <div class="statRow">
-      <div class="stat"><span class="stat__n">${totals.tokens}</span><span class="stat__l">Lights</span></div>
-      <div class="stat"><span class="stat__n">${totals.visited}</span><span class="stat__l">Places</span></div>
-      <div class="stat"><span class="stat__n">${totals.rewards}</span><span class="stat__l">Rewards</span></div>
-    </div>
-    ${badge}
-    ${rewards ? `<p class="sectionLabel">Ready to redeem</p>${rewards}` : ''}
-    ${tokens}
-    ${visitedList}
-    <p class="sectionLabel" style="margin-top:8px">About your progress</p>
-    <p class="fineprint">
-      Progress is saved to this browser on this phone — no account, no email, nothing personal.
-      It will still be here on your next visit as long as you don't clear your browser data.
-      <button class="textButton" style="margin-top:12px;font-size:13px;padding:9px 16px" data-reset-guest type="button">Start over</button>
-    </p>`;
+  dom.journeyBody.innerHTML = `
+    <p class="sectionLabel">Castle Quest</p>
+    <p class="fineprint" style="margin-bottom:16px">${Store.realmsAwakened()} of 5 Realms Awakened. Builder’s Monument is optional. The Heart finishes the quest.</p>
+    <ul class="stopList">${rows}</ul>`;
 }
-
-/* -------------------------------------------------------------------------- */
-/* info panel (reuses the sheet)                                              */
-/* -------------------------------------------------------------------------- */
-
-function openInfo() {
-  const park = Store.state.park || {};
-  const queued = Store.queue().length;
-  dom.sheetBody.innerHTML = `
-    <div style="--pin-color: var(--aurora)">
-      <p class="poi__eyebrow"><span class="dot"></span>Visiting</p>
-      <h2 class="poi__name">${escapeHtml(park.welcomeHeadline || 'Welcome')}</h2>
-      <p class="poi__body">${escapeHtml(park.welcomeBody || '')}</p>
-      ${park.hoursNote ? `<div class="poi__fact"><strong>Hours</strong>${escapeHtml(park.hoursNote)}</div>` : ''}
-      ${park.safetyNote ? `<div class="poi__fact"><strong>Stay safe</strong>${escapeHtml(park.safetyNote)}</div>` : ''}
-      ${queued ? `<p class="fineprint">${queued} scan${queued === 1 ? '' : 's'} saved while you were offline. They’ll be added as soon as you have signal.</p>` : ''}
-      <p class="fineprint" style="margin-top:14px">
-        ${Store.state.online ? 'Connected.' : 'You’re offline — the map still works, and scans are saved until you’re back in range.'}
-      </p>
-    </div>`;
-  document.body.classList.add('sheet-open');
-}
-
-/* -------------------------------------------------------------------------- */
-/* panels                                                                     */
-/* -------------------------------------------------------------------------- */
 
 function openPanel(name) {
-  closeSheet();
-  ['huntPanel', 'passportPanel', 'journeyPanel'].forEach((key) => {
+  closeGuide();
+  ['journeyPanel', 'passportPanel'].forEach((key) => {
     if (!dom[key]) return;
     dom[key].hidden = true;
     dom[key].classList.remove('is-open');
   });
-
-  if (name === 'hunt') { renderHunts(); showPanel(dom.huntPanel); setActiveNav('hunt'); }
-  else if (name === 'passport') { renderPassport(); showPanel(dom.passportPanel); setActiveNav('passport'); }
-  else if (name === 'journey') { showPanel(dom.journeyPanel); setActiveNav('hunt'); }
+  if (name === 'journey') { renderJourney(); showPanel(dom.journeyPanel); }
+  else if (name === 'passport') { renderPassport(); showPanel(dom.passportPanel); }
   currentPanel = name;
   document.body.classList.add('panel-open');
 }
@@ -483,36 +451,131 @@ function openPanel(name) {
 function showPanel(panel) {
   panel.hidden = false;
   requestAnimationFrame(() => panel.classList.add('is-open'));
-  panel.querySelector('.panel__scroll').scrollTop = 0;
 }
 
 function closePanels() {
-  ['huntPanel', 'passportPanel', 'journeyPanel'].forEach((key) => {
+  ['journeyPanel', 'passportPanel'].forEach((key) => {
     if (!dom[key]) return;
     dom[key].classList.remove('is-open');
     setTimeout(() => { dom[key].hidden = true; }, 440);
   });
   currentPanel = null;
   document.body.classList.remove('panel-open');
-  setActiveNav('map');
-  if (location.hash !== '#/map') history.replaceState(null, '', '#/map');
 }
 
-function setActiveNav(view) {
-  document.querySelectorAll('.nav__item').forEach((button) => {
-    button.classList.toggle('is-active', button.dataset.view === view);
+function renderPassport() {
+  const session = Store.state.session;
+  const park = Store.state.park || {};
+  dom.passportBody.innerHTML = session?.winterKeeper
+    ? `${staffScreenHtml(session)}<p class="fineprint">${escapeHtml(park.badgeBody || '')}</p>`
+    : `<div class="empty">
+        <h3 class="empty__title">Not a Winter Keeper yet</h3>
+        <p class="empty__body">Awaken five Realms, then scan The Heart. Progress lasts until 4 AM Eastern.</p>
+      </div>`;
+}
+
+/* -------------------------------------------------------------------------- */
+/* threshold / guide                                                          */
+/* -------------------------------------------------------------------------- */
+
+function showThreshold() {
+  const tp = Store.touchByType('threshold')[0];
+  const park = Store.state.park || {};
+  dom.thresholdEyebrow.textContent = 'Winter’s Keeper';
+  dom.thresholdTitle.textContent = tp?.title || 'The Threshold';
+  dom.thresholdSubtitle.textContent = tp?.subtitle || 'Castle Quest';
+  dom.thresholdBody.textContent = tp?.body || park.welcomeBody ||
+    'Explore the castle, complete five Guardian challenges in any order, then scan The Heart.';
+  dom.threshold.hidden = false;
+  dom.threshold.inert = false;
+  requestAnimationFrame(() => dom.threshold.classList.add('is-open'));
+}
+
+function hideThreshold() {
+  dom.threshold.classList.remove('is-open');
+  dom.threshold.inert = true;
+  setTimeout(() => { dom.threshold.hidden = true; }, 320);
+}
+
+function openGuide() {
+  document.body.classList.add('guide-open');
+  dom.guide.hidden = false;
+  dom.guideToggle.setAttribute('aria-pressed', 'true');
+  dom.guideToggle.textContent = 'Quest';
+  dom.guideToggle.setAttribute('aria-label', 'Back to Castle Quest');
+  if (dom.headerMap) dom.headerMap.setAttribute('aria-pressed', 'true');
+  ensureMap();
+  setTimeout(() => ParkMap.invalidate?.(), 80);
+}
+
+function closeGuide() {
+  document.body.classList.remove('guide-open');
+  document.body.classList.remove('sheet-open');
+  dom.guide.hidden = true;
+  dom.guideToggle.setAttribute('aria-pressed', 'false');
+  dom.guideToggle.textContent = 'Quest';
+  dom.guideToggle.setAttribute('aria-label', 'Back to Castle Quest');
+  if (dom.headerMap) dom.headerMap.setAttribute('aria-pressed', 'false');
+}
+
+function ensureMap() {
+  if (mapReady) {
+    renderMap();
+    return;
+  }
+  ParkMap.init(document.getElementById('map'), Store.state.map, {
+    onSelect: (poiId) => {
+      if (!poiId) { document.body.classList.remove('sheet-open'); return; }
+      const poi = Store.poiById(poiId);
+      if (poi) openPoiSheet(poi);
+    },
+  });
+  mapReady = true;
+  renderMap();
+  renderLegend();
+}
+
+function renderMap() {
+  if (!mapReady) return;
+  ParkMap.render(Store.state.pois, {
+    scanned: Store.scannedIds(),
+    targets: Store.journeyPoiIds(),
+    hidden: Store.state.hiddenCategories,
+    journeyOnly: Store.state.journeyMode,
+    journeyIds: Store.journeyPoiIds(),
   });
 }
 
+function openPoiSheet(poi) {
+  const touch = Store.touchForPoi(poi.id);
+  dom.sheetBody.innerHTML = `
+    <div>
+      <p class="poi__eyebrow">${escapeHtml(poi.category)}</p>
+      <h2 class="poi__name">${escapeHtml(poi.name)}</h2>
+      ${poi.blurb ? `<p class="poi__blurb">${escapeHtml(poi.blurb)}</p>` : ''}
+      ${poi.description ? `<p class="poi__body">${escapeHtml(poi.description)}</p>` : ''}
+      ${touch ? `<button class="textButton" data-go-station="${escapeHtml(touch.slug)}" type="button">Open ${escapeHtml(touch.title)}</button>` : ''}
+    </div>`;
+  document.body.classList.add('sheet-open');
+}
+
+function renderLegend() {
+  const counts = {};
+  Store.state.pois.forEach((poi) => {
+    counts[poi.category] = (counts[poi.category] || 0) + 1;
+  });
+  dom.legendRows.innerHTML = Object.entries(counts).map(([category, count]) => {
+    const on = !Store.state.hiddenCategories.has(category);
+    return `<button class="legend__row" data-category="${escapeHtml(category)}" aria-pressed="${on}" type="button">
+      <span>${escapeHtml(category)}</span><span class="legend__count">${count}</span>
+    </button>`;
+  }).join('');
+}
+
 /* -------------------------------------------------------------------------- */
-/* the earn moment                                                            */
+/* awards                                                                     */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Awards are queued and shown one at a time. A single scan can complete a stop
- * and finish a whole hunt, and stacking those two moments on top of each other
- * would waste the payoff.
- */
 function enqueueAward(award) {
   awardQueue.push(award);
   if (!awardShowing) showNextAward();
@@ -520,207 +583,92 @@ function enqueueAward(award) {
 
 function showNextAward() {
   const next = awardQueue.shift();
-  if (!next) {
-    awardShowing = false;
-    return;
-  }
+  if (!next) { awardShowing = false; return; }
   awardShowing = true;
-
+  document.body.classList.add('award-open');
   dom.award.classList.toggle('is-final', Boolean(next.final));
   dom.awardGlyph.textContent = next.glyph;
   dom.awardKicker.textContent = next.kicker;
   dom.awardTitle.textContent = next.title;
   dom.awardMeta.textContent = next.meta;
   dom.awardDone.textContent = next.action || 'Keep exploring';
-
-  dom.awardPips.innerHTML = next.total
-    ? Array.from({ length: next.total }, (_, i) =>
-        `<span class="award__pip ${i < next.earned ? 'is-on' : ''}"></span>`).join('')
-    : '';
-
+  const awakened = Store.realmsAwakened();
+  dom.awardPips.innerHTML = Array.from({ length: 5 }, (_, i) =>
+    `<span class="award__pip ${i < awakened ? 'is-on' : ''}"></span>`).join('');
   dom.award.hidden = false;
   requestAnimationFrame(() => dom.award.classList.add('is-open'));
-  if (navigator.vibrate) navigator.vibrate(next.final ? [40, 60, 120] : 45);
+  if (navigator.vibrate) navigator.vibrate(45);
 }
 
 function dismissAward() {
   dom.award.classList.remove('is-open');
-  setTimeout(() => {
-    dom.award.hidden = true;
-    showNextAward();
-  }, 340);
+  document.body.classList.remove('award-open');
+  setTimeout(() => { dom.award.hidden = true; showNextAward(); }, 340);
 }
 
-/* -------------------------------------------------------------------------- */
-/* scanning                                                                   */
-/* -------------------------------------------------------------------------- */
+async function handleStationChallenge(slug, answer) {
+  const result = await Store.completeStation(slug, answer);
+  if (result.status === 'error') {
+    const messages = {
+      bad_code: 'That word isn’t right. Try again.',
+      bad_images: 'Not those three — look again at the ice.',
+      bad_sequence: 'Not that order. Watch once more.',
+    };
+    toast(messages[result.error] || 'Not quite — try again.');
+    return;
+  }
+  renderProgress();
+  renderStation(slug);
+  if (result.realmAwakened) {
+    const meta = REALM_META[result.realmAwakened] || { label: result.realmAwakened, glyph: '✦' };
+    enqueueAward({
+      glyph: meta.glyph,
+      kicker: 'Realm Awakened',
+      title: meta.label,
+      meta: `${Store.realmsAwakened()} of 5 Realms`,
+    });
+  } else if (result.status === 'repeat') {
+    toast('Already recorded.');
+  } else {
+    toast('Saved.', { warm: true });
+  }
+}
 
 async function handleCode(code) {
   const result = await Store.scan(code);
-
-  if (result.status === 'unknown') {
-    toast('That code isn’t one of ours. Check the letters and try again.');
-    return;
-  }
-  if (result.status === 'invalid') {
-    toast('Enter the code printed under the sign.');
-    return;
-  }
-  if (result.status === 'queued') {
-    Scanner.close();
-    toast('Saved. We’ll add it as soon as you have signal.', { warm: true });
-    return;
-  }
-
   Scanner.close();
-  renderMap();
-  renderProgressRing();
-  if (currentPanel) openPanel(currentPanel);
-
-  if (result.status === 'repeat') {
-    toast(`You’ve already collected ${result.poi.name}.`);
-    showPoiBySlug(result.poi.slug);
-    return;
+  if (result.status === 'unknown') return toast('That code isn’t one of ours.');
+  if (result.status === 'invalid') return toast('Enter the printed code.');
+  if (result.status === 'queued') return toast('Saved until you have signal.', { warm: true });
+  if (result.poi) {
+    ensureMap();
+    openGuide();
+    openPoiSheet(result.poi);
+    const touch = Store.touchForPoi(result.poi.id);
+    if (touch) toast(`${result.poi.name} — open the quest station if you like.`);
   }
-
-  presentScanResult(result);
-}
-
-function presentScanResult(result) {
-  const { poi, awards = [], completed = [] } = result;
-  if (poi?.id) ParkMap.celebrate(poi.id);
-
-  awards.forEach((award) => {
-    enqueueAward({
-      glyph: glyph(award.tokenGlyph),
-      kicker: 'Light collected',
-      title: award.tokenName,
-      meta: `${award.earnedCount} of ${award.totalCount} on ${award.huntTitle}`,
-      earned: award.earnedCount,
-      total: award.totalCount,
-      action: award.earnedCount >= award.totalCount ? 'See your reward' : 'Keep exploring',
-    });
-  });
-
-  completed.forEach((completion) => {
-    enqueueAward({
-      glyph: '🏆',
-      kicker: 'Trail complete',
-      title: completion.rewardTitle || 'Reward unlocked',
-      meta: completion.rewardBody || '',
-      action: 'Show me',
-      final: true,
-      onDone: () => openPanel('hunt'),
-    });
-  });
-
-  if (!awards.length && !completed.length && poi) {
-    toast(`Found ${poi.name}.`, { warm: true });
-  }
-  if (poi?.slug) showPoiBySlug(poi.slug, { silent: Boolean(awards.length || completed.length) });
-}
-
-async function handleChallenge(stopId, answer) {
-  const result = await Store.completeChallenge(stopId, answer);
-  if (result.status === 'error') {
-    const messages = {
-      bad_code: 'That code isn’t right. Try again.',
-      bad_choice: 'Not quite — try another answer.',
-      empty_reflection: 'Write a short note first.',
-      requires_scan: 'This stop needs a QR scan.',
-    };
-    toast(messages[result.error] || 'Couldn’t complete that stop.');
-    return;
-  }
-
-  renderMap();
-  renderProgressRing();
-  if (currentPanel) openPanel(currentPanel);
-
-  if (result.status === 'repeat') {
-    toast('You’ve already collected this one.');
-    if (result.poi) showPoiBySlug(result.poi.slug);
-    return;
-  }
-
-  presentScanResult(result);
 }
 
 /* -------------------------------------------------------------------------- */
 /* routing                                                                    */
 /* -------------------------------------------------------------------------- */
 
-function showPoiBySlug(slug, { silent = false } = {}) {
-  const poi = Store.poiBySlug(slug);
-  if (!poi) return;
-  if (!silent) openSheet(poi);
-  else {
-    // Prepare the sheet behind the award overlay so it's already there.
-    openSheet(poi);
-  }
-}
+async function route() {
+  Store.state.path = Store.pathContext();
+  const slug = Store.state.path.station;
+  const live = Store.hasLiveSession();
 
-function route() {
-  const hash = location.hash || '#/map';
-  const [, section, param] = hash.split('/');
-
-  if (section === 'poi' && param) {
-    closePanels();
-    hideThreshold();
-    const poi = Store.poiBySlug(param);
-    if (poi) openSheet(poi);
-    return;
-  }
-  if (section === 'scan' && param) {
-    hideThreshold();
-    history.replaceState(null, '', '#/map');
-    handleCode(param);
-    return;
-  }
-  if (section === 'journey' && param) {
-    hideThreshold();
-    openTouchpoint(param);
-    return;
-  }
-  if (section === 'threshold') {
+  if (!live) {
+    if (slug && slug !== 'threshold') Store.setIntendedStation(slug);
     showThreshold();
+    const welcome = Store.touchByType('threshold')[0];
+    renderStation(welcome?.slug || 'threshold');
     return;
   }
-  if (section === 'heart') {
-    hideThreshold();
-    const heart = Store.touchByType('heart')[0];
-    if (heart) openTouchpoint(heart.slug);
-    return;
-  }
-  if (section === 'trails') { hideThreshold(); openPanel('hunt'); return; }
-  if (section === 'passport') { hideThreshold(); openPanel('passport'); return; }
-  if (section === 'info') { hideThreshold(); closePanels(); openInfo(); return; }
 
-  closePanels();
-  closeSheet();
-}
-
-/* -------------------------------------------------------------------------- */
-/* legend / filters                                                           */
-/* -------------------------------------------------------------------------- */
-
-function renderLegend() {
-  const counts = {};
-  Store.state.pois.forEach((poi) => {
-    counts[poi.category] = (counts[poi.category] || 0) + 1;
-  });
-
-  dom.legendRows.innerHTML = Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .map(([category, count]) => {
-      const on = !Store.state.hiddenCategories.has(category);
-      return `<button class="legend__row" data-category="${escapeHtml(category)}"
-                aria-pressed="${on}" type="button" style="--pin-color:${ParkMap.colorFor(category)}">
-                <span class="legend__gem"></span>
-                <span>${escapeHtml(categoryLabel(category))}</span>
-                <span class="legend__count">${count}</span>
-              </button>`;
-    }).join('');
+  hideThreshold();
+  const target = slug || Store.intendedStation() || Store.touchByType('threshold')[0]?.slug;
+  if (target) await openStation(target);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -728,33 +676,36 @@ function renderLegend() {
 /* -------------------------------------------------------------------------- */
 
 function wire() {
-  dom.scanFab.addEventListener('click', () => {
-    closePanels();
-    Scanner.open(handleCode);
+  dom.progressButton.addEventListener('click', () => openPanel('journey'));
+  const toggleGuide = () => {
+    if (document.body.classList.contains('guide-open')) closeGuide();
+    else openGuide();
+  };
+  dom.guideToggle.addEventListener('click', toggleGuide);
+  if (dom.headerMap) dom.headerMap.addEventListener('click', toggleGuide);
+
+  dom.thresholdStart.addEventListener('click', async () => {
+    const intended = Store.intendedStation();
+    await Store.startSession(intended);
+    hideThreshold();
+    renderProgress();
+    const next = intended && intended !== 'threshold' ? intended : Store.touchByType('guardian')[0]?.slug;
+    if (next) goStation(next);
+    else route();
   });
 
-  dom.sheetGrip.addEventListener('click', closeSheet);
-
-  dom.recenter.addEventListener('click', () => {
-    ParkMap.fit();
-    toast('Whole park in view');
+  dom.sheetGrip.addEventListener('click', () => document.body.classList.remove('sheet-open'));
+  dom.recenter.addEventListener('click', () => { ParkMap.fit(); toast('Whole park in view'); });
+  dom.journeyButton.addEventListener('click', () => {
+    const on = Store.toggleJourneyMode();
+    renderMap();
+    toast(on ? 'Quest stops only' : 'Full park map');
   });
-
-  if (dom.journeyButton) {
-    dom.journeyButton.addEventListener('click', () => {
-      const on = Store.toggleJourneyMode();
-      renderMap();
-      toast(on ? 'Trail mode — only stop markers' : 'Full park map');
-    });
-  }
-
   dom.filterButton.addEventListener('click', () => {
     const showing = !dom.legend.hidden;
     dom.legend.hidden = showing;
-    dom.filterButton.classList.toggle('is-on', !showing);
     if (!showing) renderLegend();
   });
-
   dom.legendRows.addEventListener('click', (event) => {
     const button = event.target.closest('[data-category]');
     if (!button) return;
@@ -762,192 +713,124 @@ function wire() {
     renderLegend();
     renderMap();
   });
-
-  dom.progressButton.addEventListener('click', () => { location.hash = '#/passport'; });
-
-  document.querySelectorAll('.nav__item').forEach((button) => {
-    button.addEventListener('click', () => {
-      const view = button.dataset.view;
-      location.hash = view === 'map' ? '#/map'
-        : view === 'hunt' ? '#/trails'
-        : view === 'passport' ? '#/passport'
-        : '#/info';
-      if (view === 'map') { closePanels(); closeSheet(); }
-    });
-  });
-
-  document.querySelectorAll('[data-close-panel]').forEach((button) => {
-    button.addEventListener('click', () => { location.hash = '#/map'; });
-  });
-
+  dom.scanFab.addEventListener('click', () => Scanner.open(handleCode));
   dom.awardDone.addEventListener('click', dismissAward);
-  dom.award.addEventListener('click', (event) => {
-    if (event.target === dom.award) dismissAward();
+  document.querySelectorAll('[data-close-panel]').forEach((button) => {
+    button.addEventListener('click', closePanels);
   });
 
-  // Delegated actions that appear inside rendered panels.
   document.addEventListener('click', (event) => {
-    const touchBtn = event.target.closest('[data-open-touch]');
-    if (touchBtn) {
-      location.hash = `#/journey/${touchBtn.dataset.openTouch}`;
+    const shrineBtn = event.target.closest('[data-shrine-focus]');
+    if (shrineBtn) {
+      setShrineFocus(shrineBtn.dataset.shrineFocus);
       return;
     }
-    if (event.target.closest('[data-open-passport]')) {
-      location.hash = '#/passport';
-      return;
-    }
-    if (event.target.closest('[data-view="hunt"]')) {
-      location.hash = '#/trails';
-      return;
-    }
-    const focus = event.target.closest('[data-focus-poi]');
-    if (focus) {
-      const poi = Store.poiById(focus.dataset.focusPoi);
-      if (poi) { location.hash = `#/poi/${poi.slug}`; }
-      return;
-    }
-    if (event.target.closest('[data-open-scanner]')) {
+    const go = event.target.closest('[data-go-station]');
+    if (go) {
       closePanels();
-      Scanner.open(handleCode);
+      closeGuide();
+      goStation(go.dataset.goStation);
       return;
     }
-    if (event.target.closest('[data-reset-guest]')) {
-      if (confirm('Clear everything you have collected and start fresh?')) {
-        Store.resetGuest().then(() => {
-          renderMap();
-          renderProgressRing();
-          renderPassport();
-          toast('Passport cleared.');
-        });
+    if (event.target.closest('[data-open-journey]')) { openPanel('journey'); return; }
+    if (event.target.closest('[data-show-reward]')) { showReward(); return; }
+    if (event.target.closest('[data-close-finale]')) { hideFinale(); return; }
+
+    const image = event.target.closest('[data-image-id]');
+    if (image) {
+      const id = image.dataset.imageId;
+      if (selectedImages.has(id)) selectedImages.delete(id);
+      else {
+        if (selectedImages.size >= 3) selectedImages.clear();
+        selectedImages.add(id);
+      }
+      image.closest('.pickGrid').querySelectorAll('[data-image-id]').forEach((btn) => {
+        btn.classList.toggle('is-on', selectedImages.has(btn.dataset.imageId));
+      });
+      return;
+    }
+    if (event.target.closest('[data-image-submit]')) {
+      const root = event.target.closest('[data-station]');
+      handleStationChallenge(root.dataset.station, { ids: [...selectedImages] });
+      return;
+    }
+    const seq = event.target.closest('[data-seq]');
+    if (seq) {
+      const root = seq.closest('[data-station]');
+      const len = Number(root.dataset.seqLen || 5);
+      sequenceBuffer.push(seq.dataset.seq);
+      root.querySelector('[data-seq-readout]').textContent = sequenceBuffer
+        .map((id) => (REALM_META[id]?.label || id)).join(' → ');
+      if (sequenceBuffer.length >= len) {
+        const answer = { sequence: [...sequenceBuffer] };
+        sequenceBuffer = [];
+        handleStationChallenge(root.dataset.station, answer);
       }
       return;
     }
-
-    const challengeRoot = event.target.closest('[data-challenge-stop]');
-    if (!challengeRoot) return;
-    const stopId = challengeRoot.dataset.challengeStop;
-
-    if (event.target.closest('[data-challenge-ack]')) {
-      handleChallenge(stopId, {});
-      return;
-    }
-    if (event.target.closest('[data-challenge-choice]')) {
-      const choice = event.target.closest('[data-challenge-choice]');
-      handleChallenge(stopId, { choiceIndex: Number(choice.dataset.challengeChoice) });
+    if (event.target.closest('[data-seq-clear]')) {
+      sequenceBuffer = [];
+      const readout = event.target.closest('.challenge')?.querySelector('[data-seq-readout]');
+      if (readout) readout.textContent = 'Tap the sequence';
       return;
     }
     if (event.target.closest('[data-challenge-submit]')) {
-      const text = challengeRoot.querySelector('[data-challenge-text]')?.value;
-      const code = challengeRoot.querySelector('[data-challenge-code]')?.value;
-      if (text !== undefined) handleChallenge(stopId, { text });
-      else handleChallenge(stopId, { code });
+      const root = event.target.closest('[data-station]');
+      const code = root.querySelector('[data-challenge-code]')?.value;
+      handleStationChallenge(root.dataset.station, { code });
+      return;
+    }
+    if (event.target.closest('[data-quiz-submit]')) {
+      const root = event.target.closest('[data-station]');
+      handleStationChallenge(root.dataset.station, { done: true });
     }
   });
 
-  if (dom.thresholdStart) {
-    dom.thresholdStart.addEventListener('click', () => {
-      hideThreshold();
-      location.hash = '#/trails';
-    });
-  }
-  if (dom.thresholdMap) {
-    dom.thresholdMap.addEventListener('click', () => {
-      hideThreshold();
-      location.hash = '#/map';
-    });
-  }
+  document.addEventListener('submit', (event) => {
+    if (event.target.id !== 'keepersForm') return;
+    event.preventDefault();
+    submitKeepers(event.target);
+  });
 
-  window.addEventListener('hashchange', route);
-
+  window.addEventListener('popstate', route);
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
     if (Scanner.isOpen()) Scanner.close();
     else if (!dom.award.hidden) dismissAward();
-    else if (currentPanel) location.hash = '#/map';
-    else closeSheet();
-  });
-
-  // Coming back to a backgrounded tab: re-sync and drain anything queued.
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible') return;
-    ParkMap.invalidate();
-    Store.refreshProgress().then(afterSync);
-  });
-
-  window.addEventListener('online', () => {
-    toast('Back online. Catching up…');
-    Store.flushQueue().then((results) => {
-      results.forEach(presentScanResult);
-      afterSync();
-    });
+    else if (!dom.finale.hidden) hideFinale();
+    else if (currentPanel) closePanels();
+    else if (document.body.classList.contains('guide-open')) closeGuide();
   });
 }
-
-function afterSync() {
-  renderMap();
-  renderProgressRing();
-  if (currentPanel) openPanel(currentPanel);
-}
-
-/* -------------------------------------------------------------------------- */
-/* boot                                                                       */
-/* -------------------------------------------------------------------------- */
 
 async function boot() {
   wire();
-
   try {
     await Store.load();
   } catch {
-    dom.splash.innerHTML = `
-      <div class="empty">
-        <p class="empty__mark">❄︎</p>
-        <h3 class="empty__title">Can’t reach the park guide</h3>
-        <p class="empty__body">Check your connection and pull down to reload. If you’re inside the park, ask at the Warming Hut.</p>
-      </div>`;
+    dom.splash.innerHTML = `<div class="empty"><h3 class="empty__title">Can’t reach Castle Quest</h3><p class="empty__body">Check your connection and reload.</p></div>`;
     return;
   }
 
   const park = Store.state.park || {};
   const adventure = Store.state.adventure || {};
-  dom.parkName.textContent = park.name || 'Ice Castles';
-  dom.parkLocation.textContent = park.locationName
-    || (adventure.year ? `${adventure.year} adventure` : '');
-  document.title = `${park.name || 'Ice Castles'} — Park Guide`;
+  dom.parkName.textContent = 'Castle Quest';
+  dom.parkLocation.textContent = park.locationName || park.name || '';
+  document.title = `Castle Quest — ${park.name || 'Ice Castles'}`;
+  if (adventure.venueCode && !Store.state.path.venueCode) {
+    history.replaceState(null, '', Store.stationPath(Store.state.path.station));
+    Store.state.path = Store.pathContext();
+  }
 
-  ParkMap.init(document.getElementById('map'), Store.state.map, {
-    onSelect: (poiId) => {
-      if (!poiId) { closeSheet(); return; }
-      const poi = Store.poiById(poiId);
-      if (poi) location.hash = `#/poi/${poi.slug}`;
-    },
-  });
+  renderProgress();
+  await route();
 
-  renderMap();
-  renderProgressRing();
-  renderLegend();
+  if (Store.state.session?.winterKeeper && Store.state.path.station === 'heart') {
+    showFinale();
+  }
 
   dom.splash.classList.add('is-gone');
   setTimeout(() => { dom.splash.hidden = true; }, 520);
-
-  if (Store.state.loadedFromCache) {
-    toast('Showing the map you loaded last time. Scans are saved until you’re back online.');
-  }
-
-  route();
-
-  if (!Store.hasSeenThreshold() && Store.touchByType('threshold').length && !location.hash.includes('scan')) {
-    showThreshold();
-  }
-
-  Store.flushQueue().then((results) => {
-    results.forEach(presentScanResult);
-    if (results.length) afterSync();
-  });
-
-  Store.subscribe(() => {
-    renderProgressRing();
-  });
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});

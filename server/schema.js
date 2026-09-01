@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS locations (
   id          TEXT PRIMARY KEY,
   name        TEXT NOT NULL,
   slug        TEXT NOT NULL UNIQUE,
+  venue_code  TEXT UNIQUE,
   region      TEXT,
   created_at  TEXT NOT NULL,
   updated_at  TEXT NOT NULL
@@ -124,22 +125,61 @@ CREATE TABLE IF NOT EXISTS hunt_completions (
 );
 
 CREATE TABLE IF NOT EXISTS touchpoints (
+  id              TEXT PRIMARY KEY,
+  adventure_id    TEXT NOT NULL REFERENCES adventures(id) ON DELETE CASCADE,
+  type            TEXT NOT NULL,
+  slug            TEXT NOT NULL,
+  title           TEXT NOT NULL,
+  subtitle        TEXT,
+  body            TEXT,
+  discover_body   TEXT,
+  element         TEXT,
+  image_url       TEXT,
+  audio_url       TEXT,
+  poi_id          TEXT REFERENCES pois(id) ON DELETE SET NULL,
+  sort_order      INTEGER NOT NULL DEFAULT 0,
+  published       INTEGER NOT NULL DEFAULT 1,
+  challenge_type  TEXT,
+  config          TEXT,
+  created_at      TEXT NOT NULL,
+  updated_at      TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS quest_sessions (
+  id                  TEXT PRIMARY KEY,
+  guest_id            TEXT NOT NULL REFERENCES guests(id) ON DELETE CASCADE,
+  adventure_id        TEXT NOT NULL REFERENCES adventures(id) ON DELETE CASCADE,
+  starting_station    TEXT,
+  operating_date      TEXT NOT NULL,
+  party_size          INTEGER,
+  keeper_names        TEXT,
+  email               TEXT,
+  marketing_opt_in    INTEGER NOT NULL DEFAULT 0,
+  heart_scanned_at    TEXT,
+  quest_complete_at   TEXT,
+  builders_visited_at TEXT,
+  builder_quiz_at     TEXT,
+  created_at          TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS session_realms (
   id           TEXT PRIMARY KEY,
-  adventure_id TEXT NOT NULL REFERENCES adventures(id) ON DELETE CASCADE,
-  type         TEXT NOT NULL,
-  slug         TEXT NOT NULL,
-  title        TEXT NOT NULL,
-  subtitle     TEXT,
-  body         TEXT,
-  element      TEXT,
-  image_url    TEXT,
-  audio_url    TEXT,
-  poi_id       TEXT REFERENCES pois(id) ON DELETE SET NULL,
-  sort_order   INTEGER NOT NULL DEFAULT 0,
-  published    INTEGER NOT NULL DEFAULT 1,
-  config       TEXT,
-  created_at   TEXT NOT NULL,
-  updated_at   TEXT NOT NULL
+  session_id   TEXT NOT NULL REFERENCES quest_sessions(id) ON DELETE CASCADE,
+  realm        TEXT NOT NULL,
+  station_id   TEXT,
+  completed_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS quest_events (
+  id            TEXT PRIMARY KEY,
+  session_id    TEXT,
+  guest_id      TEXT,
+  adventure_id  TEXT,
+  type          TEXT NOT NULL,
+  station_slug  TEXT,
+  payload       TEXT,
+  user_agent    TEXT,
+  created_at    TEXT NOT NULL
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_scan_guest_poi   ON guest_scans (guest_id, poi_id);
@@ -156,6 +196,10 @@ CREATE INDEX IF NOT EXISTS ix_adv_loc      ON adventures (location_id, year);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_adv_loc_year ON adventures (location_id, year);
 CREATE INDEX IF NOT EXISTS ix_touch_adv ON touchpoints (adventure_id, sort_order);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_touch_adv_slug ON touchpoints (adventure_id, slug);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_session_day ON quest_sessions (guest_id, adventure_id, operating_date);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_session_realm ON session_realms (session_id, realm);
+CREATE INDEX IF NOT EXISTS ix_events_session ON quest_events (session_id, created_at);
+CREATE INDEX IF NOT EXISTS ix_events_adv ON quest_events (adventure_id, type, created_at);
 `;
 
 const DEFAULT_SETTINGS = {
@@ -219,12 +263,13 @@ async function ensureDefaultAdventure() {
   const year = new Date().getFullYear();
 
   await db.run(
-    `INSERT INTO locations (id, name, slug, region, created_at, updated_at)
-     VALUES (?,?,?,?,?,?)`,
+    `INSERT INTO locations (id, name, slug, venue_code, region, created_at, updated_at)
+     VALUES (?,?,?,?,?,?,?)`,
     [
       locationId,
       settings.park_name || 'Ice Castles',
       'NHAdventure',
+      'nh',
       settings.location_name || 'North Woodstock, New Hampshire',
       ts,
       ts,
@@ -273,8 +318,30 @@ async function migrate() {
   await ensureColumn('adventures', 'badge_title', 'badge_title TEXT');
   await ensureColumn('adventures', 'badge_body', 'badge_body TEXT');
   await ensureColumn('adventures', 'badge_redemption', 'badge_redemption TEXT');
+  await ensureColumn('locations', 'venue_code', 'venue_code TEXT');
+  await ensureColumn('touchpoints', 'discover_body', 'discover_body TEXT');
+  await ensureColumn('touchpoints', 'challenge_type', 'challenge_type TEXT');
 
   await db.exec(INDEX_DDL);
+
+  const nh = await db.get('SELECT id FROM locations WHERE slug = ?', ['NHAdventure']);
+  if (nh) {
+    await db.run(
+      `UPDATE locations SET venue_code = ? WHERE id = ? AND (venue_code IS NULL OR venue_code = '')`,
+      ['nh', nh.id]
+    );
+  }
+  const uncoded = await db.all(
+    `SELECT id, slug FROM locations WHERE venue_code IS NULL OR venue_code = ''`
+  );
+  for (const loc of uncoded) {
+    const code = String(loc.slug || 'venue')
+      .toLowerCase()
+      .replace(/adventure$/i, '')
+      .replace(/[^a-z0-9]+/g, '')
+      .slice(0, 8) || 'venue';
+    await db.run('UPDATE locations SET venue_code = ? WHERE id = ?', [code, loc.id]);
+  }
 
   const ts = now();
   for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {

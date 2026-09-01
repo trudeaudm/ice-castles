@@ -152,26 +152,96 @@ const POIS = [
   },
 ];
 
-const HUNT = {
-  title: 'The Lantern Keeper’s Trail',
-  tagline: 'Six lights went out. Find them all and the last one lights itself.',
-  description:
-    'Somewhere on the trail, six lanterns lost their flame. Each marker below hides a code — scan it to carry that light with you. Collect all six and bring your screen to the Warming Hut.',
-  reward_title: 'Lantern Keeper',
-  reward_body:
-    'Show this screen at the Warming Hut counter to claim your Lantern Keeper pin and a free hot chocolate.',
-  stops: [
-    ['Fairy Village', 'Doorlight', 'lantern', 'Crouch to kid height. The code is beside the blue door.', 'scan', null],
-    ['Bird Aviary', 'Wingflame', 'wing', 'Look up, then look at the post you have been leaning on.', 'scan', null],
-    ['Dragon Roost', 'Dragonspark', 'flame', 'The roost has three dragons. The code sits under the smallest one.', 'scan', null],
-    ['Butterfly Garden', 'Wingdust', 'wing', 'Near the centre of the canopy, at eye level for a grown-up.', 'scan', null],
-    ['Mystic Forest — Earth', 'Rootglow', 'rune', 'Read the runes on the low wall. One of them is not a rune.', 'multiple_choice', {
-      question: 'What keeps watch over the roots here?',
-      choices: ['A dragon', 'The Female Golem', 'A yeti', 'A horse'],
-      correctIndex: 1,
-    }],
-    ['Polar Tundra', 'Coldfire', 'crystal', 'Wait for your eyes to adjust. It is on the far side of the field.', 'scan', null],
-  ],
+const REALM_OPTIONS = [
+  { id: 'water', label: 'Water', color: '#5df0cf' },
+  { id: 'earth', label: 'Earth', color: '#c4a574' },
+  { id: 'fire', label: 'Fire', color: '#ffb455' },
+  { id: 'air', label: 'Air', color: '#bfeaff' },
+  { id: 'spirit', label: 'Spirit', color: '#9b8cff' },
+];
+
+const CHALLENGES = {
+  cascade: {
+    type: 'image_select',
+    config: {
+      prompt: 'Three of these details are frozen in the ice beside you. Tap the three that match what you see.',
+      selectCount: 3,
+      correctIds: ['ice-vein', 'ice-arch', 'ice-ripple'],
+      images: [
+        { id: 'ice-vein', label: 'Hairline vein', color: '#8ec9e8' },
+        { id: 'lantern-glow', label: 'Lantern glow', color: '#ffb455' },
+        { id: 'ice-arch', label: 'Pressed arch', color: '#c5e8f6' },
+        { id: 'silk-wing', label: 'Silk wing', color: '#ff8fb8' },
+        { id: 'ice-ripple', label: 'Frozen ripple', color: '#5df0cf' },
+        { id: 'rune-cut', label: 'Carved rune', color: '#c4a574' },
+      ],
+    },
+  },
+  granite: {
+    type: 'code_entry',
+    config: { prompt: 'Four moose hide the letters. Enter the word they spell.', code: 'ARCH' },
+  },
+  ember: {
+    type: 'sequence',
+    config: {
+      prompt: 'Tap the four lantern colors in the order you see them.',
+      kind: 'color',
+      length: 4,
+      options: [
+        { id: 'ice', label: 'Ice', color: '#8ec9e8' },
+        { id: 'amber', label: 'Amber', color: '#ffb455' },
+        { id: 'rose', label: 'Rose', color: '#ff8fb8' },
+        { id: 'violet', label: 'Violet', color: '#9b8cff' },
+      ],
+      correct: ['amber', 'ice', 'rose', 'violet'],
+    },
+  },
+  summit: {
+    type: 'code_entry',
+    config: { prompt: 'Five flags reveal a word. Enter it.', code: 'CARVE' },
+  },
+  aurora: {
+    type: 'multi_sequence',
+    config: {
+      prompt: 'Watch the installation, then tap the five Realm symbols in the order you saw.',
+      kind: 'symbol',
+      length: 5,
+      options: REALM_OPTIONS,
+      accepted: [
+        ['water', 'earth', 'fire', 'air', 'spirit'],
+        ['earth', 'water', 'air', 'fire', 'spirit'],
+        ['spirit', 'air', 'fire', 'earth', 'water'],
+      ],
+    },
+  },
+  builders: {
+    type: 'quiz',
+    config: {
+      prompt: 'A short builder quiz. There is no passing score — finish it when you are ready.',
+      questions: [
+        {
+          question: 'What is an Ice Castle grown from?',
+          choices: ['Cut stone blocks', 'Water, cold, and time', 'Carved foam', 'Glass panels'],
+        },
+        {
+          question: 'How do icicles become walls?',
+          choices: ['They are printed overnight', 'Harvested, placed by hand, then sprayed until they fuse', 'Poured into molds', 'Shipped in from a factory'],
+        },
+        {
+          question: 'Who began growing these castles?',
+          choices: ['A lighting designer', 'Brent Christensen', 'A municipal ice crew', 'An unknown winter spirit'],
+        },
+        {
+          question: 'Why does the forest lighting stay low in some rooms?',
+          choices: ['To save power', 'So your eyes adjust and the sculptures appear', 'Because the LEDs failed', 'To hide unfinished work'],
+        },
+        {
+          question: 'What should you do on uneven ice?',
+          choices: ['Run the loops', 'Walk, and keep little ones in reach', 'Climb the walls', 'Sit until it melts'],
+        },
+      ],
+    },
+  },
 };
 
 async function ensureNhAdventure() {
@@ -180,6 +250,7 @@ async function ensureNhAdventure() {
     location = await createLocation({
       name: 'Ice Castles',
       slug: 'NHAdventure',
+      venue_code: 'nh',
       region: 'North Woodstock, New Hampshire',
     });
   }
@@ -224,6 +295,7 @@ async function seed() {
 
   if (force) {
     for (const table of [
+      'quest_events', 'session_realms', 'quest_sessions',
       'hunt_completions', 'guest_tokens', 'guest_scans', 'hunt_stops', 'hunts', 'touchpoints', 'pois',
     ]) {
       await db.run(`DELETE FROM ${table}`);
@@ -240,7 +312,7 @@ async function seed() {
       'You walked the Threshold, met the Guardians, and carried light to the Heart of Winter.',
       'Show this badge at the Warming Hut to claim your Winter Keeper pin.',
       'Welcome, Winter Keeper',
-      'Begin at the Threshold. Visit the five Guardians, learn the craft at the Builder’s Monument, and finish at the Heart of Winter.',
+      'Explore the castle. Discover the five Guardians, complete their challenges in any order, then scan The Heart to become a Winter Keeper.',
       now(),
       adventure.id,
     ]
@@ -262,30 +334,6 @@ async function seed() {
     );
   }
 
-  const huntId = uuid();
-  await db.run(
-    `INSERT INTO hunts (id, adventure_id, title, slug, tagline, description, reward_title, reward_body,
-       reward_code, active, sort_order, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    [
-      huntId, adventure.id, HUNT.title, slugify(HUNT.title), HUNT.tagline, HUNT.description,
-      HUNT.reward_title, HUNT.reward_body, shortCode(5), 1, 0, ts, ts,
-    ]
-  );
-
-  for (const [i, [poiName, tokenName, glyph, hint, challengeType, challengeConfig]] of HUNT.stops.entries()) {
-    await db.run(
-      `INSERT INTO hunt_stops
-         (id, hunt_id, poi_id, token_name, token_glyph, hint, position, challenge_type, challenge_config)
-       VALUES (?,?,?,?,?,?,?,?,?)`,
-      [
-        uuid(), huntId, idByName[poiName], tokenName, glyph, hint, i,
-        challengeType || 'scan',
-        challengeConfig ? JSON.stringify(challengeConfig) : null,
-      ]
-    );
-  }
-
   const TOUCHPOINTS = [
     {
       type: 'threshold',
@@ -293,7 +341,8 @@ async function seed() {
       title: 'The Threshold',
       subtitle: 'Where the Winter Keeper tradition begins',
       body:
-        'Every castle has a Threshold — the place where cold air meets warm courage. Cross it and the journey opens: five Guardians keep the realms, the builders leave their mark in ice, and the Heart of Winter waits for those who finish the path.',
+        'Explore the castle. Discover the five Guardians — Water, Earth, Fire, Air, and Spirit — and complete their challenges in any order. When all five Realms are awake, scan The Heart to become a Winter Keeper.',
+      discover_body: 'You may begin at any Castle Quest station. The Threshold is a welcome, not a gate you must find first.',
       sort_order: 0,
       poi: 'Entrance & Ticketing',
     },
@@ -304,9 +353,12 @@ async function seed() {
       subtitle: 'Guardian of Water',
       element: 'water',
       body:
-        'Cascade watches the moving ice — currents frozen mid-pour, light shifting like a river under the surface. Find the water realm and listen for the current.',
+        'Cascade watches the moving ice — currents frozen mid-pour, light shifting like a river under the surface.',
+      discover_body:
+        'Water is the trickiest element to grow, because it has to look like it is still moving. Look for veins, ripples, and arches pressed into the ice around this shrine.',
       sort_order: 1,
       poi: 'Mystic Forest — Water',
+      challenge: CHALLENGES.cascade,
     },
     {
       type: 'guardian',
@@ -315,9 +367,12 @@ async function seed() {
       subtitle: 'Guardian of Earth',
       element: 'earth',
       body:
-        'Granite keeps the roots and the weight of the forest. Stone-shouldered figures and carved runes mark this realm. Answer Granite’s question to carry Rootglow.',
+        'Granite keeps the roots and the weight of the forest. Stone-shouldered figures and carved runes mark this realm.',
+      discover_body:
+        'Four physical moose are hidden nearby. Each one reveals a letter. Together they spell a builder’s word.',
       sort_order: 2,
       poi: 'Mystic Forest — Earth',
+      challenge: CHALLENGES.granite,
     },
     {
       type: 'guardian',
@@ -327,8 +382,11 @@ async function seed() {
       element: 'fire',
       body:
         'Ember is warm light through cold silk — flicker without flame. Stand still in the fire realm and the heat is almost believable.',
+      discover_body:
+        'Four colored lanterns hang in a fixed order this season. Watch them, then tap that sequence on your phone.',
       sort_order: 3,
       poi: 'Mystic Forest — Fire',
+      challenge: CHALLENGES.ember,
     },
     {
       type: 'guardian',
@@ -338,8 +396,11 @@ async function seed() {
       element: 'air',
       body:
         'Summit lifts the gaze. Wings overhead, wind in the silk, paths that ask you to look up more than once.',
+      discover_body:
+        'Five physical flags in this area reveal the letters of a single word. Enter what they spell.',
       sort_order: 4,
       poi: 'Bird Aviary',
+      challenge: CHALLENGES.summit,
     },
     {
       type: 'guardian',
@@ -349,8 +410,11 @@ async function seed() {
       element: 'spirit',
       body:
         'Aurora holds the quiet between lights — the moment your eyes adjust and the field comes up out of the dark.',
+      discover_body:
+        'A physical installation plays several five-symbol Realm sequences on a loop. Repeat any one of them. The website answers on its own — no show-control hookup is required.',
       sort_order: 5,
       poi: 'Polar Tundra',
+      challenge: CHALLENGES.aurora,
     },
     {
       type: 'monument',
@@ -358,9 +422,12 @@ async function seed() {
       title: 'Builder’s Monument',
       subtitle: 'The First Winter Keeper and the craft of ice',
       body:
-        'Brent Christensen, First Winter Keeper, began growing castles from water, cold, and patience. Icicles are harvested, placed by hand, and sprayed until they fuse. Lighting, carving, and overnight growth turn a field into a castle that can hold more than twenty million pounds of ice. This monument is for the builders who return each winter.',
+        'Brent Christensen, First Winter Keeper, began growing castles from water, cold, and patience. This monument is optional — it does not affect becoming a Winter Keeper.',
+      discover_body:
+        'Icicles are harvested, placed by hand, and sprayed until they fuse. Lighting, carving, and overnight growth turn a field into a castle that can hold more than twenty million pounds of ice.',
       sort_order: 6,
       poi: 'The Ice Castle',
+      challenge: CHALLENGES.builders,
     },
     {
       type: 'heart',
@@ -368,7 +435,9 @@ async function seed() {
       title: 'Heart of Winter',
       subtitle: 'Recognition at the end of the path',
       body:
-        'When the Guardians are visited and the trail lights are gathered, the Heart of Winter opens. Reflect, claim your Winter Keeper badge, and redeem your pin at the Warming Hut.',
+        'The five Realms must already be awake. Scanning The Heart is what finishes Castle Quest — completing the last Guardian is not enough.',
+      discover_body:
+        'If a Realm is still sleeping, this page will tell you which one. When all five are complete, the Winter Keeper finale opens here.',
       sort_order: 7,
       poi: 'Warming Hut',
     },
@@ -377,12 +446,14 @@ async function seed() {
   for (const tp of TOUCHPOINTS) {
     await db.run(
       `INSERT INTO touchpoints
-         (id, adventure_id, type, slug, title, subtitle, body, element, image_url, audio_url,
-          poi_id, sort_order, published, config, created_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         (id, adventure_id, type, slug, title, subtitle, body, discover_body, element, image_url, audio_url,
+          poi_id, sort_order, published, challenge_type, config, created_at, updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         uuid(), adventure.id, tp.type, tp.slug, tp.title, tp.subtitle, tp.body,
-        tp.element || null, null, null, idByName[tp.poi] || null, tp.sort_order, 1, null, ts, ts,
+        tp.discover_body || null, tp.element || null, null, null, idByName[tp.poi] || null,
+        tp.sort_order, 1, tp.challenge?.type || null,
+        tp.challenge ? JSON.stringify(tp.challenge.config) : null, ts, ts,
       ]
     );
   }
@@ -391,11 +462,13 @@ async function seed() {
     'SELECT name, scan_code FROM pois WHERE adventure_id = ? ORDER BY sort_order',
     [adventure.id]
   );
-  console.log(`\nSeeded ${POIS.length} markers, 1 hunt, and ${TOUCHPOINTS.length} journey touchpoints under /NHAdventure.\n`);
-  console.log('Guest app: http://localhost:3000/NHAdventure');
-  console.log('Test codes — paste any of these into the app\'s "Enter code" box:');
+  console.log(`\nSeeded ${POIS.length} markers and ${TOUCHPOINTS.length} Castle Quest stations under /nh.\n`);
+  console.log('Guest app: http://localhost:3000/nh');
+  console.log('Station URLs:');
+  for (const tp of TOUCHPOINTS) console.log(`  http://localhost:3000/nh/${tp.slug}`);
+  console.log('\nAmenity map codes (site guide only):');
   for (const c of codes) console.log(`  ${c.scan_code}   ${c.name}`);
-  console.log('\nOne stop uses a multiple-choice challenge (Mystic Forest — Earth) instead of a scan.\n');
+  console.log('');
 }
 
 seed()

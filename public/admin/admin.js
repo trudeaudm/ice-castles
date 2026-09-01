@@ -30,7 +30,7 @@ let markers = new Map();
 let mapOverlay = null;
 
 const adventureId = () => state.adventure?.id || null;
-const locationSlug = () => state.adventure?.location_slug || 'NHAdventure';
+const locationSlug = () => state.adventure?.venue_code || state.adventure?.location_slug || 'nh';
 
 const CHALLENGE_TYPES = [
   { id: 'scan', label: 'QR scan' },
@@ -38,6 +38,10 @@ const CHALLENGE_TYPES = [
   { id: 'code_entry', label: 'Code entry' },
   { id: 'multiple_choice', label: 'Multiple choice' },
   { id: 'reflection', label: 'Reflection' },
+  { id: 'image_select', label: 'Image select' },
+  { id: 'sequence', label: 'Sequence' },
+  { id: 'multi_sequence', label: 'Any-of sequences' },
+  { id: 'quiz', label: 'Quiz (no score)' },
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -715,9 +719,22 @@ function renderTouchpoints() {
           </label>
           <label>Element<input name="element" value="${escapeHtml(tp.element || '')}" maxlength="40" placeholder="water"></label>
         </div>
+        <label>Permanent URL slug<input name="slug" value="${escapeHtml(tp.slug)}" maxlength="60" placeholder="cascade"></label>
         <label>Title<input name="title" value="${escapeHtml(tp.title)}" maxlength="120"></label>
         <label>Subtitle<input name="subtitle" value="${escapeHtml(tp.subtitle || '')}" maxlength="200"></label>
-        <label>Story<textarea name="body" rows="5" maxlength="8000">${escapeHtml(tp.body || '')}</textarea></label>
+        <label>Meet / story<textarea name="body" rows="4" maxlength="8000">${escapeHtml(tp.body || '')}</textarea></label>
+        <label>Discover<textarea name="discover_body" rows="3" maxlength="8000">${escapeHtml(tp.discover_body || '')}</textarea></label>
+        <div class="form__row">
+          <label>Challenge
+            <select name="challenge_type">
+              <option value="">None</option>
+              ${CHALLENGE_TYPES.map((t) => `<option value="${t.id}"${t.id === (tp.challenge_type || '') ? ' selected' : ''}>${t.label}</option>`).join('')}
+            </select>
+          </label>
+        </div>
+        <label>Challenge config (JSON)
+          <textarea name="config" rows="5">${escapeHtml(tp.config || '')}</textarea>
+        </label>
         <label>Linked marker
           <select name="poi_id">
             <option value="">None</option>
@@ -764,10 +781,14 @@ el('touchList')?.addEventListener('submit', async (event) => {
       method: 'PATCH',
       body: JSON.stringify({
         type: form.type.value,
+        slug: form.slug.value,
         element: form.element.value,
         title: form.title.value,
         subtitle: form.subtitle.value,
         body: form.body.value,
+        discover_body: form.discover_body.value,
+        challenge_type: form.challenge_type.value || null,
+        config: form.config.value.trim() ? JSON.parse(form.config.value) : null,
         poi_id: form.poi_id.value || null,
         published: form.published.checked,
       }),
@@ -797,25 +818,25 @@ el('touchList')?.addEventListener('click', async (event) => {
 /* -------------------------------------------------------------------------- */
 
 function renderSigns() {
-  const live = state.pois.filter((poi) => poi.published && poi.scan_code);
-  el('baseUrlSample').textContent = `${location.origin}/${locationSlug()}/s/CODE`;
-  el('signGrid').innerHTML = live.length
-    ? live.map((poi) => `
-        <div class="signCard">
-          <div class="signCard__qr">
-            <img src="/api/admin/qr/${escapeHtml(poi.id)}.svg?token=${encodeURIComponent(token)}" alt="QR code for ${escapeHtml(poi.name)}">
-          </div>
-          <p class="signCard__name">${escapeHtml(poi.name)}</p>
-          <p class="signCard__code">${escapeHtml(poi.scan_code)}</p>
-          <a class="ghostButton" href="/api/admin/qr/${escapeHtml(poi.id)}.svg?token=${encodeURIComponent(token)}"
-             download="${escapeHtml(poi.slug)}-qr.svg">Download SVG</a>
-        </div>`).join('')
-    : `<p class="pane__note">No live markers yet. Turn a marker on and its sign appears here.</p>`;
+  const venue = locationSlug();
+  const stations = (state.touchpoints || []).filter((t) => t.published);
+  el('baseUrlSample').textContent = `${location.origin}/${venue}/cascade`;
+  const stationCards = stations.map((tp) => `
+    <div class="signCard">
+      <div class="signCard__qr">
+        <img src="/api/admin/station-qr/${escapeHtml(tp.id)}.svg?token=${encodeURIComponent(token)}" alt="QR for ${escapeHtml(tp.title)}">
+      </div>
+      <p class="signCard__name">${escapeHtml(tp.title)}</p>
+      <p class="signCard__code">/${escapeHtml(venue)}/${escapeHtml(tp.slug)}</p>
+      <a class="ghostButton" href="/api/admin/station-qr/${escapeHtml(tp.id)}.svg?token=${encodeURIComponent(token)}"
+         download="${escapeHtml(tp.slug)}-qr.svg">Download SVG</a>
+    </div>`).join('');
+  el('signGrid').innerHTML = stationCards || `<p class="pane__note">No published quest stations yet.</p>`;
 }
 
 el('printSheet').addEventListener('click', () => {
-  const q = adventureId() ? `&adventure_id=${encodeURIComponent(adventureId())}` : '';
-  window.open(`/api/admin/qr-sheet?token=${encodeURIComponent(token)}${q}`, '_blank', 'noopener');
+  const q = adventureId() ? `adventure_id=${encodeURIComponent(adventureId())}&` : '';
+  window.open(`/api/admin/station-sheet?${q}token=${encodeURIComponent(token)}`, '_blank', 'noopener');
 });
 
 /* -------------------------------------------------------------------------- */

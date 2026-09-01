@@ -11,6 +11,7 @@ const {
   validateChallengeAnswer,
   publicChallengeConfig,
 } = require('../adventures');
+const quest = require('../quest');
 
 const router = express.Router();
 
@@ -103,7 +104,17 @@ function publicStop(s) {
   };
 }
 
-function publicTouchpoint(row) {
+function publicTouchpoint(row, venueCode, sessionPublic) {
+  const type = row.challenge_type ? normalizeChallengeType(row.challenge_type) : null;
+  const realmDone = Boolean(
+    row.element && sessionPublic?.realms?.some((r) => r.realm === row.element && r.complete)
+  );
+  const stationDone =
+    row.type === 'heart'
+      ? Boolean(sessionPublic?.heartScannedAt && sessionPublic?.realmsComplete)
+      : row.type === 'monument'
+        ? Boolean(sessionPublic?.buildersVisitedAt)
+        : realmDone;
   return {
     id: row.id,
     type: row.type,
@@ -111,22 +122,30 @@ function publicTouchpoint(row) {
     title: row.title,
     subtitle: row.subtitle,
     body: row.body,
+    discoverBody: row.discover_body,
     element: row.element,
     imageUrl: row.image_url,
     audioUrl: row.audio_url,
     poiId: row.poi_id,
     sortOrder: row.sort_order,
+    path: `/${venueCode || 'nh'}/${row.slug}`,
+    challengeType: type && type !== 'scan' ? type : row.challenge_type || null,
+    challenge:
+      row.challenge_type && row.challenge_type !== 'scan'
+        ? publicChallengeConfig(normalizeChallengeType(row.challenge_type), row.config)
+        : null,
+    complete: stationDone,
   };
 }
 
-async function loadTouchpoints(adventureId) {
+async function loadTouchpoints(adventureId, venueCode, sessionPublic) {
   const rows = await db.all(
     `SELECT * FROM touchpoints
       WHERE adventure_id = ? AND published = 1
       ORDER BY sort_order, created_at`,
     [adventureId]
   );
-  return rows.map(publicTouchpoint);
+  return rows.map((row) => publicTouchpoint(row, venueCode, sessionPublic));
 }
 
 async function loadHunts(adventureId) {
@@ -157,9 +176,11 @@ async function loadHunts(adventureId) {
 }
 
 async function resolveFromQuery(req) {
+  const venueCode = clean(req.query.venue, 20);
   const locationSlug = clean(req.query.location || req.query.adventure, 80);
   const year = req.query.year ? Number(req.query.year) : null;
   return resolveAdventure({
+    venueCode: venueCode || null,
     locationSlug: locationSlug || null,
     year: Number.isFinite(year) ? year : null,
   });
@@ -178,14 +199,18 @@ router.get('/bootstrap', async (req, res) => {
     [adventure.id]
   );
 
+  const pack = await quest.sessionWithRealms(guest.id, adventure.id);
+  const pubAdv = publicAdventure(adventure);
   res.json({
-    adventure: publicAdventure(adventure),
+    adventure: pubAdv,
     park: parkFromAdventure(adventure),
     map: mapFromAdventure(adventure),
     guest: { token: guest.id, nickname: guest.nickname },
+    session: pack.public,
+    operatingDate: quest.operatingDateKey(),
     pois: poiRows.map(publicPoi),
     hunts: await loadHunts(adventure.id),
-    touchpoints: await loadTouchpoints(adventure.id),
+    touchpoints: await loadTouchpoints(adventure.id, pubAdv.venueCode, pack.public),
     progress: await progressFor(guest.id, adventure.id),
   });
 });
@@ -336,6 +361,190 @@ router.get('/progress', async (req, res) => {
   const adventure = await resolveFromQuery(req);
   if (!guest || !adventure) return res.json({ scans: [], tokens: [], completions: [] });
   res.json(await progressFor(guest.id, adventure.id));
+});
+
+/* ------------------------------------------------------------------ *
+ * Castle Quest — same-day session, stations, Heart, completion
+ * ------------------------------------------------------------------ */
+
+async function guestAndAdventure(req, res) {
+  const adventure = await resolveFromQuery(req);
+  if (!adventure) {
+    res.status(404).json({ error: 'adventure_not_found' });
+    return null;
+  }
+  let guest = await touchGuest(req.get('x-guest-token'));
+  if (!guest) guest = await createGuest();
+  return { guest, adventure };
+}
+
+async function stationBySlug(adventureId, slug) {
+  return db.get(
+    'SELECT * FROM touchpoints WHERE adventure_id = ? AND slug = ? AND published = 1',
+    [adventureId, slug]
+  );
+}
+
+async function refreshPack(guestId, adventure) {
+  const pack = await quest.sessionWithRealms(guestId, adventure.id);
+  const pubAdv = publicAdventure(adventure);
+  return {
+    guestToken: guestId,
+    session: pack.public,
+    touchpoints: await loadTouchpoints(adventure.id, pubAdv.venueCode, pack.public),
+  };
+}
+
+router.post('/quest/session', async (req, res) => {
+  const ctx = await guestAndAdventure(req, res);
+  if (!ctx) return;
+  const starting = clean(req.body?.station, 80);
+  const started = await quest.startSession(ctx.guest.id, ctx.adventure.id, starting, req);
+  res.json({
+    ...(await refreshPack(ctx.guest.id, ctx.adventure)),
+    created: started.created,
+  });
+});
+
+router.post('/quest/visit', async (req, res) => {
+  const ctx = await guestAndAdventure(req, res);
+  if (!ctx) return;
+  const slug = clean(req.body?.station, 80);
+  const station = slug ? await stationBySlug(ctx.adventure.id, slug) : null;
+  if (!station) return res.status(404).json({ error: 'station_not_found' });
+
+  const pack = await quest.requireLiveSession(ctx.guest.id, ctx.adventure.id);
+  if (pack.error) return res.status(409).json({ error: pack.error });
+
+  await quest.track(pack.row, 'station_scan', { station: slug, payload: { type: station.type } }, req);
+
+  if (station.type === 'monument') {
+    const updated = await quest.markBuildersVisited(pack.row);
+    if (!pack.row.builders_visited_at) {
+      await quest.track(updated, 'builders_visited', { station: slug }, req);
+    }
+  }
+
+  res.json(await refreshPack(ctx.guest.id, ctx.adventure));
+});
+
+router.post('/quest/challenge', async (req, res) => {
+  const ctx = await guestAndAdventure(req, res);
+  if (!ctx) return;
+  const slug = clean(req.body?.station, 80);
+  const station = slug ? await stationBySlug(ctx.adventure.id, slug) : null;
+  if (!station) return res.status(404).json({ error: 'station_not_found' });
+
+  const pack = await quest.requireLiveSession(ctx.guest.id, ctx.adventure.id);
+  if (pack.error) return res.status(409).json({ error: pack.error });
+
+  const type = normalizeChallengeType(station.challenge_type);
+  await quest.track(pack.row, 'challenge_attempt', {
+    station: slug,
+    payload: { type, realm: station.element },
+  }, req);
+
+  if (station.type === 'monument' || type === 'quiz') {
+    const check = validateChallengeAnswer('quiz', station.config, req.body?.answer);
+    if (!check.ok) return res.status(400).json({ error: check.error || 'invalid_answer' });
+    const quiz = await quest.markBuilderQuiz(pack.row);
+    if (!quiz.already) {
+      await quest.track(quiz.row, 'builder_quiz_completed', { station: slug }, req);
+      await quest.track(quiz.row, 'challenge_complete', { station: slug, payload: { type: 'quiz' } }, req);
+    }
+    return res.json({
+      ...(await refreshPack(ctx.guest.id, ctx.adventure)),
+      alreadyCompleted: quiz.already,
+      realmAwakened: null,
+    });
+  }
+
+  const check = validateChallengeAnswer(type, station.config, req.body?.answer);
+  if (!check.ok) return res.status(400).json({ error: check.error || 'invalid_answer' });
+
+  await quest.track(pack.row, 'challenge_complete', {
+    station: slug,
+    payload: { type, realm: station.element },
+  }, req);
+
+  let realmAwakened = null;
+  if (station.type === 'guardian' && REALM_OK(station.element)) {
+    const result = await quest.completeRealm(pack.row.id, station.element, station.id);
+    if (!result.already) {
+      await quest.track(pack.row, 'realm_complete', {
+        station: slug,
+        payload: { realm: station.element },
+      }, req);
+      realmAwakened = station.element;
+    }
+  }
+
+  res.json({
+    ...(await refreshPack(ctx.guest.id, ctx.adventure)),
+    alreadyCompleted: !realmAwakened,
+    realmAwakened,
+  });
+});
+
+function REALM_OK(element) {
+  return quest.REALMS.includes(element);
+}
+
+router.post('/quest/heart', async (req, res) => {
+  const ctx = await guestAndAdventure(req, res);
+  if (!ctx) return;
+  const pack = await quest.requireLiveSession(ctx.guest.id, ctx.adventure.id);
+  if (pack.error) return res.status(409).json({ error: pack.error });
+
+  const remaining = quest.remainingRealms(pack.realms);
+  const ready = remaining.length === 0;
+  const updated = await quest.markHeartScan(pack.row);
+  await quest.track(updated, 'heart_scan', {
+    station: 'heart',
+    payload: { complete: ready, remaining },
+  }, req);
+
+  res.json({
+    ...(await refreshPack(ctx.guest.id, ctx.adventure)),
+    eligible: ready,
+    remaining,
+  });
+});
+
+router.post('/quest/complete', async (req, res) => {
+  const ctx = await guestAndAdventure(req, res);
+  if (!ctx) return;
+  const pack = await quest.requireLiveSession(ctx.guest.id, ctx.adventure.id);
+  if (pack.error) return res.status(409).json({ error: pack.error });
+
+  const remaining = quest.remainingRealms(pack.realms);
+  if (remaining.length) {
+    return res.status(409).json({ error: 'realms_incomplete', remaining });
+  }
+  if (!pack.row.heart_scanned_at) {
+    return res.status(409).json({ error: 'heart_required' });
+  }
+
+  const firstTime = !pack.row.quest_complete_at;
+  const finished = await quest.finishQuest(pack.row, {
+    names: req.body?.names,
+    partySize: req.body?.partySize,
+    email: req.body?.email,
+    marketingOptIn: req.body?.marketingOptIn,
+  });
+
+  if (firstTime) {
+    await quest.track(finished, 'names_captured', {
+      payload: { count: quest.parseJson(finished.keeper_names, []).length },
+    }, req);
+    if (finished.email) await quest.track(finished, 'email_supplied', {}, req);
+    if (finished.marketing_opt_in) await quest.track(finished, 'marketing_opt_in', {}, req);
+    await quest.track(finished, 'winter_keeper_complete', {
+      payload: { partySize: finished.party_size },
+    }, req);
+  }
+
+  res.json(await refreshPack(ctx.guest.id, ctx.adventure));
 });
 
 module.exports = router;

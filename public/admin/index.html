@@ -53,7 +53,7 @@
     <div class="bar__actions">
       <button class="ghostButton is-active" id="gridToggle" type="button" aria-pressed="true" title="Reference grid — admin only, guests never see it">Grid on</button>
       <span class="saveState" id="saveState"></span>
-      <a class="ghostButton" id="guestAppLink" href="/NHAdventure" target="_blank" rel="noopener">View guest app</a>
+      <a class="ghostButton" id="guestAppLink" href="/nh" target="_blank" rel="noopener">View guest app</a>
       <button class="ghostButton" id="signOut" type="button">Sign out</button>
     </div>
   </header>
@@ -167,8 +167,8 @@
         <button class="primaryButton" id="addTouchButton" type="button">Add touchpoint</button>
       </div>
       <p class="pane__note">
-        Threshold, Guardians, Builder’s Monument, and Heart of Winter. Link a marker so the story
-        opens from the map. Guests see these under Trails.
+        Permanent Castle Quest URLs. Leave the slug blank on create to get a random code until you name it.
+        Guests land on the station page; the map is a corner toggle.
       </p>
       <div id="touchList"></div>
     </div>
@@ -182,9 +182,8 @@
         <button class="primaryButton" id="printSheet" type="button">Open print sheet</button>
       </div>
       <p class="pane__note">
-        Every marker has its own code. The QR points at <code id="baseUrlSample">/s/CODE</code>, so a guest
-        can scan it with their phone's normal camera and land straight in the app — no install step.
-        Reprinting a sign? Roll the code first so the old printout stops working.
+        Quest station QRs encode a permanent path such as <code id="baseUrlSample">/nh/cascade</code>.
+        Print these for Castle Quest signs. Amenity map codes are separate and do not start the quest.
       </p>
       <div class="signGrid" id="signGrid"></div>
     </div>

@@ -1,7 +1,17 @@
 const db = require('./db');
 const { uuid, now, clean, num, bool, slugify, shortCode } = require('./helpers');
 
-const CHALLENGE_TYPES = ['scan', 'acknowledge', 'code_entry', 'multiple_choice', 'reflection'];
+const CHALLENGE_TYPES = [
+  'scan',
+  'acknowledge',
+  'code_entry',
+  'multiple_choice',
+  'reflection',
+  'image_select',
+  'sequence',
+  'multi_sequence',
+  'quiz',
+];
 
 function parseConfig(raw) {
   if (!raw) return {};
@@ -31,51 +41,46 @@ function normalizeChallengeType(value) {
   return CHALLENGE_TYPES.includes(t) ? t : 'scan';
 }
 
-/** Resolve location slug (+ optional year) to the adventure package guests see. */
-async function resolveAdventure({ locationSlug, year } = {}) {
-  if (!locationSlug) {
-    return db.get(
-      `SELECT a.*, l.name AS location_name, l.slug AS location_slug, l.region
-         FROM adventures a JOIN locations l ON l.id = a.location_id
-        WHERE a.is_active = 1
-        ORDER BY a.year DESC LIMIT 1`
-    );
+/** Resolve venue code or location slug (+ optional year) to the adventure package. */
+async function resolveAdventure({ venueCode, locationSlug, year } = {}) {
+  const select = `SELECT a.*, l.name AS location_name, l.slug AS location_slug,
+                         l.venue_code, l.region
+                    FROM adventures a JOIN locations l ON l.id = a.location_id`;
+
+  if (!venueCode && !locationSlug) {
+    return db.get(`${select} WHERE a.is_active = 1 ORDER BY a.year DESC LIMIT 1`);
   }
 
-  const location = await db.get('SELECT * FROM locations WHERE slug = ?', [locationSlug]);
+  const key = venueCode || locationSlug;
+  const location = await db.get(
+    'SELECT * FROM locations WHERE venue_code = ? OR slug = ?',
+    [String(key).toLowerCase(), key]
+  );
   if (!location) return null;
 
   if (year) {
     const byYear = await db.get(
-      `SELECT a.*, l.name AS location_name, l.slug AS location_slug, l.region
-         FROM adventures a JOIN locations l ON l.id = a.location_id
-        WHERE a.location_id = ? AND a.year = ?`,
+      `${select} WHERE a.location_id = ? AND a.year = ?`,
       [location.id, Number(year)]
     );
     if (byYear) return byYear;
   }
 
   const active = await db.get(
-    `SELECT a.*, l.name AS location_name, l.slug AS location_slug, l.region
-       FROM adventures a JOIN locations l ON l.id = a.location_id
-      WHERE a.location_id = ? AND a.is_active = 1
-      ORDER BY a.year DESC LIMIT 1`,
+    `${select} WHERE a.location_id = ? AND a.is_active = 1 ORDER BY a.year DESC LIMIT 1`,
     [location.id]
   );
   if (active) return active;
 
   return db.get(
-    `SELECT a.*, l.name AS location_name, l.slug AS location_slug, l.region
-       FROM adventures a JOIN locations l ON l.id = a.location_id
-      WHERE a.location_id = ?
-      ORDER BY a.year DESC LIMIT 1`,
+    `${select} WHERE a.location_id = ? ORDER BY a.year DESC LIMIT 1`,
     [location.id]
   );
 }
 
 async function adventureById(id) {
   return db.get(
-    `SELECT a.*, l.name AS location_name, l.slug AS location_slug, l.region
+    `SELECT a.*, l.name AS location_name, l.slug AS location_slug, l.venue_code, l.region
        FROM adventures a JOIN locations l ON l.id = a.location_id
       WHERE a.id = ?`,
     [id]
@@ -91,9 +96,10 @@ function publicAdventure(row) {
     locationId: row.location_id,
     locationName: row.location_name,
     locationSlug: row.location_slug,
+    venueCode: row.venue_code || 'nh',
     region: row.region,
-    path: `/${row.location_slug}`,
-    yearPath: `/${row.location_slug}/${row.year}`,
+    path: `/${row.venue_code || 'nh'}`,
+    yearPath: `/${row.venue_code || 'nh'}/${row.year}`,
   };
 }
 
@@ -146,14 +152,16 @@ async function setActiveAdventure(adventureId) {
   return adventureById(adventureId);
 }
 
-async function createLocation({ name, slug, region }) {
+async function createLocation({ name, slug, region, venue_code: venueCode }) {
   const id = uuid();
   const ts = now();
   const finalSlug = slugify(slug || name, 'location');
+  const inferred = finalSlug.toLowerCase().startsWith('nh') ? 'nh' : finalSlug;
+  const code = slugify(venueCode || inferred, 'nh').replace(/-/g, '').slice(0, 8) || 'nh';
   await db.run(
-    `INSERT INTO locations (id, name, slug, region, created_at, updated_at)
-     VALUES (?,?,?,?,?,?)`,
-    [id, clean(name, 120) || 'New location', finalSlug, clean(region, 160), ts, ts]
+    `INSERT INTO locations (id, name, slug, venue_code, region, created_at, updated_at)
+     VALUES (?,?,?,?,?,?,?)`,
+    [id, clean(name, 120) || 'New location', finalSlug, code, clean(region, 160), ts, ts]
   );
   return db.get('SELECT * FROM locations WHERE id = ?', [id]);
 }
@@ -333,6 +341,34 @@ function validateChallengeAnswer(type, config, answer) {
       if (!Number.isFinite(got) || got !== correct) return { ok: false, error: 'bad_choice' };
       return { ok: true };
     }
+    case 'image_select': {
+      const need = (cfg.correctIds || []).map(String).sort();
+      const got = (answer?.ids || answer?.selected || []).map(String).sort();
+      if (!need.length || got.length !== need.length || got.join('|') !== need.join('|')) {
+        return { ok: false, error: 'bad_images' };
+      }
+      return { ok: true };
+    }
+    case 'sequence': {
+      const expected = (cfg.correct || []).map((v) => String(v).toLowerCase());
+      const got = (answer?.sequence || []).map((v) => String(v).toLowerCase());
+      if (!expected.length || got.join('|') !== expected.join('|')) {
+        return { ok: false, error: 'bad_sequence' };
+      }
+      return { ok: true };
+    }
+    case 'multi_sequence': {
+      const accepted = (cfg.accepted || []).map((seq) =>
+        (seq || []).map((v) => String(v).toLowerCase()).join('|')
+      );
+      const got = (answer?.sequence || []).map((v) => String(v).toLowerCase()).join('|');
+      if (!accepted.length || !accepted.includes(got)) {
+        return { ok: false, error: 'bad_sequence' };
+      }
+      return { ok: true };
+    }
+    case 'quiz':
+      return { ok: true };
     default:
       return { ok: false, error: 'wrong_type' };
   }
@@ -351,6 +387,33 @@ function publicChallengeConfig(type, config) {
       return {
         question: cfg.question || 'Choose the right answer.',
         choices: Array.isArray(cfg.choices) ? cfg.choices : [],
+      };
+    case 'image_select':
+      return {
+        prompt: cfg.prompt || 'Choose the matching details.',
+        selectCount: Number(cfg.selectCount) || (cfg.correctIds || []).length || 3,
+        images: (cfg.images || []).map((img) => ({
+          id: img.id,
+          url: img.url || null,
+          label: img.label || '',
+          color: img.color || null,
+        })),
+      };
+    case 'sequence':
+    case 'multi_sequence':
+      return {
+        prompt: cfg.prompt || 'Repeat the sequence you see.',
+        kind: cfg.kind || 'symbol',
+        options: cfg.options || [],
+        length: Number(cfg.length) || (cfg.correct || [])[0]?.length || 5,
+      };
+    case 'quiz':
+      return {
+        prompt: cfg.prompt || 'A short quiz — any answers count.',
+        questions: (cfg.questions || []).map((q) => ({
+          question: q.question,
+          choices: q.choices || [],
+        })),
       };
     default:
       return {};

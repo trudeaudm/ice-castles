@@ -1,9 +1,7 @@
 /* global window, localStorage, fetch */
 /**
  * Store + API client.
- *
- * Identity: a single opaque guest token in localStorage. Progress is scoped
- * server-side to the adventure package currently loaded.
+ * Device token in localStorage. Same-day quest session lives on the server.
  */
 const Store = (() => {
   const KEY_GUEST = 'ic.guest.v1';
@@ -11,6 +9,7 @@ const Store = (() => {
   const KEY_QUEUE = 'ic.queue.v1';
   const KEY_SEEN = 'ic.seen.v1';
   const KEY_JOURNEY = 'ic.journey.v1';
+  const KEY_INTENDED = 'ic.intended.v1';
 
   const read = (key, fallback) => {
     try {
@@ -23,21 +22,26 @@ const Store = (() => {
   const write = (key, value) => {
     try {
       localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-      /* private mode or full quota */
-    }
+    } catch { /* private mode */ }
   };
 
-  /** Parse /NHAdventure or /NHAdventure/2026 from the URL. */
   function pathContext() {
     const parts = location.pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
     const reserved = new Set(['admin', 'api', 'assets', 'vendor', 'js', 's']);
     if (!parts.length || reserved.has(parts[0].toLowerCase())) {
-      return { locationSlug: null, year: null };
+      return { venueCode: null, locationSlug: null, year: null, station: null };
     }
-    const locationSlug = parts[0];
-    const year = parts[1] && /^\d{4}$/.test(parts[1]) ? Number(parts[1]) : null;
-    return { locationSlug, year };
+    const first = parts[0];
+    const second = parts[1] || null;
+    if (second && /^\d{4}$/.test(second)) {
+      return { venueCode: first.toLowerCase(), locationSlug: first, year: Number(second), station: null };
+    }
+    return {
+      venueCode: first.toLowerCase(),
+      locationSlug: first,
+      year: null,
+      station: second || null,
+    };
   }
 
   const state = {
@@ -47,6 +51,8 @@ const Store = (() => {
     pois: [],
     hunts: [],
     touchpoints: [],
+    session: null,
+    operatingDate: null,
     progress: { scans: [], tokens: [], completions: [] },
     hiddenCategories: new Set(read(KEY_SEEN, {}).hidden || []),
     journeyMode: Boolean(read(KEY_JOURNEY, false)),
@@ -63,17 +69,18 @@ const Store = (() => {
   const setGuestToken = (token) => write(KEY_GUEST, token);
 
   function bootstrapQuery() {
-    const { locationSlug, year } = state.path;
+    const { venueCode, locationSlug, year } = state.path;
     const params = new URLSearchParams();
-    if (locationSlug) params.set('location', locationSlug);
+    if (venueCode) params.set('venue', venueCode);
+    else if (locationSlug) params.set('location', locationSlug);
     if (year) params.set('year', String(year));
     const q = params.toString();
     return q ? `?${q}` : '';
   }
 
   function cacheKey() {
-    const { locationSlug, year } = state.path;
-    return `${KEY_CACHE}:${locationSlug || 'default'}:${year || 'active'}`;
+    const { venueCode, year } = state.path;
+    return `${KEY_CACHE}:${venueCode || 'default'}:${year || 'active'}`;
   }
 
   async function request(path, options = {}) {
@@ -98,20 +105,25 @@ const Store = (() => {
     state.pois = data.pois;
     state.hunts = data.hunts;
     state.touchpoints = data.touchpoints || [];
-    state.progress = data.progress;
+    state.session = data.session || null;
+    state.operatingDate = data.operatingDate || null;
+    state.progress = data.progress || { scans: [], tokens: [], completions: [] };
     if (data.guest?.token) setGuestToken(data.guest.token);
     write(cacheKey(), data);
 
-    // Canonicalize short URL onto the location slug when we resolved a default.
-    if (state.adventure?.locationSlug && !state.path.locationSlug) {
-      const target = state.path.year
-        ? `/${state.adventure.locationSlug}/${state.path.year}`
-        : `/${state.adventure.locationSlug}`;
-      if (location.pathname !== target) {
-        history.replaceState(null, '', `${target}${location.hash || '#/map'}`);
-        state.path = pathContext();
-      }
+    const venue = state.adventure?.venueCode;
+    if (venue && state.path.venueCode && state.path.venueCode !== venue) {
+      const station = state.path.station ? `/${state.path.station}` : '';
+      history.replaceState(null, '', `/${venue}${station}${location.hash || ''}`);
+      state.path = pathContext();
     }
+  }
+
+  function applyQuest(data) {
+    if (data.guestToken) setGuestToken(data.guestToken);
+    if (data.session !== undefined) state.session = data.session;
+    if (data.touchpoints) state.touchpoints = data.touchpoints;
+    emit();
   }
 
   async function load() {
@@ -157,42 +169,89 @@ const Store = (() => {
   const touchByType = (type) => state.touchpoints.filter((t) => t.type === type);
   const touchForPoi = (poiId) => state.touchpoints.find((t) => t.poiId === poiId) || null;
 
-  function thresholdSeenKey() {
-    return `ic.threshold.v1:${state.adventure?.id || 'default'}`;
+  const hasLiveSession = () => Boolean(state.session?.live);
+  const realmsAwakened = () => (state.session?.realms || []).filter((r) => r.complete).length;
+
+  function intendedStation() {
+    return state.path.station || read(KEY_INTENDED, null);
   }
-  function hasSeenThreshold() {
-    return Boolean(read(thresholdSeenKey(), false));
-  }
-  function markThresholdSeen() {
-    write(thresholdSeenKey(), true);
+  function setIntendedStation(slug) {
+    write(KEY_INTENDED, slug || null);
   }
 
-  /** Journey complete when the primary hunt is done, or all guardian tokens earned. */
-  function journeyComplete() {
-    if (state.progress.completions.length) return true;
-    const guardians = touchByType('guardian');
-    if (!guardians.length) return false;
-    const earned = tokenIds();
-    return guardians.every((g) => {
-      const stops = stopsForPoi(g.poiId);
-      return stops.length && stops.every((s) => earned.has(s.id));
+  function stationPath(slug) {
+    const venue = state.adventure?.venueCode || state.path.venueCode || 'nh';
+    return slug ? `/${venue}/${slug}` : `/${venue}`;
+  }
+
+  async function startSession(station) {
+    const data = await request(`/api/quest/session${bootstrapQuery()}`, {
+      method: 'POST',
+      body: JSON.stringify({ station: station || intendedStation() }),
     });
+    applyQuest(data);
+    return data;
   }
 
-  /** POI ids that appear on any active trail (journey map focus). */
+  async function visitStation(station) {
+    const data = await request(`/api/quest/visit${bootstrapQuery()}`, {
+      method: 'POST',
+      body: JSON.stringify({ station }),
+    });
+    applyQuest(data);
+    return data;
+  }
+
+  async function completeStation(station, answer) {
+    try {
+      const data = await request(`/api/quest/challenge${bootstrapQuery()}`, {
+        method: 'POST',
+        body: JSON.stringify({ station, answer }),
+      });
+      applyQuest(data);
+      return { status: data.alreadyCompleted ? 'repeat' : 'new', ...data };
+    } catch (err) {
+      return { status: 'error', error: err.body?.error || err.message, remaining: err.body?.remaining };
+    }
+  }
+
+  async function scanHeart() {
+    try {
+      const data = await request(`/api/quest/heart${bootstrapQuery()}`, { method: 'POST', body: '{}' });
+      applyQuest(data);
+      return data;
+    } catch (err) {
+      return { error: err.body?.error || err.message, remaining: err.body?.remaining };
+    }
+  }
+
+  async function finishQuest(payload) {
+    const data = await request(`/api/quest/complete${bootstrapQuery()}`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    applyQuest(data);
+    return data;
+  }
+
+  function journeyComplete() {
+    return Boolean(state.session?.winterKeeper);
+  }
+
   function journeyPoiIds() {
-    return new Set(state.hunts.flatMap((h) => h.stops.map((s) => s.poiId)));
+    return new Set(
+      state.touchpoints.filter((t) => t.poiId).map((t) => t.poiId)
+    );
   }
 
   function totals() {
-    const earned = tokenIds();
-    const allStops = state.hunts.flatMap((h) => h.stops);
+    const awakened = realmsAwakened();
     return {
-      tokens: allStops.filter((s) => earned.has(s.id)).length,
-      tokensTotal: allStops.length,
+      tokens: awakened,
+      tokensTotal: 5,
       visited: scannedIds().size,
       visitedTotal: state.pois.length,
-      rewards: state.progress.completions.length,
+      rewards: state.session?.winterKeeper ? 1 : 0,
     };
   }
 
@@ -202,7 +261,6 @@ const Store = (() => {
   async function scan(code) {
     const cleanCode = String(code).trim().toUpperCase().replace(/^.*\/S\//, '');
     if (!cleanCode) return { status: 'invalid' };
-
     try {
       const data = await request('/api/scan', {
         method: 'POST',
@@ -239,20 +297,15 @@ const Store = (() => {
       });
       if (data.guestToken) setGuestToken(data.guestToken);
       state.progress = data.progress;
-      state.online = true;
       emit();
       return {
         status: data.alreadyCompleted ? 'repeat' : 'new',
         poi: data.poi,
         awards: data.awards,
         completed: data.completed,
-        error: null,
       };
     } catch (err) {
-      return {
-        status: 'error',
-        error: err.body?.error || err.message,
-      };
+      return { status: 'error', error: err.body?.error || err.message };
     }
   }
 
@@ -263,10 +316,7 @@ const Store = (() => {
     const stillPending = [];
     for (const code of pending) {
       try {
-        const data = await request('/api/scan', {
-          method: 'POST',
-          body: JSON.stringify({ code }),
-        });
+        const data = await request('/api/scan', { method: 'POST', body: JSON.stringify({ code }) });
         state.progress = data.progress;
         if (!data.alreadyScanned) {
           results.push({ poi: data.poi, awards: data.awards, completed: data.completed });
@@ -295,6 +345,7 @@ const Store = (() => {
       localStorage.removeItem(KEY_GUEST);
     }
     setQueue([]);
+    state.session = null;
     state.progress = { scans: [], tokens: [], completions: [] };
     emit();
   }
@@ -323,8 +374,10 @@ const Store = (() => {
   return {
     state, subscribe, load, scan, completeChallenge, flushQueue, refreshProgress, resetGuest,
     scannedIds, tokenIds, huntProgress, stopsForPoi, poiBySlug, poiById, stopById,
-    touchBySlug, touchByType, touchForPoi, hasSeenThreshold, markThresholdSeen, journeyComplete,
-    journeyPoiIds, totals, toggleCategory, setJourneyMode, toggleJourneyMode, queue, pathContext,
+    touchBySlug, touchByType, touchForPoi, journeyComplete, journeyPoiIds, totals,
+    toggleCategory, setJourneyMode, toggleJourneyMode, queue, pathContext,
+    hasLiveSession, realmsAwakened, intendedStation, setIntendedStation, stationPath,
+    startSession, visitStation, completeStation, scanHeart, finishQuest,
   };
 })();
 
