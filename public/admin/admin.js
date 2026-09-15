@@ -304,7 +304,12 @@ function fillForm(poi) {
   form.y.value = Math.round(poi.y);
   form.published.checked = poi.published === 1 || poi.published === true;
   el('poiCode').textContent = poi.scan_code || '------';
-  el('qrLink').href = `/api/admin/qr/${poi.id}.svg?token=${encodeURIComponent(token)}`;
+  const qrSvg = `/api/admin/qr/${poi.id}.svg?token=${encodeURIComponent(token)}`;
+  const qrPng = `/api/admin/qr/${poi.id}.png?token=${encodeURIComponent(token)}`;
+  el('qrLink').href = qrSvg;
+  el('qrPngLink').href = qrPng;
+  el('qrPngLink').download = `${poi.scan_code || 'marker'}-qr.png`;
+  el('qrPngCopy').dataset.copyQr = qrPng;
 }
 
 el('poiForm').addEventListener('submit', async (event) => {
@@ -817,22 +822,57 @@ el('touchList')?.addEventListener('click', async (event) => {
 /* signs                                                                      */
 /* -------------------------------------------------------------------------- */
 
+function qrAuth(path) {
+  return `/api/admin${path}?token=${encodeURIComponent(token)}`;
+}
+
+async function copyQrPng(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('fetch');
+    const blob = await res.blob();
+    if (!navigator.clipboard?.write || !window.ClipboardItem) throw new Error('clipboard');
+    await navigator.clipboard.write([new ClipboardItem({ [blob.type || 'image/png']: blob })]);
+    toast('QR copied as PNG.');
+  } catch {
+    toast('Couldn’t copy that QR.', true);
+  }
+}
+
 function renderSigns() {
   const venue = locationSlug();
   const stations = (state.touchpoints || []).filter((t) => t.published);
   el('baseUrlSample').textContent = `${location.origin}/${venue}/cascade`;
-  const stationCards = stations.map((tp) => `
+  const stationCards = stations.map((tp) => {
+    const svg = qrAuth(`/station-qr/${tp.id}.svg`);
+    const png = qrAuth(`/station-qr/${tp.id}.png`);
+    return `
     <div class="signCard">
       <div class="signCard__qr">
-        <img src="/api/admin/station-qr/${escapeHtml(tp.id)}.svg?token=${encodeURIComponent(token)}" alt="QR for ${escapeHtml(tp.title)}">
+        <img src="${escapeHtml(svg)}" alt="QR for ${escapeHtml(tp.title)}">
       </div>
       <p class="signCard__name">${escapeHtml(tp.title)}</p>
       <p class="signCard__code">/${escapeHtml(venue)}/${escapeHtml(tp.slug)}</p>
-      <a class="ghostButton" href="/api/admin/station-qr/${escapeHtml(tp.id)}.svg?token=${encodeURIComponent(token)}"
-         download="${escapeHtml(tp.slug)}-qr.svg">Download SVG</a>
-    </div>`).join('');
+      <div class="signCard__actions">
+        <a class="ghostButton" href="${escapeHtml(svg)}" download="${escapeHtml(tp.slug)}-qr.svg">SVG</a>
+        <a class="ghostButton" href="${escapeHtml(png)}" download="${escapeHtml(tp.slug)}-qr.png">PNG</a>
+        <button class="ghostButton" type="button" data-copy-qr="${escapeHtml(png)}">Copy PNG</button>
+      </div>
+    </div>`;
+  }).join('');
   el('signGrid').innerHTML = stationCards || `<p class="pane__note">No published quest stations yet.</p>`;
 }
+
+el('signGrid')?.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-copy-qr]');
+  if (!button) return;
+  copyQrPng(button.dataset.copyQr);
+});
+
+el('qrPngCopy')?.addEventListener('click', () => {
+  const url = el('qrPngCopy').dataset.copyQr;
+  if (url) copyQrPng(url);
+});
 
 el('printSheet').addEventListener('click', () => {
   const q = adventureId() ? `adventure_id=${encodeURIComponent(adventureId())}&` : '';

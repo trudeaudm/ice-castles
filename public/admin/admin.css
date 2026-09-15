@@ -342,7 +342,7 @@ code { font-family: var(--mono); font-size: 0.9em; color: var(--aurora); }
 }
 .check input { width: auto; }
 
-.form__foot { display: flex; align-items: center; gap: 9px; margin-top: 5px; }
+.form__foot { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 5px; }
 
 /* ---------------------------------- panes --------------------------------- */
 
@@ -496,6 +496,7 @@ code { font-family: var(--mono); font-size: 0.9em; color: var(--aurora); }
 .signCard__qr img { width: 100%; height: 100%; display: block; }
 .signCard__name { font-size: 13px; margin: 0 0 5px; }
 .signCard__code { font-family: var(--mono); font-size: 13px; letter-spacing: 0.14em; color: var(--lantern); margin: 0 0 11px; }
+.signCard__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 
 /* ---------------------------------- stats --------------------------------- */
 

@@ -635,6 +635,15 @@ function stationUrl(req, venueCode, slug) {
   return `${originOf(req)}/${venueCode || 'nh'}/${slug}`;
 }
 
+async function qrPng(text) {
+  return QRCode.toBuffer(text, {
+    type: 'png',
+    margin: 1,
+    errorCorrectionLevel: 'M',
+    width: 1024,
+  });
+}
+
 router.get('/qr/:id.svg', async (req, res) => {
   const poi = await db.get(
     `SELECT p.*, l.slug AS location_slug
@@ -651,6 +660,20 @@ router.get('/qr/:id.svg', async (req, res) => {
     errorCorrectionLevel: 'M',
   });
   res.type('image/svg+xml').send(svg);
+});
+
+router.get('/qr/:id.png', async (req, res) => {
+  const poi = await db.get(
+    `SELECT p.*, l.slug AS location_slug
+       FROM pois p
+       LEFT JOIN adventures a ON a.id = p.adventure_id
+       LEFT JOIN locations l ON l.id = a.location_id
+      WHERE p.id = ?`,
+    [req.params.id]
+  );
+  if (!poi || !poi.scan_code) return res.status(404).send('Not found');
+  const png = await qrPng(scanUrl(req, poi.scan_code, poi.location_slug));
+  res.type('image/png').send(png);
 });
 
 router.get('/qr-sheet', async (req, res) => {
@@ -721,6 +744,20 @@ router.get('/station-qr/:id.svg', async (req, res) => {
     errorCorrectionLevel: 'M',
   });
   res.type('image/svg+xml').send(svg);
+});
+
+router.get('/station-qr/:id.png', async (req, res) => {
+  const row = await db.get(
+    `SELECT t.*, l.venue_code
+       FROM touchpoints t
+       JOIN adventures a ON a.id = t.adventure_id
+       JOIN locations l ON l.id = a.location_id
+      WHERE t.id = ?`,
+    [req.params.id]
+  );
+  if (!row) return res.status(404).send('Not found');
+  const png = await qrPng(stationUrl(req, row.venue_code, row.slug));
+  res.type('image/png').send(png);
 });
 
 router.get('/station-sheet', async (req, res) => {
