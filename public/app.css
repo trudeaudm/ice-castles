@@ -568,17 +568,40 @@ body.landing-open .station { visibility: hidden; }
 .landing__begin:active { transform: translateY(1px); }
 .landing__foot {
   display: flex;
-  justify-content: space-between;
+  gap: 10px;
   width: min(360px, 100%);
   margin-top: 14px;
 }
 .landing__link {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(186, 230, 255, 0.42);
+  background:
+    linear-gradient(180deg, rgba(180, 226, 255, 0.16), rgba(10, 32, 54, 0.55));
+  box-shadow:
+    0 0 16px rgba(110, 210, 255, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(210, 236, 255, 0.86);
+  color: #e8f6ff;
 }
+.landing__link svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  fill: none;
+  flex: none;
+}
+.landing__link:active { transform: translateY(1px); }
 .landingHowto {
   position: absolute;
   inset: 0;
