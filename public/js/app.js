@@ -30,6 +30,9 @@ const dom = {
   threshold: el('threshold'), thresholdEyebrow: el('thresholdEyebrow'),
   thresholdTitle: el('thresholdTitle'), thresholdSubtitle: el('thresholdSubtitle'),
   thresholdBody: el('thresholdBody'), thresholdStart: el('thresholdStart'),
+  mapModal: el('mapModal'), mapModalEyebrow: el('mapModalEyebrow'),
+  mapModalTitle: el('mapModalTitle'), mapModalBody: el('mapModalBody'),
+  mapModalPrimary: el('mapModalPrimary'), mapModalGhost: el('mapModalGhost'),
   finale: el('finale'), finaleCard: el('finaleCard'),
   award: el('award'), awardGlyph: el('awardGlyph'), awardTitle: el('awardTitle'),
   awardMeta: el('awardMeta'), awardKicker: el('awardKicker'), awardPips: el('awardPips'),
@@ -44,6 +47,8 @@ let selectedImages = new Set();
 let sequenceBuffer = [];
 let shrineFocus = null;
 let shrineSlug = null;
+let mapModalMode = null;
+let mapModalStation = null;
 
 const ICON_HANDSHAKE = `<svg viewBox="0 0 64 64" aria-hidden="true">
   <path d="M12 30c3-8 10-12 18-10l4 2"/>
@@ -95,7 +100,14 @@ function goStation(slug) {
   const path = Store.stationPath(slug);
   if (`${location.pathname}` !== path) history.pushState({ station: slug }, '', path);
   Store.state.path = Store.pathContext();
-  route();
+  hideMapModal();
+  openStation(slug);
+}
+
+function goVenueHome() {
+  const path = Store.stationPath(null);
+  if (`${location.pathname}` !== path) history.replaceState({ station: null }, '', path);
+  Store.state.path = Store.pathContext();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -279,8 +291,9 @@ function renderStation(slug) {
 
 async function openStation(slug, { recordVisit = true } = {}) {
   hideThreshold();
+  hideMapModal();
   closePanels();
-  closeGuide();
+  closeGuide({ force: true });
   Store.setIntendedStation(slug);
   renderStation(slug);
   if (recordVisit && Store.hasLiveSession() && slug) {
@@ -497,6 +510,106 @@ function hideThreshold() {
   setTimeout(() => { dom.threshold.hidden = true; }, 320);
 }
 
+function hideMapModal() {
+  if (!dom.mapModal) return;
+  mapModalMode = null;
+  mapModalStation = null;
+  dom.mapModal.classList.remove('is-open');
+  dom.mapModal.inert = true;
+  document.body.classList.remove('map-modal-open');
+  setTimeout(() => {
+    if (!dom.mapModal.classList.contains('is-open')) dom.mapModal.hidden = true;
+  }, 280);
+}
+
+function showMapModal({ mode, eyebrow, title, body, primary, ghost }) {
+  mapModalMode = mode;
+  dom.mapModalEyebrow.textContent = eyebrow;
+  dom.mapModalTitle.textContent = title;
+  dom.mapModalBody.textContent = body;
+  dom.mapModalPrimary.textContent = primary;
+  dom.mapModalGhost.textContent = ghost;
+  dom.mapModalGhost.hidden = !ghost;
+  dom.mapModal.hidden = false;
+  dom.mapModal.inert = false;
+  document.body.classList.add('map-modal-open');
+  dom.mapModal.classList.add('is-open');
+}
+
+function showChoiceModal() {
+  showMapModal({
+    mode: 'choice',
+    eyebrow: 'Castle Quest',
+    title: 'Where to first?',
+    body: 'Wander the whole castle, or begin the quest and pick a Guardian challenge.',
+    primary: 'Begin the quest',
+    ghost: 'Explore the map',
+  });
+}
+
+function showBeginStationModal(station) {
+  mapModalStation = station;
+  showMapModal({
+    mode: 'begin',
+    eyebrow: station.subtitle || 'Guardian',
+    title: station.title,
+    body: 'Begin this shrine when you are ready.',
+    primary: `Begin ${station.title}`,
+    ghost: 'Stay on the map',
+  });
+}
+
+function applyMapMode(on) {
+  Store.setJourneyMode(on);
+  renderMap();
+  setTimeout(() => ParkMap.fit(), 80);
+}
+
+function handleMapModalPrimary() {
+  if (mapModalMode === 'choice') {
+    hideMapModal();
+    applyMapMode(true);
+    return;
+  }
+  if (mapModalMode === 'begin' && mapModalStation) {
+    const slug = mapModalStation.slug;
+    hideMapModal();
+    goStation(slug);
+  }
+}
+
+function handleMapModalGhost() {
+  if (mapModalMode === 'choice') {
+    hideMapModal();
+    applyMapMode(false);
+    return;
+  }
+  hideMapModal();
+}
+
+function openMapHome({ showChoice = false } = {}) {
+  hideThreshold();
+  if (!showChoice) hideMapModal();
+  const welcome = Store.touchByType('threshold')[0];
+  renderStation(welcome?.slug || 'threshold');
+  openGuide();
+  setTimeout(() => ParkMap.fit(), 100);
+  if (showChoice) showChoiceModal();
+}
+
+function showGuardianQrLanding(station) {
+  hideThreshold();
+  const welcome = Store.touchByType('threshold')[0];
+  renderStation(welcome?.slug || 'threshold');
+  openGuide();
+  document.body.classList.remove('sheet-open');
+  showBeginStationModal(station);
+  setTimeout(() => {
+    ParkMap.invalidate?.();
+    if (station.poiId) ParkMap.focusOn(station.poiId, Store.state.pois, { zoom: 0.5, offsetY: 0.2 });
+  }, 120);
+}
+
 function openGuide() {
   document.body.classList.add('guide-open');
   dom.guide.hidden = false;
@@ -508,7 +621,10 @@ function openGuide() {
   setTimeout(() => ParkMap.invalidate?.(), 80);
 }
 
-function closeGuide() {
+function closeGuide({ force = false } = {}) {
+  if (!force && mapModalMode === 'choice') return;
+  if (force) hideMapModal();
+  else if (mapModalMode === 'begin') hideMapModal();
   document.body.classList.remove('guide-open');
   document.body.classList.remove('sheet-open');
   dom.guide.hidden = true;
@@ -525,7 +641,16 @@ function ensureMap() {
   }
   ParkMap.init(document.getElementById('map'), Store.state.map, {
     onSelect: (poiId) => {
-      if (!poiId) { document.body.classList.remove('sheet-open'); return; }
+      if (!poiId) {
+        document.body.classList.remove('sheet-open');
+        return;
+      }
+      const touch = Store.touchForPoi(poiId);
+      if (Store.state.journeyMode && touch?.type === 'guardian') {
+        document.body.classList.remove('sheet-open');
+        goStation(touch.slug);
+        return;
+      }
       const poi = Store.poiById(poiId);
       if (poi) openPoiSheet(poi);
     },
@@ -537,13 +662,21 @@ function ensureMap() {
 
 function renderMap() {
   if (!mapReady) return;
+  const guardians = Store.guardianPoiIds();
+  const completed = Store.completedGuardianPoiIds();
+  const glowing = new Set([...guardians].filter((id) => !completed.has(id)));
   ParkMap.render(Store.state.pois, {
     scanned: Store.scannedIds(),
-    targets: Store.journeyPoiIds(),
+    targets: Store.state.journeyMode ? guardians : Store.journeyPoiIds(),
     hidden: Store.state.hiddenCategories,
     journeyOnly: Store.state.journeyMode,
-    journeyIds: Store.journeyPoiIds(),
+    journeyIds: guardians,
+    completed: Store.state.journeyMode ? completed : new Set(),
+    glowing: Store.state.journeyMode ? glowing : new Set(),
   });
+  if (dom.journeyButton) {
+    dom.journeyButton.setAttribute('aria-pressed', Store.state.journeyMode ? 'true' : 'false');
+  }
 }
 
 function openPoiSheet(poi) {
@@ -619,6 +752,7 @@ async function handleStationChallenge(slug, answer) {
   }
   renderProgress();
   renderStation(slug);
+  renderMap();
   if (result.realmAwakened) {
     const meta = REALM_META[result.realmAwakened] || { label: result.realmAwakened, glyph: '✦' };
     enqueueAward({
@@ -660,6 +794,7 @@ async function route() {
 
   if (!live) {
     if (slug && slug !== 'threshold') Store.setIntendedStation(slug);
+    hideMapModal();
     showThreshold();
     const welcome = Store.touchByType('threshold')[0];
     renderStation(welcome?.slug || 'threshold');
@@ -667,8 +802,20 @@ async function route() {
   }
 
   hideThreshold();
-  const target = slug || Store.intendedStation() || Store.touchByType('threshold')[0]?.slug;
-  if (target) await openStation(target);
+
+  if (!slug || slug === 'threshold') {
+    Store.setIntendedStation(null);
+    openMapHome();
+    return;
+  }
+
+  const station = Store.touchBySlug(slug);
+  if (station?.type === 'guardian' && !station.complete) {
+    showGuardianQrLanding(station);
+    return;
+  }
+
+  await openStation(slug);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -678,6 +825,7 @@ async function route() {
 function wire() {
   dom.progressButton.addEventListener('click', () => openPanel('journey'));
   const toggleGuide = () => {
+    if (mapModalMode === 'choice') return;
     if (document.body.classList.contains('guide-open')) closeGuide();
     else openGuide();
   };
@@ -685,13 +833,19 @@ function wire() {
   if (dom.headerMap) dom.headerMap.addEventListener('click', toggleGuide);
 
   dom.thresholdStart.addEventListener('click', async () => {
-    const intended = Store.intendedStation();
-    await Store.startSession(intended);
+    await Store.startSession(Store.intendedStation());
+    Store.setIntendedStation(null);
+    goVenueHome();
     hideThreshold();
     renderProgress();
-    const next = intended && intended !== 'threshold' ? intended : Store.touchByType('guardian')[0]?.slug;
-    if (next) goStation(next);
-    else route();
+    openMapHome({ showChoice: true });
+  });
+
+  dom.mapModalPrimary.addEventListener('click', handleMapModalPrimary);
+  dom.mapModalGhost.addEventListener('click', handleMapModalGhost);
+  dom.mapModal.addEventListener('click', (event) => {
+    if (event.target !== dom.mapModal) return;
+    if (mapModalMode === 'begin') hideMapModal();
   });
 
   dom.sheetGrip.addEventListener('click', () => document.body.classList.remove('sheet-open'));
@@ -699,7 +853,7 @@ function wire() {
   dom.journeyButton.addEventListener('click', () => {
     const on = Store.toggleJourneyMode();
     renderMap();
-    toast(on ? 'Quest stops only' : 'Full park map');
+    toast(on ? 'Guardian stops only' : 'Full park map');
   });
   dom.filterButton.addEventListener('click', () => {
     const showing = !dom.legend.hidden;
@@ -798,6 +952,8 @@ function wire() {
     if (Scanner.isOpen()) Scanner.close();
     else if (!dom.award.hidden) dismissAward();
     else if (!dom.finale.hidden) hideFinale();
+    else if (mapModalMode === 'choice') return;
+    else if (mapModalMode === 'begin') hideMapModal();
     else if (currentPanel) closePanels();
     else if (document.body.classList.contains('guide-open')) closeGuide();
   });

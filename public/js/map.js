@@ -83,12 +83,14 @@ const ParkMap = (() => {
     map.panBy([0, -28], { animate: false });
   }
 
-  function buildIcon(poi, { visited, isTarget, label }) {
+  function buildIcon(poi, { visited, isTarget, isGlow, isDimmed, label }) {
     const el = document.createElement('div');
     el.className = 'pin';
     el.style.setProperty('--pin-color', colorFor(poi.category));
     if (visited) el.classList.add('is-visited');
     if (isTarget) el.classList.add('is-target');
+    if (isGlow) el.classList.add('is-glow');
+    if (isDimmed) el.classList.add('is-dimmed');
     el.innerHTML = `
       <span class="pin__halo"></span>
       <span class="pin__gem"></span>
@@ -103,12 +105,17 @@ const ParkMap = (() => {
    * journeyOnly + journeyIds: when journey mode is on, hide amenity/guide pins
    * that aren't part of an active trail so guests can focus the game loop.
    */
-  function render(pois, { scanned, targets, hidden, journeyOnly = false, journeyIds = null }) {
+  function render(pois, {
+    scanned, targets, hidden, journeyOnly = false, journeyIds = null,
+    completed = null, glowing = null,
+  }) {
     if (!map) return;
     markers.forEach((m) => map.removeLayer(m));
     markers = new Map();
 
     const journeySet = journeyIds instanceof Set ? journeyIds : null;
+    const completedSet = completed instanceof Set ? completed : new Set();
+    const glowingSet = glowing instanceof Set ? glowing : new Set();
 
     pois
       .filter((p) => !hidden.has(p.category))
@@ -116,12 +123,14 @@ const ParkMap = (() => {
       .forEach((poi) => {
         const visited = scanned.has(poi.id);
         const isTarget = targets.has(poi.id);
+        const isGlow = glowingSet.has(poi.id);
+        const isDimmed = completedSet.has(poi.id);
         const marker = L.marker(toLatLng(poi.x, poi.y), {
-          icon: buildIcon(poi, { visited, isTarget, label: poi.name }),
+          icon: buildIcon(poi, { visited, isTarget, isGlow, isDimmed, label: poi.name }),
           keyboard: true,
           title: poi.name,
           riseOnHover: true,
-          zIndexOffset: isTarget ? 400 : visited ? 100 : 200,
+          zIndexOffset: isGlow ? 500 : isTarget ? 400 : isDimmed ? 80 : visited ? 100 : 200,
         }).addTo(map);
 
         marker.on('click', (event) => {

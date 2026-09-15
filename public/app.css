@@ -132,6 +132,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
    don't compete with map paints on a mid-range phone. */
 body.map-moving .pin__halo,
 body.map-moving .pin.is-target::before,
+body.map-moving .pin.is-glow::before,
 body.map-moving .aurora__band { animation-play-state: paused; }
 
 @keyframes drift {
@@ -294,7 +295,30 @@ body.map-moving .aurora__band { animation-play-state: paused; }
 }
 .pin.is-target.is-visited::before { border-style: solid; animation: none; opacity: 0.5; }
 
+.pin.is-glow::before {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--lantern);
+  box-shadow: 0 0 18px rgba(255, 180, 85, 0.72);
+  animation: glowPulse 1.8s ease-in-out infinite;
+}
+.pin.is-glow .pin__halo {
+  opacity: 0.95;
+  transform: scale(1.35);
+}
+.pin.is-dimmed { opacity: 0.42; }
+.pin.is-dimmed::before {
+  animation: none;
+  opacity: 0.35;
+  border-style: solid;
+}
+.pin.is-dimmed .pin__halo { animation: none; opacity: 0.2; }
+
 @keyframes spin { to { transform: rotate(360deg); } }
+@keyframes glowPulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.18); opacity: 1; }
+}
 
 .pin.is-selected { transform: scale(1.5); z-index: 500; }
 
@@ -472,6 +496,59 @@ body.map-moving .aurora__band { animation-play-state: paused; }
   border: 2px solid var(--ice-mid);
   color: var(--ink-text);
   background: var(--snow);
+}
+
+.mapModal {
+  position: fixed;
+  inset: 0;
+  z-index: 82;
+  display: grid;
+  place-items: center;
+  padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+  background: rgba(7, 22, 38, 0.42);
+  opacity: 0;
+  pointer-events: none;
+}
+.mapModal.is-open { opacity: 1; pointer-events: auto; }
+.mapModal__card {
+  width: min(380px, 100%);
+  margin-bottom: 8vh;
+  padding: 20px 18px 16px;
+  border-radius: 18px;
+  border: 3px solid var(--ice-card);
+  background: var(--ice-pale);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  color: var(--ink-text);
+  transform: translateY(16px);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mapModal.is-open .mapModal__card { transform: translateY(0); }
+.mapModal__eyebrow {
+  margin: 0 0 6px;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ice-mid);
+}
+.mapModal__title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--ink-text);
+}
+.mapModal__body {
+  margin: 10px 0 0;
+  color: var(--ink-text);
+  line-height: 1.45;
+  font-size: 15px;
+}
+.mapModal__actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
 }
 
 .badgeCard {
@@ -1854,5 +1931,15 @@ body.quest.guide-open .toast {
     width: 460px;
     transform: translateX(-50%);
     border-inline: 1px solid var(--hairline);
+  }
+  .threshold,
+  .mapModal,
+  .finale,
+  .award,
+  .scanner {
+    left: 50%;
+    right: auto;
+    width: 460px;
+    transform: translateX(-50%);
   }
 }

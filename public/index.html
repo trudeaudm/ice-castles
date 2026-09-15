@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
-<link rel="stylesheet" href="/app.css?v=20">
+<link rel="stylesheet" href="/app.css?v=22">
 </head>
 <body class="quest">
 
@@ -51,7 +51,7 @@
     <button class="mapTool" id="recenterButton" type="button" aria-label="Fit the whole park on screen">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
     </button>
-    <button class="mapTool" id="journeyButton" type="button" aria-pressed="false" aria-label="Show trail stops only">
+    <button class="mapTool" id="journeyButton" type="button" aria-pressed="false" aria-label="Show Guardian stops only">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 5.4 5.6.6-4.2 3.9 1.2 5.7L12 15.8 6.9 18.6l1.2-5.7L4 9l5.6-.6L12 3z"/></svg>
     </button>
     <button class="mapTool" id="filterButton" type="button" aria-label="Filter what the map shows">
@@ -100,6 +100,18 @@
     <p class="threshold__body" id="thresholdBody"></p>
     <div class="threshold__actions">
       <button class="threshold__primary" id="thresholdStart" type="button">Begin Castle Quest</button>
+    </div>
+  </div>
+</section>
+
+<section class="mapModal" id="mapModal" hidden>
+  <div class="mapModal__card">
+    <p class="mapModal__eyebrow" id="mapModalEyebrow"></p>
+    <h2 class="mapModal__title" id="mapModalTitle"></h2>
+    <p class="mapModal__body" id="mapModalBody"></p>
+    <div class="mapModal__actions">
+      <button class="threshold__primary" id="mapModalPrimary" type="button"></button>
+      <button class="threshold__ghost" id="mapModalGhost" type="button"></button>
     </div>
   </div>
 </section>
@@ -158,9 +170,9 @@
 </div>
 
 <script src="/vendor/leaflet.js"></script>
-<script src="/js/api.js?v=19"></script>
-<script src="/js/map.js?v=19"></script>
+<script src="/js/api.js?v=21"></script>
+<script src="/js/map.js?v=21"></script>
 <script src="/js/scanner.js?v=19"></script>
-<script src="/js/app.js?v=19"></script>
+<script src="/js/app.js?v=22"></script>
 </body>
 </html>

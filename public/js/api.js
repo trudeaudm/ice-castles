@@ -244,6 +244,20 @@ const Store = (() => {
     );
   }
 
+  function guardianPoiIds() {
+    return new Set(
+      state.touchpoints.filter((t) => t.type === 'guardian' && t.poiId).map((t) => t.poiId)
+    );
+  }
+
+  function completedGuardianPoiIds() {
+    return new Set(
+      state.touchpoints
+        .filter((t) => t.type === 'guardian' && t.complete && t.poiId)
+        .map((t) => t.poiId)
+    );
+  }
+
   function totals() {
     const awakened = realmsAwakened();
     return {
@@ -374,7 +388,8 @@ const Store = (() => {
   return {
     state, subscribe, load, scan, completeChallenge, flushQueue, refreshProgress, resetGuest,
     scannedIds, tokenIds, huntProgress, stopsForPoi, poiBySlug, poiById, stopById,
-    touchBySlug, touchByType, touchForPoi, journeyComplete, journeyPoiIds, totals,
+    touchBySlug, touchByType, touchForPoi, journeyComplete, journeyPoiIds,
+    guardianPoiIds, completedGuardianPoiIds, totals,
     toggleCategory, setJourneyMode, toggleJourneyMode, queue, pathContext,
     hasLiveSession, realmsAwakened, intendedStation, setIntendedStation, stationPath,
     startSession, visitStation, completeStation, scanHeart, finishQuest,
