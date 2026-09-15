@@ -27,9 +27,11 @@ const dom = {
   scanFab: el('scanFab'), recenter: el('recenterButton'),
   filterButton: el('filterButton'), legend: el('legend'), legendRows: el('legendRows'),
   journeyButton: el('journeyButton'),
-  threshold: el('threshold'), thresholdEyebrow: el('thresholdEyebrow'),
-  thresholdTitle: el('thresholdTitle'), thresholdSubtitle: el('thresholdSubtitle'),
-  thresholdBody: el('thresholdBody'), thresholdStart: el('thresholdStart'),
+  threshold: el('threshold'), thresholdStart: el('thresholdStart'),
+  landingPlace: el('landingPlace'), landingProgress: el('landingProgress'),
+  landingHow: el('landingHow'), landingMap: el('landingMap'),
+  landingHowto: el('landingHowto'), landingHowtoBody: el('landingHowtoBody'),
+  landingHowtoClose: el('landingHowtoClose'),
   mapModal: el('mapModal'), mapModalEyebrow: el('mapModalEyebrow'),
   mapModalTitle: el('mapModalTitle'), mapModalBody: el('mapModalBody'),
   mapModalPrimary: el('mapModalPrimary'), mapModalGhost: el('mapModalGhost'),
@@ -494,20 +496,47 @@ function renderPassport() {
 function showThreshold() {
   const tp = Store.touchByType('threshold')[0];
   const park = Store.state.park || {};
-  dom.thresholdEyebrow.textContent = 'Winter’s Keeper';
-  dom.thresholdTitle.textContent = tp?.title || 'The Threshold';
-  dom.thresholdSubtitle.textContent = tp?.subtitle || 'Castle Quest';
-  dom.thresholdBody.textContent = tp?.body || park.welcomeBody ||
-    'Explore the castle, complete five Guardian challenges in any order, then scan The Heart.';
+  if (dom.landingPlace) {
+    dom.landingPlace.textContent = park.locationName || park.name || 'Ice Castles';
+  }
+  if (dom.landingProgress) {
+    dom.landingProgress.textContent = `${Store.realmsAwakened()} / 5 Realms Awakened`;
+  }
+  if (dom.landingHowtoBody) {
+    const story = tp?.body || park.welcomeBody ||
+      'Explore the castle, complete five Guardian challenges in any order, then scan The Heart.';
+    const discover = tp?.discoverBody ||
+      'Guardians can be done in any order. The Heart finishes the quest.';
+    dom.landingHowtoBody.textContent = `${story} ${discover}`;
+  }
+  hideLandingHowto();
+  document.body.classList.add('landing-open');
   dom.threshold.hidden = false;
   dom.threshold.inert = false;
-  requestAnimationFrame(() => dom.threshold.classList.add('is-open'));
+  dom.threshold.classList.add('is-open');
+}
+
+function hideLandingHowto() {
+  if (!dom.landingHowto) return;
+  dom.landingHowto.hidden = true;
 }
 
 function hideThreshold() {
+  hideLandingHowto();
+  document.body.classList.remove('landing-open');
   dom.threshold.classList.remove('is-open');
   dom.threshold.inert = true;
   setTimeout(() => { dom.threshold.hidden = true; }, 320);
+}
+
+async function enterFromLanding({ journeyMode }) {
+  await Store.startSession(Store.intendedStation());
+  Store.setIntendedStation(null);
+  goVenueHome();
+  hideThreshold();
+  renderProgress();
+  Store.setJourneyMode(journeyMode);
+  openMapHome();
 }
 
 function hideMapModal() {
@@ -832,14 +861,12 @@ function wire() {
   dom.guideToggle.addEventListener('click', toggleGuide);
   if (dom.headerMap) dom.headerMap.addEventListener('click', toggleGuide);
 
-  dom.thresholdStart.addEventListener('click', async () => {
-    await Store.startSession(Store.intendedStation());
-    Store.setIntendedStation(null);
-    goVenueHome();
-    hideThreshold();
-    renderProgress();
-    openMapHome({ showChoice: true });
+  dom.thresholdStart.addEventListener('click', () => enterFromLanding({ journeyMode: true }));
+  dom.landingMap?.addEventListener('click', () => enterFromLanding({ journeyMode: false }));
+  dom.landingHow?.addEventListener('click', () => {
+    if (dom.landingHowto) dom.landingHowto.hidden = false;
   });
+  dom.landingHowtoClose?.addEventListener('click', hideLandingHowto);
 
   dom.mapModalPrimary.addEventListener('click', handleMapModalPrimary);
   dom.mapModalGhost.addEventListener('click', handleMapModalGhost);

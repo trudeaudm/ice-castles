@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
-<link rel="stylesheet" href="/app.css?v=22">
+<link rel="stylesheet" href="/app.css?v=23">
 </head>
 <body class="quest">
 
@@ -92,14 +92,36 @@
   <div class="panel__scroll" id="passportBody"></div>
 </section>
 
-<section class="threshold" id="threshold" hidden>
-  <div class="threshold__card">
-    <p class="threshold__eyebrow" id="thresholdEyebrow">Winter’s Keeper</p>
-    <h2 class="threshold__title" id="thresholdTitle">The Threshold</h2>
-    <p class="threshold__subtitle" id="thresholdSubtitle"></p>
-    <p class="threshold__body" id="thresholdBody"></p>
-    <div class="threshold__actions">
-      <button class="threshold__primary" id="thresholdStart" type="button">Begin Castle Quest</button>
+<section class="threshold landing" id="threshold" hidden>
+  <p class="landing__place" id="landingPlace">North Woodstock, New Hampshire</p>
+  <div class="landing__brand">
+    <span class="landing__crest" aria-hidden="true"></span>
+    <h1 class="landing__title">Castle Quest</h1>
+    <p class="landing__kicker">Awaken the five Realms</p>
+    <ul class="landing__realms" aria-label="The five Realms">
+      <li class="landing__realm landing__realm--water"><span></span>Water</li>
+      <li class="landing__realm landing__realm--earth"><span></span>Earth</li>
+      <li class="landing__realm landing__realm--fire"><span></span>Fire</li>
+      <li class="landing__realm landing__realm--air"><span></span>Air</li>
+      <li class="landing__realm landing__realm--spirit"><span></span>Spirit</li>
+    </ul>
+    <p class="landing__progress" id="landingProgress">0 / 5 Realms Awakened</p>
+  </div>
+  <div class="landing__gate" aria-hidden="true">
+    <img src="/assets/landing-gate.svg" alt="">
+  </div>
+  <p class="landing__lead">Find the Guardians. Complete their trials. Awaken the Heart.</p>
+  <button class="landing__begin" id="thresholdStart" type="button">Begin Quest</button>
+  <div class="landing__foot">
+    <button class="landing__link" id="landingHow" type="button">How to play</button>
+    <button class="landing__link" id="landingMap" type="button">Map</button>
+  </div>
+  <div class="landingHowto" id="landingHowto" hidden>
+    <div class="landingHowto__card">
+      <p class="landingHowto__kicker">Castle Quest</p>
+      <h2 class="landingHowto__title">How to play</h2>
+      <p class="landingHowto__body" id="landingHowtoBody"></p>
+      <button class="threshold__primary" id="landingHowtoClose" type="button">Back</button>
     </div>
   </div>
 </section>
@@ -173,6 +195,6 @@
 <script src="/js/api.js?v=21"></script>
 <script src="/js/map.js?v=21"></script>
 <script src="/js/scanner.js?v=19"></script>
-<script src="/js/app.js?v=22"></script>
+<script src="/js/app.js?v=23"></script>
 </body>
 </html>

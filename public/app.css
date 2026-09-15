@@ -417,61 +417,204 @@ body.map-moving .aurora__band { animation-play-state: paused; }
   position: fixed;
   inset: 0;
   z-index: 80;
-  display: grid;
-  place-items: center;
-  padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
-  background:
-    radial-gradient(120% 80% at 50% 0%, rgba(126, 243, 255, 0.12), transparent 55%),
-    rgba(30, 58, 95, 0.72);
   opacity: 0;
   transition: opacity 0.35s ease;
   pointer-events: none;
 }
 .threshold.is-open { opacity: 1; pointer-events: auto; }
-.threshold__card {
-  width: min(420px, 100%);
-  padding: 28px 22px 22px;
-  border-radius: 20px;
+
+.landing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(var(--safe-t) + 18px) 22px calc(18px + var(--safe-b));
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgba(126, 243, 255, 0.22), transparent 52%),
+    linear-gradient(180deg, #071526 0%, #12345a 42%, #0b223d 100%);
+  color: #eef8ff;
+  overflow: hidden;
+}
+body.landing-open .topbar,
+body.landing-open .station { visibility: hidden; }
+.landing__place {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(198, 230, 255, 0.72);
+}
+.landing__brand {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  margin-top: 18px;
+  width: 100%;
+}
+.landing__crest {
+  width: 14px;
+  height: 14px;
+  margin-bottom: 8px;
+  background:
+    linear-gradient(#fff, #9adfff);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  box-shadow: 0 0 16px rgba(126, 243, 255, 0.8);
+}
+.landing__title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(34px, 11vw, 48px);
+  line-height: 0.95;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f4fbff;
+  text-shadow:
+    0 0 18px rgba(180, 236, 255, 0.55),
+    0 2px 0 rgba(20, 60, 90, 0.35);
+}
+.landing__kicker {
+  margin: 10px 0 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(210, 236, 255, 0.78);
+}
+.landing__realms {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  width: min(340px, 100%);
+  margin: 16px 0 0;
+  padding: 0;
+}
+.landing__realm {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(220, 240, 255, 0.8);
+}
+.landing__realm span {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(190, 230, 255, 0.45);
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.35), transparent 46%), rgba(8, 28, 48, 0.55);
+  box-shadow: 0 0 12px currentColor;
+  position: relative;
+}
+.landing__realm span::after {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  background: currentColor;
+}
+.landing__realm--water { color: #7ecbff; }
+.landing__realm--water span::after { clip-path: polygon(50% 12%, 78% 52%, 50% 88%, 22% 52%); }
+.landing__realm--earth { color: #8fd07a; }
+.landing__realm--earth span::after { clip-path: polygon(50% 14%, 64% 42%, 86% 48%, 50% 84%, 14% 48%, 36% 42%); }
+.landing__realm--fire { color: #ffb068; }
+.landing__realm--fire span::after { clip-path: polygon(50% 10%, 68% 46%, 58% 46%, 72% 82%, 28% 82%, 44% 46%, 32% 46%); }
+.landing__realm--air { color: #c9dce8; }
+.landing__realm--air span::after { clip-path: polygon(18% 42%, 82% 30%, 78% 42%, 22% 54%, 18% 66%, 82% 54%, 78% 66%, 18% 78%); }
+.landing__realm--spirit { color: #d7b4ff; }
+.landing__realm--spirit span::after { clip-path: polygon(50% 12%, 58% 40%, 88% 50%, 58% 60%, 50% 88%, 42% 60%, 12% 50%, 42% 40%); }
+.landing__progress {
+  margin: 12px 0 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(198, 230, 255, 0.7);
+}
+.landing__gate {
+  width: min(280px, 72vw);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 34vh;
+  margin: 6px 0 0;
+  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.35));
+}
+.landing__gate img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.landing__lead {
+  margin: 4px 0 0;
+  max-width: 280px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(220, 240, 255, 0.82);
+}
+.landing__begin {
+  width: min(360px, 100%);
+  min-height: 58px;
+  margin-top: 16px;
+  border-radius: 999px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #08304a;
+  background: linear-gradient(#f4feff, #8cefff 48%, #4fd4ea);
+  box-shadow:
+    0 0 24px rgba(110, 230, 255, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+.landing__begin:active { transform: translateY(1px); }
+.landing__foot {
+  display: flex;
+  justify-content: space-between;
+  width: min(360px, 100%);
+  margin-top: 14px;
+}
+.landing__link {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(210, 236, 255, 0.86);
+}
+.landingHowto {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(6, 18, 32, 0.72);
+}
+.landingHowto[hidden] { display: none; }
+.landingHowto__card {
+  width: min(380px, 100%);
+  padding: 22px 18px 16px;
+  border-radius: 18px;
   border: 3px solid var(--ice-card);
   background: var(--ice-pale);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
   color: var(--ink-text);
-  transform: translateY(18px);
-  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.threshold.is-open .threshold__card { transform: translateY(0); }
-.threshold__eyebrow {
-  margin: 0 0 8px;
-  font-family: var(--body);
-  font-weight: 700;
+.landingHowto__kicker {
+  margin: 0 0 6px;
   font-size: 11px;
+  font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ice-mid);
 }
-.threshold__title {
+.landingHowto__title {
   margin: 0;
   font-family: var(--display);
-  font-size: 34px;
-  line-height: 1.05;
-  letter-spacing: 0.02em;
+  font-size: 28px;
   color: var(--ink-text);
 }
-.threshold__subtitle {
-  margin: 10px 0 0;
-  color: var(--ice-mid);
-  font-weight: 700;
-}
-.threshold__body {
-  margin: 14px 0 0;
-  color: var(--ink-text);
+.landingHowto__body {
+  margin: 12px 0 18px;
   line-height: 1.5;
   font-size: 15px;
-}
-.threshold__actions {
-  display: grid;
-  gap: 10px;
-  margin-top: 22px;
 }
 .threshold__primary,
 .threshold__ghost {
