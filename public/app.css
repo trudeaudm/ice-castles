@@ -50,7 +50,7 @@
   --cat-ride: var(--aurora);
   --cat-amenity: #7fa8c9;
 
-  --display: 'Cinzel', 'Times New Roman', Times, serif;
+  --display: 'Fredoka', 'Nunito', ui-rounded, ui-sans-serif, system-ui, sans-serif;
   --body: 'Nunito', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
 
@@ -450,15 +450,15 @@ body.map-moving .aurora__band { animation-play-state: paused; }
   flex-direction: column;
   align-items: center;
   padding: calc(var(--safe-t) + 18px) 22px calc(18px + var(--safe-b));
-  background:
-    radial-gradient(120% 60% at 50% -10%, rgba(126, 243, 255, 0.22), transparent 52%),
-    linear-gradient(180deg, #071526 0%, #12345a 42%, #0b223d 100%);
+  background: #071526;
   color: #eef8ff;
   overflow: hidden;
 }
 body.landing-open .topbar,
 body.landing-open .station { visibility: hidden; }
 .landing__place {
+  position: relative;
+  z-index: 1;
   margin: 0;
   font-size: 10px;
   font-weight: 700;
@@ -467,6 +467,8 @@ body.landing-open .station { visibility: hidden; }
   color: rgba(198, 230, 255, 0.72);
 }
 .landing__brand {
+  position: relative;
+  z-index: 1;
   display: grid;
   justify-items: center;
   text-align: center;
@@ -483,10 +485,10 @@ body.landing-open .station { visibility: hidden; }
 .landing__title {
   margin: 0;
   font-family: var(--display);
-  font-weight: 700;
-  font-size: clamp(34px, 11vw, 48px);
+  font-weight: 650;
+  font-size: clamp(36px, 12vw, 50px);
   line-height: 0.95;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: #f4fbff;
   text-shadow:
@@ -539,66 +541,90 @@ body.landing-open .station { visibility: hidden; }
   color: rgba(198, 230, 255, 0.7);
 }
 .landing__gate {
-  width: min(320px, 78vw);
-  flex: 1 1 auto;
-  min-height: 0;
-  max-height: 36vh;
-  margin: 6px 0 0;
-  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.35));
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  margin: 0;
+  pointer-events: none;
 }
-.landing__gate img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.landing__gate img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 42%;
+  display: block;
+}
+.landing__gate::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(7, 21, 38, 0.78) 0%, rgba(7, 21, 38, 0.28) 36%, rgba(7, 21, 38, 0.18) 55%, rgba(7, 21, 38, 0.82) 100%);
+}
 .landing__lead {
-  margin: 4px 0 0;
+  position: relative;
+  z-index: 1;
+  margin: auto 0 0;
   max-width: 280px;
   text-align: center;
   font-size: 13px;
   line-height: 1.45;
-  color: rgba(220, 240, 255, 0.82);
+  color: rgba(220, 240, 255, 0.92);
+  text-shadow: 0 1px 8px rgba(7, 21, 38, 0.7);
 }
 .landing__begin {
-  width: min(360px, 100%);
-  min-height: 92px;
+  position: relative;
+  z-index: 1;
+  width: min(380px, 100%);
+  min-height: 118px;
   margin-top: 8px;
-  padding: 28px 18px 10px;
+  padding: 36px 48px 16px;
   border-radius: 0;
   font-family: var(--display);
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: 0.16em;
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #f4fbff;
-  text-shadow: 0 1px 2px rgba(8, 32, 56, 0.55);
-  background: url("/assets/art/btn-begin-quest.png") center / contain no-repeat;
+  color: #fff;
+  text-shadow:
+    0 1px 2px rgba(8, 32, 56, 0.75),
+    0 0 10px rgba(8, 32, 56, 0.45);
+  background: url("/assets/art/btn-begin-quest.png") center / 100% 100% no-repeat;
   box-shadow: none;
 }
 .landing__begin:active { transform: translateY(1px); }
 .landing__foot {
+  position: relative;
+  z-index: 1;
   display: flex;
   gap: 10px;
-  width: min(360px, 100%);
-  margin-top: 14px;
+  width: min(380px, 100%);
+  margin-top: 12px;
 }
 .landing__link {
   flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 56px;
-  padding: 0 10px;
+  gap: 6px;
+  min-height: 68px;
+  padding: 0 28px;
   border-radius: 999px;
   border: 0;
   background: url("/assets/art/btn-pill-a.png") center / 100% 100% no-repeat;
   box-shadow: none;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: #e8f6ff;
+  color: #fff;
+  text-shadow:
+    0 1px 2px rgba(8, 32, 56, 0.7),
+    0 0 8px rgba(8, 32, 56, 0.4);
 }
 .landing__link img {
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   object-fit: contain;
   flex: none;
 }
@@ -1647,11 +1673,8 @@ body.sheet-open .sheet { transform: none; }
 
 /* ==========================================================================
    Storybook retheme
-   The wordmark on icecastles.com is an italic display face and the press
-   quotes all reach for "fairytale" and "Narnia", so the app follows that
-   voice: Cinzel for anything with a name, rounded sans for anything
-   you read at speed. Parchment-warm hairlines soften the cold palette
-   without abandoning it.
+   Painted ice-crystal art wants a round, playful display face — Fredoka
+   for names and buttons, Nunito for anything you read at speed.
    ========================================================================== */
 
 .topbar__name, .poi__name, .panel__title, .hunt__tagline,
