@@ -526,8 +526,9 @@ body.landing-open .station { visibility: hidden; }
 .landing__realm img {
   width: 80px;
   height: 80px;
-  object-fit: contain;
-  filter: drop-shadow(0 0 10px currentColor);
+  border-radius: 50%;
+  object-fit: cover;
+  filter: drop-shadow(0 4px 10px rgba(4, 16, 31, 0.4));
 }
 .landing__realm--water { color: #7ecbff; }
 .landing__realm--earth { color: #8fd07a; }
@@ -1114,7 +1115,7 @@ body.sheet-open .sheet { transform: none; }
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-.remainList img { width: 44px; height: 44px; object-fit: contain; }
+.remainList img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
 
 .stop__name { font-size: 14px; margin: 0 0 2px; color: var(--frost-100); }
 .stop.is-found .stop__name { color: #ffd6a3; }
@@ -1726,13 +1727,14 @@ body.quest .topbar {
   padding: 8px 0 0;
 }
 .realmPip {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
   opacity: 0.42;
-  filter: grayscale(0.35);
+  filter: grayscale(0.25);
 }
-.realmPip.is-on { opacity: 1; filter: drop-shadow(0 0 8px rgba(126, 243, 255, 0.7)); }
+.realmPip.is-on { opacity: 1; filter: none; }
 
 .station {
   position: relative;

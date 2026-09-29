@@ -2,11 +2,11 @@
 
 const ART = '/assets/art';
 const REALM_META = {
-  water: { label: 'Water', glyph: '💧', shrine: `${ART}/shrine-water.png`, portrait: `${ART}/guardian-cascade.png` },
-  earth: { label: 'Earth', glyph: '🪨', shrine: `${ART}/shrine-earth.png`, portrait: `${ART}/guardian-granite.png` },
-  fire: { label: 'Fire', glyph: '🔥', shrine: `${ART}/shrine-fire.png`, portrait: `${ART}/guardian-ember.png` },
-  air: { label: 'Air', glyph: '🌬️', shrine: `${ART}/shrine-air.png`, portrait: `${ART}/guardian-summit.png` },
-  spirit: { label: 'Spirit', glyph: '✦', shrine: `${ART}/shrine-spirit.png`, portrait: `${ART}/guardian-aurora.png` },
+  water: { label: 'Water', glyph: '💧', shrine: `${ART}/shrine-water.png`, portrait: `${ART}/guardian-cascade.png`, pfp: `${ART}/pfp-cascade.png` },
+  earth: { label: 'Earth', glyph: '🪨', shrine: `${ART}/shrine-earth.png`, portrait: `${ART}/guardian-granite.png`, pfp: `${ART}/pfp-granite.png` },
+  fire: { label: 'Fire', glyph: '🔥', shrine: `${ART}/shrine-fire.png`, portrait: `${ART}/guardian-ember.png`, pfp: `${ART}/pfp-ember.png` },
+  air: { label: 'Air', glyph: '🌬️', shrine: `${ART}/shrine-air.png`, portrait: `${ART}/guardian-summit.png`, pfp: `${ART}/pfp-summit.png` },
+  spirit: { label: 'Spirit', glyph: '✦', shrine: `${ART}/shrine-spirit.png`, portrait: `${ART}/guardian-aurora.png`, pfp: `${ART}/pfp-aurora.png` },
 };
 const REALM_ORDER = ['water', 'earth', 'fire', 'air', 'spirit'];
 const TILE_ART = {
@@ -26,6 +26,9 @@ const LANTERN_ART = {
 
 function realmIcon(realm, on = true) {
   return `${ART}/realm-${realm}-${on ? 'on' : 'off'}.png`;
+}
+function realmPfp(realm) {
+  return REALM_META[realm]?.pfp || realmIcon(realm, true);
 }
 function realmPad(realm) {
   return `${ART}/pad-${realm}.png`;
@@ -142,7 +145,7 @@ function renderProgress() {
   const realms = Store.state.session?.realms || [];
   dom.realmPips.innerHTML = REALM_ORDER.map((realm) => {
     const on = realms.some((r) => r.realm === realm && r.complete);
-    return `<img class="realmPip ${on ? 'is-on' : ''}" src="${realmIcon(realm, on)}" alt="${REALM_META[realm].label}">`;
+    return `<img class="realmPip ${on ? 'is-on' : ''}" src="${realmPfp(realm)}" alt="${REALM_META[realm].label}">`;
   }).join('');
 }
 
@@ -350,7 +353,7 @@ function renderHeartSlot(heartResult) {
   if (remaining.length) {
     const names = remaining.map((r) => REALM_META[r]?.label || r);
     const icons = remaining.map((r) =>
-      `<li><img src="${realmIcon(r, false)}" alt=""><span>${escapeHtml(REALM_META[r]?.label || r)}</span></li>`
+      `<li><img src="${realmPfp(r)}" alt=""><span>${escapeHtml(REALM_META[r]?.label || r)}</span></li>`
     ).join('');
     slot.innerHTML = `<div class="challenge">
       <p class="challenge__prompt">The Heart is still sleeping. ${names.length === 1 ? 'This Realm' : 'These Realms'} remain:</p>
@@ -466,7 +469,7 @@ function renderJourney() {
       <button class="stop ${tp.complete || (tp.type === 'heart' && session?.winterKeeper) ? 'is-found' : 'is-secret'}" data-go-station="${escapeHtml(tp.slug)}" type="button">
         <span class="stop__token">${
           tp.element
-            ? `<img src="${realmIcon(tp.element, Boolean(tp.complete))}" alt="">`
+            ? `<img src="${realmPfp(tp.element)}" alt="">`
             : (tp.type === 'heart' ? `<img src="${ART}/seal-winter-keeper.png" alt="">` : tp.type === 'monument' ? `<img src="${ART}/pin-park.png" alt="">` : '◇')
         }</span>
         <span>
