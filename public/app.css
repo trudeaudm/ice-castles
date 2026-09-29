@@ -200,12 +200,21 @@ body.map-moving .aurora__band { animation-play-state: paused; }
   filter: drop-shadow(0 0 6px rgba(126, 243, 255, 0.7));
 }
 
+.progressRing__gem {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  opacity: 0.9;
+  pointer-events: none;
+}
 .progressRing__label {
   position: absolute;
   font-family: var(--mono);
   font-weight: 700;
   font-size: 13px;
   color: var(--frost-100);
+  text-shadow: 0 0 8px #04101f, 0 1px 2px #04101f;
 }
 
 /* ----------------------------------- map ---------------------------------- */
@@ -240,6 +249,15 @@ body.map-moving .aurora__band { animation-play-state: paused; }
   border: 1.6px solid var(--pin-color);
   box-shadow: 0 0 12px -1px var(--pin-color);
 }
+.pin__art {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+}
+.pin.is-realm { width: 44px; height: 44px; }
+.pin.is-realm .pin__art { width: 40px; height: 40px; }
 
 /* Inner sliver reads as a light catch on a carved facet. */
 .pin__gem::after {
@@ -277,12 +295,14 @@ body.map-moving .aurora__band { animation-play-state: paused; }
   transition: opacity 260ms, transform 320ms var(--ease-spring);
 }
 .pin__tick svg { width: 11px; height: 11px; stroke-width: 3.4; }
+.pin__tick img { width: 18px; height: 18px; object-fit: contain; }
 
 /* visited: solid fill, tick shown, halo retired */
 .pin.is-visited .pin__gem { background: var(--pin-color); }
 .pin.is-visited .pin__gem::after { opacity: 0; }
 .pin.is-visited .pin__halo { animation: none; opacity: 0; }
 .pin.is-visited .pin__tick { opacity: 1; transform: scale(1); }
+.pin.is-visited .pin__art { filter: drop-shadow(0 0 6px var(--pin-color)); }
 
 /* a hunt target wears a warm ring until it's found */
 .pin.is-target::before {
@@ -351,14 +371,16 @@ body.map-moving .aurora__band { animation-play-state: paused; }
 }
 
 .mapTool {
-  width: 42px; height: 42px;
+  width: 46px; height: 46px;
   display: grid; place-items: center;
-  border-radius: 12px;
-  background: var(--ink-700);
-  border: 2px solid var(--ice-card);
+  border-radius: 50%;
+  background: transparent;
+  border: 0;
   color: var(--snow);
+  padding: 0;
 }
 .mapTool svg { width: 19px; height: 19px; }
+.mapTool img { width: 36px; height: 36px; object-fit: contain; display: block; }
 .mapTool:active { transform: scale(0.92); }
 .mapTool.is-on { color: var(--aurora); border-color: rgba(93, 240, 207, 0.45); }
 
@@ -452,13 +474,11 @@ body.landing-open .station { visibility: hidden; }
   width: 100%;
 }
 .landing__crest {
-  width: 14px;
-  height: 14px;
-  margin-bottom: 8px;
-  background:
-    linear-gradient(#fff, #9adfff);
-  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
-  box-shadow: 0 0 16px rgba(126, 243, 255, 0.8);
+  width: 42px;
+  height: 42px;
+  margin-bottom: 4px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 12px rgba(126, 243, 255, 0.55));
 }
 .landing__title {
   margin: 0;
@@ -499,31 +519,17 @@ body.landing-open .station { visibility: hidden; }
   text-transform: uppercase;
   color: rgba(220, 240, 255, 0.8);
 }
-.landing__realm span {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(190, 230, 255, 0.45);
-  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.35), transparent 46%), rgba(8, 28, 48, 0.55);
-  box-shadow: 0 0 12px currentColor;
-  position: relative;
-}
-.landing__realm span::after {
-  content: '';
-  position: absolute;
-  inset: 10px;
-  background: currentColor;
+.landing__realm img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px currentColor);
 }
 .landing__realm--water { color: #7ecbff; }
-.landing__realm--water span::after { clip-path: polygon(50% 12%, 78% 52%, 50% 88%, 22% 52%); }
 .landing__realm--earth { color: #8fd07a; }
-.landing__realm--earth span::after { clip-path: polygon(50% 14%, 64% 42%, 86% 48%, 50% 84%, 14% 48%, 36% 42%); }
 .landing__realm--fire { color: #ffb068; }
-.landing__realm--fire span::after { clip-path: polygon(50% 10%, 68% 46%, 58% 46%, 72% 82%, 28% 82%, 44% 46%, 32% 46%); }
 .landing__realm--air { color: #c9dce8; }
-.landing__realm--air span::after { clip-path: polygon(18% 42%, 82% 30%, 78% 42%, 22% 54%, 18% 66%, 82% 54%, 78% 66%, 18% 78%); }
 .landing__realm--spirit { color: #d7b4ff; }
-.landing__realm--spirit span::after { clip-path: polygon(50% 12%, 58% 40%, 88% 50%, 58% 60%, 50% 88%, 42% 60%, 12% 50%, 42% 40%); }
 .landing__progress {
   margin: 12px 0 0;
   font-size: 11px;
@@ -533,10 +539,10 @@ body.landing-open .station { visibility: hidden; }
   color: rgba(198, 230, 255, 0.7);
 }
 .landing__gate {
-  width: min(280px, 72vw);
+  width: min(320px, 78vw);
   flex: 1 1 auto;
   min-height: 0;
-  max-height: 34vh;
+  max-height: 36vh;
   margin: 6px 0 0;
   filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.35));
 }
@@ -551,19 +557,19 @@ body.landing-open .station { visibility: hidden; }
 }
 .landing__begin {
   width: min(360px, 100%);
-  min-height: 58px;
-  margin-top: 16px;
-  border-radius: 999px;
+  min-height: 92px;
+  margin-top: 8px;
+  padding: 28px 18px 10px;
+  border-radius: 0;
   font-family: var(--display);
   font-weight: 700;
   font-size: 18px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #08304a;
-  background: linear-gradient(#f4feff, #8cefff 48%, #4fd4ea);
-  box-shadow:
-    0 0 24px rgba(110, 230, 255, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  color: #f4fbff;
+  text-shadow: 0 1px 2px rgba(8, 32, 56, 0.55);
+  background: url("/assets/art/btn-begin-quest.png") center / contain no-repeat;
+  box-shadow: none;
 }
 .landing__begin:active { transform: translateY(1px); }
 .landing__foot {
@@ -578,20 +584,23 @@ body.landing-open .station { visibility: hidden; }
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 48px;
-  padding: 0 12px;
+  min-height: 56px;
+  padding: 0 10px;
   border-radius: 999px;
-  border: 1.5px solid rgba(186, 230, 255, 0.42);
-  background:
-    linear-gradient(180deg, rgba(180, 226, 255, 0.16), rgba(10, 32, 54, 0.55));
-  box-shadow:
-    0 0 16px rgba(110, 210, 255, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  border: 0;
+  background: url("/assets/art/btn-pill-a.png") center / 100% 100% no-repeat;
+  box-shadow: none;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #e8f6ff;
+}
+.landing__link img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex: none;
 }
 .landing__link svg {
   width: 16px;
@@ -601,6 +610,7 @@ body.landing-open .station { visibility: hidden; }
   fill: none;
   flex: none;
 }
+.landing__link + .landing__link { background-image: url("/assets/art/btn-pill-b.png"); }
 .landing__link:active { transform: translateY(1px); }
 .landingHowto {
   position: absolute;
@@ -1058,6 +1068,25 @@ body.sheet-open .sheet { transform: none; }
 .stop.is-found { border-color: rgba(255, 180, 85, 0.35); background: rgba(255, 180, 85, 0.07); }
 
 .stop__token { flex: none; margin-top: 1px; }
+.stop__token img { width: 28px; height: 28px; object-fit: contain; display: block; }
+.remainList {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0 16px;
+  padding: 0;
+}
+.remainList li {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.remainList img { width: 44px; height: 44px; object-fit: contain; }
 
 .stop__name { font-size: 14px; margin: 0 0 2px; color: var(--frost-100); }
 .stop.is-found .stop__name { color: #ffd6a3; }
@@ -1401,6 +1430,7 @@ body.sheet-open .sheet { transform: none; }
 }
 .award__facetInner { fill: none; stroke: rgba(255, 214, 163, 0.6); stroke-width: 1.4; }
 .award__glyph { position: relative; font-size: 46px; line-height: 1; }
+.award__glyph img { width: 72px; height: 72px; object-fit: contain; display: block; }
 
 .award.is-open .award__medallion { animation: ignite 1100ms var(--ease-spring) forwards !important; animation-play-state: running !important; }
 @keyframes ignite {
@@ -1507,14 +1537,12 @@ body.sheet-open .sheet { transform: none; }
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: linear-gradient(160deg, #b8fbff, var(--aurora) 40%, var(--aurora-dim));
+  background: transparent;
   color: #032a24;
-  box-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.55),
-    0 8px 26px rgba(126, 243, 255, 0.45),
-    0 0 0 5px var(--ink-900);
+  box-shadow: none;
 }
 .scanFab svg { width: 27px; height: 27px; stroke-width: 2; position: relative; }
+.scanFab img { width: 60px; height: 60px; object-fit: contain; position: relative; }
 .scanFab:active { transform: scale(0.93); }
 
 .scanFab__pulse {
@@ -1672,13 +1700,14 @@ body.quest .topbar {
   gap: 10px;
   padding: 8px 0 0;
 }
-.realmPip { opacity: 0.28; font-size: 15px; line-height: 1; }
-.realmPip--water { color: var(--water); }
-.realmPip--earth { color: var(--earth); }
-.realmPip--fire { color: var(--fire); }
-.realmPip--air { color: var(--air); }
-.realmPip--spirit { color: var(--spirit); }
-.realmPip.is-on { opacity: 1; filter: drop-shadow(0 0 8px currentColor); }
+.realmPip {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  opacity: 0.42;
+  filter: grayscale(0.35);
+}
+.realmPip.is-on { opacity: 1; filter: drop-shadow(0 0 8px rgba(126, 243, 255, 0.7)); }
 
 .station {
   position: relative;
@@ -1721,11 +1750,21 @@ body.quest .topbar {
 }
 .shrine__art {
   width: 100%;
+  max-height: 220px;
+  object-fit: contain;
   border-radius: 22px;
-  margin: 16px 0;
+  margin: 12px 0 0;
   display: block;
+  background: radial-gradient(circle at 50% 40%, rgba(20, 48, 80, 0.4), transparent 70%);
 }
 .shrine__art--small { max-height: 120px; object-fit: cover; margin: 10px 0 0; }
+.shrine__portrait {
+  display: block;
+  width: min(180px, 56%);
+  margin: 0 auto 14px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 18px rgba(4, 16, 31, 0.35));
+}
 .shrine__block { margin-top: 22px; }
 .shrine__block h3,
 .shrinePanel h3 {
@@ -1763,11 +1802,15 @@ body.quest .topbar {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background:
-    radial-gradient(circle at 32% 26%, rgba(255,255,255,0.28), transparent 40%),
-    linear-gradient(165deg, #4a7bb5, #1e3a5f);
-  border: 3px solid var(--ice-card);
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.shrineIcon__gem img {
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
 }
 .shrineIcon__gem svg {
   width: 40px;
@@ -1804,11 +1847,7 @@ body.quest .topbar {
   z-index: 2;
 }
 .shrineGate.is-focus .shrineIcon.is-on .shrineIcon__gem {
-  border-color: var(--realm);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    0 0 26px color-mix(in srgb, var(--realm) 45%, transparent),
-    0 12px 28px rgba(0, 0, 0, 0.4);
+  filter: drop-shadow(0 0 16px color-mix(in srgb, var(--realm) 55%, transparent));
 }
 .shrineGate.is-focus .shrineIcon.is-on .shrineIcon__label { color: var(--realm); }
 .shrineGate.is-spinning .shrineIcon.is-on .shrineIcon__orbit {
@@ -1861,37 +1900,43 @@ body.quest .topbar {
 }
 .mapChip {
   min-height: 36px;
-  padding: 0 14px;
-  border-radius: 12px;
+  width: 108px;
+  padding: 0;
+  border-radius: 0;
   border: 0;
-  border-bottom: 3px solid var(--candy-lip);
   color: var(--ink-text);
-  background: linear-gradient(#b8fbff, var(--aurora) 55%, var(--aurora-dim));
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  background: transparent;
 }
-.mapChip:active { transform: translateY(2px); border-bottom-width: 1px; }
+.mapChip img { width: 100%; height: 36px; object-fit: contain; display: block; }
+.mapChip:active { transform: translateY(2px); }
 .guideFab {
   display: none;
   position: absolute;
   right: 14px;
   bottom: calc(16px + var(--safe-b));
   z-index: 55;
-  min-width: 72px;
-  min-height: 52px;
-  padding: 0 18px;
-  border-radius: 14px;
-  background: linear-gradient(#b8fbff, var(--aurora) 55%, var(--aurora-dim));
+  min-width: 112px;
+  min-height: 48px;
+  padding: 0 10px;
+  border-radius: 0;
+  background: transparent;
   border: 0;
-  border-bottom: 4px solid var(--candy-lip);
-  color: var(--ink-text);
+  color: #e8f6ff;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-size: 13px;
+  font-size: 12px;
+  gap: 0;
 }
+.guideFab img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.guideFab span { position: relative; }
 body.guide-open .guideFab { display: inline-flex; align-items: center; justify-content: center; }
 body.panel-open .guideFab,
 body.award-open .guideFab { display: none; }
@@ -1968,6 +2013,21 @@ body.award-open .guideFab { display: none; }
   font-size: 14px;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 6px 16px rgba(0,0,0,0.22);
 }
+.pickTile--art, .seqBtn--art {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 8px 6px 10px;
+  background: rgba(6, 20, 40, 0.35);
+  border-color: rgba(186, 230, 255, 0.2);
+}
+.pickTile--art img, .seqBtn--art img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+.seqBtn--art img { width: 56px; height: 56px; }
+.pickTile--art span, .seqBtn--art span { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
 .pickTile.is-on, .seqBtn:active {
   outline: 2px solid var(--play);
   color: #f4fbff;
@@ -2042,13 +2102,26 @@ body.award-open .guideFab { display: none; }
 
 .seal {
   text-align: center;
-  padding: 36px 20px 24px;
+  padding: 20px 16px 24px;
   border-radius: 28px;
-  border: 1px solid rgba(244, 193, 74, 0.45);
+  border: 1px solid rgba(126, 210, 255, 0.35);
   background:
-    radial-gradient(circle at 50% 20%, rgba(244,193,74,0.3), transparent 50%),
-    var(--glass-fill);
+    radial-gradient(circle at 50% 18%, rgba(126, 226, 255, 0.22), transparent 52%),
+    var(--ice-pale);
   box-shadow: var(--glass-edge);
+}
+.seal__art {
+  width: 128px;
+  height: 128px;
+  object-fit: contain;
+  margin: 0 auto 8px;
+  display: block;
+  filter: drop-shadow(0 0 18px rgba(126, 226, 255, 0.45));
+}
+.seal__wordmark {
+  width: min(280px, 92%);
+  margin: 0 auto 10px;
+  display: block;
 }
 .seal__ring {
   width: 88px; height: 88px; margin: 0 auto 16px;

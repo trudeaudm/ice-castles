@@ -83,7 +83,7 @@ const ParkMap = (() => {
     map.panBy([0, -28], { animate: false });
   }
 
-  function buildIcon(poi, { visited, isTarget, isGlow, isDimmed, label }) {
+  function buildIcon(poi, { visited, isTarget, isGlow, isDimmed, label, realm }) {
     const el = document.createElement('div');
     el.className = 'pin';
     el.style.setProperty('--pin-color', colorFor(poi.category));
@@ -91,13 +91,18 @@ const ParkMap = (() => {
     if (isTarget) el.classList.add('is-target');
     if (isGlow) el.classList.add('is-glow');
     if (isDimmed) el.classList.add('is-dimmed');
+    if (realm) el.classList.add('is-realm');
+    const art = realm
+      ? `/assets/art/realm-${realm}-${isDimmed ? 'off' : 'on'}.png`
+      : '/assets/art/pin-park.png';
     el.innerHTML = `
       <span class="pin__halo"></span>
-      <span class="pin__gem"></span>
-      <span class="pin__tick"><svg viewBox="0 0 24 24"><path d="M5 13l4.5 4.5L19 7"/></svg></span>
+      <img class="pin__art" src="${art}" alt="">
+      <span class="pin__tick"><img src="/assets/art/icon-check.png" alt=""></span>
       <span class="pin__label"></span>`;
     el.querySelector('.pin__label').textContent = label;
-    return L.divIcon({ html: el.outerHTML, className: '', iconSize: [34, 34], iconAnchor: [17, 17] });
+    const size = realm ? 44 : 36;
+    return L.divIcon({ html: el.outerHTML, className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
   }
 
   /**
@@ -107,7 +112,7 @@ const ParkMap = (() => {
    */
   function render(pois, {
     scanned, targets, hidden, journeyOnly = false, journeyIds = null,
-    completed = null, glowing = null,
+    completed = null, glowing = null, realmByPoi = null,
   }) {
     if (!map) return;
     markers.forEach((m) => map.removeLayer(m));
@@ -116,6 +121,7 @@ const ParkMap = (() => {
     const journeySet = journeyIds instanceof Set ? journeyIds : null;
     const completedSet = completed instanceof Set ? completed : new Set();
     const glowingSet = glowing instanceof Set ? glowing : new Set();
+    const realms = realmByPoi || {};
 
     pois
       .filter((p) => !hidden.has(p.category))
@@ -126,7 +132,7 @@ const ParkMap = (() => {
         const isGlow = glowingSet.has(poi.id);
         const isDimmed = completedSet.has(poi.id);
         const marker = L.marker(toLatLng(poi.x, poi.y), {
-          icon: buildIcon(poi, { visited, isTarget, isGlow, isDimmed, label: poi.name }),
+          icon: buildIcon(poi, { visited, isTarget, isGlow, isDimmed, label: poi.name, realm: realms[poi.id] }),
           keyboard: true,
           title: poi.name,
           riseOnHover: true,

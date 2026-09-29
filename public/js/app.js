@@ -1,12 +1,42 @@
 /* global window, document, Store, ParkMap, Scanner */
 
+const ART = '/assets/art';
 const REALM_META = {
-  water: { label: 'Water', glyph: '💧' },
-  earth: { label: 'Earth', glyph: '🪨' },
-  fire: { label: 'Fire', glyph: '🔥' },
-  air: { label: 'Air', glyph: '🌬️' },
-  spirit: { label: 'Spirit', glyph: '✦' },
+  water: { label: 'Water', glyph: '💧', shrine: `${ART}/shrine-water.png`, portrait: `${ART}/guardian-cascade.png` },
+  earth: { label: 'Earth', glyph: '🪨', shrine: `${ART}/shrine-earth.png`, portrait: `${ART}/guardian-granite.png` },
+  fire: { label: 'Fire', glyph: '🔥', shrine: `${ART}/shrine-fire.png`, portrait: `${ART}/guardian-ember.png` },
+  air: { label: 'Air', glyph: '🌬️', shrine: `${ART}/shrine-air.png`, portrait: `${ART}/guardian-summit.png` },
+  spirit: { label: 'Spirit', glyph: '✦', shrine: `${ART}/shrine-spirit.png`, portrait: `${ART}/guardian-aurora.png` },
 };
+const REALM_ORDER = ['water', 'earth', 'fire', 'air', 'spirit'];
+const TILE_ART = {
+  'ice-vein': `${ART}/cascade-ice-vein.png`,
+  'lantern-glow': `${ART}/cascade-lantern-glow.png`,
+  'ice-arch': `${ART}/cascade-ice-arch.png`,
+  'silk-wing': `${ART}/cascade-silk-wing.png`,
+  'ice-ripple': `${ART}/cascade-ice-ripple.png`,
+  'rune-cut': `${ART}/cascade-rune-cut.png`,
+};
+const LANTERN_ART = {
+  ice: `${ART}/lantern-ice.png`,
+  amber: `${ART}/lantern-amber.png`,
+  rose: `${ART}/lantern-rose.png`,
+  violet: `${ART}/lantern-violet.png`,
+};
+
+function realmIcon(realm, on = true) {
+  return `${ART}/realm-${realm}-${on ? 'on' : 'off'}.png`;
+}
+function realmPad(realm) {
+  return `${ART}/pad-${realm}.png`;
+}
+function stationArt(station) {
+  if (station.imageUrl) return station.imageUrl;
+  const meta = REALM_META[station.element];
+  if (meta?.shrine) return meta.shrine;
+  if (station.type === 'heart' || station.type === 'monument') return `${ART}/landing-gate.webp`;
+  return '';
+}
 
 const el = (id) => document.getElementById(id);
 const escapeHtml = (value) =>
@@ -52,24 +82,9 @@ let shrineSlug = null;
 let mapModalMode = null;
 let mapModalStation = null;
 
-const ICON_HANDSHAKE = `<svg viewBox="0 0 64 64" aria-hidden="true">
-  <path d="M12 30c3-8 10-12 18-10l4 2"/>
-  <path d="M52 30c-3-8-10-12-18-10l-4 2"/>
-  <path d="M16 32c4 1 7 6 8 10 2-5 6-8 11-8s9 3 11 8c1-4 4-9 8-10"/>
-  <path d="M22 42c3 6 8 9 10 9s7-3 10-9"/>
-  <path d="M20 28l6 3M44 28l-6 3"/>
-</svg>`;
-const ICON_COMPASS = `<svg viewBox="0 0 64 64" aria-hidden="true">
-  <circle cx="32" cy="32" r="20"/>
-  <circle cx="32" cy="32" r="3"/>
-  <path d="M32 12v6M32 46v6M12 32h6M46 32h6"/>
-  <path d="M32 18l7 18-7-3-7 3z"/>
-  <path d="M32 46l-4-12 4 2 4-2z"/>
-</svg>`;
-const ICON_PLAY = `<svg viewBox="0 0 64 64" aria-hidden="true">
-  <circle cx="32" cy="32" r="22"/>
-  <path d="M27 20l20 12-20 12z" fill="currentColor" stroke="none"/>
-</svg>`;
+const ICON_MEET = `<img src="${ART}/icon-meet.png" alt="">`;
+const ICON_DISCOVER = `<img src="${ART}/icon-discover.png" alt="">`;
+const ICON_PLAY = `<img src="${ART}/icon-play.png" alt="">`;
 
 function setShrineFocus(key, { spin = true } = {}) {
   shrineFocus = key;
@@ -125,9 +140,9 @@ function renderProgress() {
   dom.progressLabel.textContent = String(awakened);
   dom.questProgress.textContent = `${awakened} of 5 Realms Awakened`;
   const realms = Store.state.session?.realms || [];
-  dom.realmPips.innerHTML = ['water', 'earth', 'fire', 'air', 'spirit'].map((realm) => {
+  dom.realmPips.innerHTML = REALM_ORDER.map((realm) => {
     const on = realms.some((r) => r.realm === realm && r.complete);
-    return `<span class="realmPip realmPip--${realm} ${on ? 'is-on' : ''}" title="${REALM_META[realm].label}">${REALM_META[realm].glyph}</span>`;
+    return `<img class="realmPip ${on ? 'is-on' : ''}" src="${realmIcon(realm, on)}" alt="${REALM_META[realm].label}">`;
   }).join('');
 }
 
@@ -156,12 +171,13 @@ function challengeHtml(station) {
   }
 
   if (type === 'image_select') {
-    const tiles = (challenge.images || []).map((img) =>
-      `<button class="pickTile" data-image-id="${escapeHtml(img.id)}" type="button" style="--tile:${escapeHtml(img.color || '#5df0cf')}">
-        ${img.url ? `<img src="${escapeHtml(img.url)}" alt="">` : ''}
+    const tiles = (challenge.images || []).map((img) => {
+      const url = img.url || TILE_ART[img.id] || '';
+      return `<button class="pickTile${url ? ' pickTile--art' : ''}" data-image-id="${escapeHtml(img.id)}" type="button" style="--tile:${escapeHtml(img.color || '#5df0cf')}">
+        ${url ? `<img src="${escapeHtml(url)}" alt="">` : ''}
         <span>${escapeHtml(img.label || img.id)}</span>
-      </button>`
-    ).join('');
+      </button>`;
+    }).join('');
     return `<div class="challenge" data-station="${escapeHtml(station.slug)}">
       <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
       <div class="pickGrid">${tiles}</div>
@@ -174,7 +190,13 @@ function challengeHtml(station) {
       const id = opt.id || opt;
       const label = opt.label || opt;
       const color = opt.color || '';
-      return `<button class="seqBtn" data-seq="${escapeHtml(id)}" type="button" style="${color ? `--tile:${escapeHtml(color)}` : ''}">${escapeHtml(label)}</button>`;
+      const art = challenge.kind === 'color'
+        ? LANTERN_ART[id]
+        : (REALM_META[id] ? realmPad(id) : '');
+      return `<button class="seqBtn${art ? ' seqBtn--art' : ''}" data-seq="${escapeHtml(id)}" type="button" style="${color ? `--tile:${escapeHtml(color)}` : ''}">
+        ${art ? `<img src="${escapeHtml(art)}" alt="">` : ''}
+        <span>${escapeHtml(label)}</span>
+      </button>`;
     }).join('');
     return `<div class="challenge" data-station="${escapeHtml(station.slug)}" data-seq-len="${challenge.length || 5}">
       <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
@@ -226,13 +248,15 @@ function renderStation(slug) {
   const extra = station.type === 'monument' && Store.state.session?.builderQuizAt
     ? `<p class="fineprint">You finished the builder quiz. This stop is optional.</p>`
     : '';
+  const art = stationArt(station);
+  const portrait = REALM_META[station.element]?.portrait || '';
 
   if (!gated) {
     dom.stationView.innerHTML = `
       <article class="shrine" data-realm="${escapeHtml(station.element || '')}">
         <p class="shrine__kicker">${escapeHtml(station.subtitle || station.type)}</p>
         <h2 class="shrine__title">${escapeHtml(station.title)}</h2>
-        ${station.imageUrl ? `<img class="shrine__art" src="${escapeHtml(station.imageUrl)}" alt="">` : ''}
+        ${art ? `<img class="shrine__art" src="${escapeHtml(art)}" alt="">` : ''}
         <section class="shrine__block">
           <h3>${escapeHtml(shrineMeetTitle(station))}</h3>
           <p>${escapeHtml(station.body || '')}</p>
@@ -252,16 +276,16 @@ function renderStation(slug) {
       <p class="shrine__kicker">${escapeHtml(station.subtitle || station.type)}</p>
       <h2 class="shrine__title">${escapeHtml(station.title)}</h2>
       ${station.element ? `<p class="chip chip--target">${escapeHtml(REALM_META[station.element]?.label || station.element)}</p>` : ''}
-      ${station.imageUrl ? `<img class="shrine__art shrine__art--small" src="${escapeHtml(station.imageUrl)}" alt="">` : ''}
+      ${art ? `<img class="shrine__art" src="${escapeHtml(art)}" alt="">` : ''}
       <div class="shrineGate" data-focus="">
         <button class="shrineIcon" data-shrine-focus="meet" type="button">
           <span class="shrineIcon__orbit" aria-hidden="true"></span>
-          <span class="shrineIcon__gem">${ICON_HANDSHAKE}</span>
+          <span class="shrineIcon__gem">${ICON_MEET}</span>
           <span class="shrineIcon__label">Meet</span>
         </button>
         <button class="shrineIcon" data-shrine-focus="discover" type="button">
           <span class="shrineIcon__orbit" aria-hidden="true"></span>
-          <span class="shrineIcon__gem">${ICON_COMPASS}</span>
+          <span class="shrineIcon__gem">${ICON_DISCOVER}</span>
           <span class="shrineIcon__label">Discover</span>
         </button>
         <button class="shrineIcon" data-shrine-focus="play" type="button">
@@ -272,6 +296,7 @@ function renderStation(slug) {
       </div>
       <section class="shrinePanel" data-panel="meet">
         <h3>${escapeHtml(shrineMeetTitle(station))}</h3>
+        ${portrait ? `<img class="shrine__portrait" src="${escapeHtml(portrait)}" alt="">` : ''}
         <p>${escapeHtml(station.body || '')}</p>
         ${station.audioUrl ? `<audio class="journeyAudio" controls preload="none" src="${escapeHtml(station.audioUrl)}"></audio>` : ''}
       </section>
@@ -324,8 +349,12 @@ function renderHeartSlot(heartResult) {
 
   if (remaining.length) {
     const names = remaining.map((r) => REALM_META[r]?.label || r);
+    const icons = remaining.map((r) =>
+      `<li><img src="${realmIcon(r, false)}" alt=""><span>${escapeHtml(REALM_META[r]?.label || r)}</span></li>`
+    ).join('');
     slot.innerHTML = `<div class="challenge">
-      <p class="challenge__prompt">The Heart is still sleeping. ${names.length === 1 ? 'This Realm' : 'These Realms'} remain: <strong>${escapeHtml(names.join(', '))}</strong>.</p>
+      <p class="challenge__prompt">The Heart is still sleeping. ${names.length === 1 ? 'This Realm' : 'These Realms'} remain:</p>
+      <ul class="remainList">${icons}</ul>
       <button class="textButton" data-open-journey type="button">View my journey</button>
     </div>`;
     return;
@@ -371,8 +400,8 @@ function sealHtml(session) {
   const park = Store.state.park || {};
   const year = Store.state.adventure?.year || '';
   return `<div class="seal">
-    <div class="seal__ring" aria-hidden="true"></div>
-    <p class="seal__kicker">Winter Keeper Seal</p>
+    <img class="seal__art" src="${ART}/seal-winter-keeper.png" alt="">
+    <img class="seal__wordmark" src="${ART}/wordmark-winter-keeper.png" alt="Winter Keeper">
     <h2 class="seal__names">${escapeHtml(names)}</h2>
     <p class="seal__meta">${escapeHtml(park.locationName || park.name || '')} · ${escapeHtml(String(year))}</p>
   </div>`;
@@ -435,7 +464,11 @@ function renderJourney() {
     else if (tp.complete) status = 'Realm awake';
     return `<li>
       <button class="stop ${tp.complete || (tp.type === 'heart' && session?.winterKeeper) ? 'is-found' : 'is-secret'}" data-go-station="${escapeHtml(tp.slug)}" type="button">
-        <span class="stop__token">${tp.type === 'heart' ? '❤' : tp.type === 'monument' ? '▣' : tp.complete ? '✦' : '◇'}</span>
+        <span class="stop__token">${
+          tp.element
+            ? `<img src="${realmIcon(tp.element, Boolean(tp.complete))}" alt="">`
+            : (tp.type === 'heart' ? `<img src="${ART}/seal-winter-keeper.png" alt="">` : tp.type === 'monument' ? `<img src="${ART}/pin-park.png" alt="">` : '◇')
+        }</span>
         <span>
           <p class="stop__name">${escapeHtml(tp.title)}</p>
           <p class="stop__hint">${escapeHtml(status)}</p>
@@ -694,6 +727,10 @@ function renderMap() {
   const guardians = Store.guardianPoiIds();
   const completed = Store.completedGuardianPoiIds();
   const glowing = new Set([...guardians].filter((id) => !completed.has(id)));
+  const realmByPoi = {};
+  (Store.state.touchpoints || []).forEach((tp) => {
+    if (tp.poiId && tp.element) realmByPoi[tp.poiId] = tp.element;
+  });
   ParkMap.render(Store.state.pois, {
     scanned: Store.scannedIds(),
     targets: Store.state.journeyMode ? guardians : Store.journeyPoiIds(),
@@ -702,6 +739,7 @@ function renderMap() {
     journeyIds: guardians,
     completed: Store.state.journeyMode ? completed : new Set(),
     glowing: Store.state.journeyMode ? glowing : new Set(),
+    realmByPoi,
   });
   if (dom.journeyButton) {
     dom.journeyButton.setAttribute('aria-pressed', Store.state.journeyMode ? 'true' : 'false');
@@ -749,7 +787,11 @@ function showNextAward() {
   awardShowing = true;
   document.body.classList.add('award-open');
   dom.award.classList.toggle('is-final', Boolean(next.final));
-  dom.awardGlyph.textContent = next.glyph;
+  if (next.glyphUrl) {
+    dom.awardGlyph.innerHTML = `<img src="${escapeHtml(next.glyphUrl)}" alt="">`;
+  } else {
+    dom.awardGlyph.textContent = next.glyph || '';
+  }
   dom.awardKicker.textContent = next.kicker;
   dom.awardTitle.textContent = next.title;
   dom.awardMeta.textContent = next.meta;
@@ -786,6 +828,7 @@ async function handleStationChallenge(slug, answer) {
     const meta = REALM_META[result.realmAwakened] || { label: result.realmAwakened, glyph: '✦' };
     enqueueAward({
       glyph: meta.glyph,
+      glyphUrl: realmIcon(result.realmAwakened, true),
       kicker: 'Realm Awakened',
       title: meta.label,
       meta: `${Store.realmsAwakened()} of 5 Realms`,
