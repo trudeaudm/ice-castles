@@ -90,7 +90,14 @@ body.quest { overflow: auto; }
 body.quest.guide-open,
 body.quest.panel-open { overflow: hidden; }
 
-button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
 input { font: inherit; }
 
 :focus-visible {
@@ -381,7 +388,6 @@ body.map-moving .aurora__band { animation-play-state: paused; }
 }
 .mapTool svg { width: 19px; height: 19px; }
 .mapTool img { width: 36px; height: 36px; object-fit: contain; display: block; }
-.mapTool:active { transform: scale(0.92); }
 .mapTool.is-on { color: var(--aurora); border-color: rgba(93, 240, 207, 0.45); }
 
 .challenge {
@@ -595,7 +601,17 @@ body.landing-open .station { visibility: hidden; }
   background: url("/assets/art/btn-begin-quest.png") center / 100% 100% no-repeat;
   box-shadow: none;
 }
-.landing__begin:active { transform: translateY(1px); }
+.landing__begin span { position: relative; z-index: 1; }
+.landing__begin::after {
+  content: "";
+  position: absolute;
+  inset: 24% 12% 34%;
+  border-radius: 40px;
+  background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.45) 50%, transparent 65%);
+  transform: translateX(-130%);
+  pointer-events: none;
+  animation: btnShimmer 3.2s var(--ease-out) 0.9s infinite;
+}
 .landing__foot {
   position: relative;
   z-index: 1;
@@ -605,6 +621,7 @@ body.landing-open .station { visibility: hidden; }
   margin-top: 12px;
 }
 .landing__link {
+  position: relative;
   flex: 1;
   display: inline-flex;
   align-items: center;
@@ -640,7 +657,15 @@ body.landing-open .station { visibility: hidden; }
   flex: none;
 }
 .landing__link + .landing__link { background-image: url("/assets/art/btn-pill-b.png"); }
-.landing__link:active { transform: translateY(1px); }
+.landing__link::after {
+  content: "";
+  position: absolute;
+  inset: 18% 10% 22%;
+  border-radius: 999px;
+  background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.4) 50%, transparent 65%);
+  transform: translateX(-130%);
+  pointer-events: none;
+}
 .landingHowto {
   position: absolute;
   inset: 0;
@@ -691,7 +716,6 @@ body.landing-open .station { visibility: hidden; }
   color: var(--ink-text);
   border-bottom: 4px solid var(--candy-lip);
 }
-.threshold__primary:active { transform: translateY(2px); border-bottom-width: 2px; }
 .threshold__primary--earned {
   background: linear-gradient(#ffe28a, var(--lantern) 50%, var(--lantern-dim));
   color: #3a2200;
@@ -1269,7 +1293,6 @@ body.sheet-open .sheet { transform: none; }
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-.textButton:active { transform: translateY(2px); border-bottom-width: 2px; }
 .textButton--play {
   color: #073014;
   background: linear-gradient(#81c784, var(--play) 50%, var(--play-deep));
@@ -1555,7 +1578,6 @@ body.sheet-open .sheet { transform: none; }
 .nav__item svg { width: 21px; height: 21px; }
 .nav__item.is-active { color: var(--aurora); }
 .nav__item.is-active svg { filter: drop-shadow(0 0 8px rgba(93, 240, 207, 0.55)); }
-.nav__item:active { transform: scale(0.93); }
 
 /* The shutter button: the scan is the app's primary verb, so it breaks the bar. */
 .scanFab {
@@ -1572,7 +1594,7 @@ body.sheet-open .sheet { transform: none; }
 }
 .scanFab svg { width: 27px; height: 27px; stroke-width: 2; position: relative; }
 .scanFab img { width: 60px; height: 60px; object-fit: contain; position: relative; }
-.scanFab:active { transform: scale(0.93); }
+.scanFab img { transition: transform 220ms var(--ease-spring); }
 
 .scanFab__pulse {
   position: absolute;
@@ -1935,7 +1957,7 @@ body.quest .topbar {
   background: transparent;
 }
 .mapChip img { width: 100%; height: 36px; object-fit: contain; display: block; }
-.mapChip:active { transform: translateY(2px); }
+.mapChip img { transition: transform 220ms var(--ease-spring); }
 .guideFab {
   display: none;
   position: absolute;
@@ -2018,8 +2040,6 @@ body.award-open .guideFab { display: none; }
   transform: none;
   z-index: 40;
 }
-.scanFab--guide:active { transform: scale(0.93); }
-
 .pickGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2031,6 +2051,7 @@ body.award-open .guideFab { display: none; }
 .pickTile, .seqBtn {
   min-height: 72px;
   border-radius: 18px;
+  transition: transform 200ms var(--ease-spring), box-shadow 200ms, filter 200ms;
   border: 1px solid color-mix(in srgb, var(--tile, var(--aurora)) 40%, transparent);
   background:
     radial-gradient(circle at 30% 22%, rgba(255,255,255,0.16), transparent 46%),
@@ -2208,4 +2229,128 @@ body.quest.guide-open .toast {
     width: 460px;
     transform: translateX(-50%);
   }
+}
+
+/* -------------------------------- fun buttons ----------------------------- */
+
+button.is-fun { position: relative; overflow: visible; }
+
+button:not(.shrineIcon):not(.sheet__grip) {
+  transition: transform 200ms var(--ease-spring), filter 200ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button:not(.shrineIcon):not(.sheet__grip):hover {
+    transform: translateY(-3px) scale(1.045);
+    filter: brightness(1.08);
+  }
+  .landing__begin:hover {
+    filter: brightness(1.1) drop-shadow(0 10px 18px rgba(126, 243, 255, 0.35));
+  }
+  .landing__link:hover::after { animation: btnShimmer 700ms var(--ease-out); }
+  .mapTool:hover img,
+  .scanFab:hover img,
+  .progressRing:hover .progressRing__gem,
+  .mapChip:hover img,
+  .guideFab:hover img {
+    animation: btnWiggle 420ms var(--ease-spring);
+  }
+}
+
+button:not(.shrineIcon):not(.sheet__grip):active,
+button:not(.shrineIcon):not(.sheet__grip).is-pressed {
+  transform: scale(0.985);
+  filter: brightness(0.94);
+  transition-duration: 70ms;
+}
+
+button:not(.shrineIcon):not(.sheet__grip).is-pop {
+  animation: btnPop 480ms var(--ease-spring);
+}
+
+.landing__begin { animation: btnFloat 2.6s ease-in-out infinite; }
+.landing__begin:hover,
+.landing__begin:active,
+.landing__begin.is-pressed { animation: none; }
+.landing__begin.is-pop { animation: btnPop 480ms var(--ease-spring); }
+
+.textButton.is-pressed,
+.textButton:active,
+.threshold__primary.is-pressed,
+.threshold__primary:active,
+.award__done.is-pressed,
+.award__done:active {
+  transform: translateY(2px) scale(0.99);
+  border-bottom-width: 2px;
+}
+
+.shrineIcon__gem { transition: transform 200ms var(--ease-spring), filter 200ms; }
+.shrineIcon.is-pressed .shrineIcon__gem { transform: scale(0.86); }
+.shrineIcon.is-pop .shrineIcon__gem { animation: btnPop 460ms var(--ease-spring); }
+
+.sheet__grip::before {
+  transition: transform 200ms var(--ease-spring), opacity 200ms, background 200ms;
+}
+.sheet__grip:hover::before { opacity: 0.9; background: var(--aurora); transform: scaleX(1.12); }
+.sheet__grip.is-pressed::before { transform: scaleX(0.72); background: var(--aurora); opacity: 1; }
+
+.pickTile.is-on { animation: btnSelect 400ms var(--ease-spring); }
+
+.btnBurst {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.btnBurst i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px;
+  border-radius: 1px;
+  background: #fff;
+  box-shadow: 0 0 10px #7ef3ff;
+  animation: btnSpark 540ms var(--ease-out) forwards;
+  transform: rotate(45deg);
+}
+.btnBurst i:nth-child(1) { --dx: -26px; --dy: -18px; background: #7ef3ff; }
+.btnBurst i:nth-child(2) { --dx: 8px; --dy: -28px; background: #ffe28a; }
+.btnBurst i:nth-child(3) { --dx: 24px; --dy: -10px; }
+.btnBurst i:nth-child(4) { --dx: 18px; --dy: 16px; background: #d7b4ff; }
+.btnBurst i:nth-child(5) { --dx: -14px; --dy: 20px; background: #7ef3ff; }
+.btnBurst i:nth-child(6) { --dx: -22px; --dy: 4px; background: #ffe28a; }
+
+@keyframes btnFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@keyframes btnPop {
+  0% { transform: translateY(3px) scale(0.92); }
+  40% { transform: translateY(-6px) scale(1.08) rotate(-2deg); }
+  68% { transform: translateY(1px) scale(0.97) rotate(1.5deg); }
+  100% { transform: none; }
+}
+@keyframes btnShimmer {
+  0% { transform: translateX(-130%); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateX(130%); opacity: 0; }
+}
+@keyframes btnWiggle {
+  0%, 100% { transform: rotate(0) scale(1); }
+  30% { transform: rotate(-14deg) scale(1.1); }
+  60% { transform: rotate(10deg) scale(1.08); }
+}
+@keyframes btnSpark {
+  0% { opacity: 1; transform: translate(0, 0) scale(1) rotate(45deg); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.15) rotate(45deg); }
+}
+@keyframes btnSelect {
+  0% { transform: scale(0.9); }
+  55% { transform: scale(1.07); }
+  100% { transform: none; }
 }

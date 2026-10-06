@@ -897,7 +897,52 @@ async function route() {
 /* wiring                                                                     */
 /* -------------------------------------------------------------------------- */
 
+function bindFunButtons() {
+  const skip = (btn) =>
+    !btn || btn.disabled || btn.closest('.leaflet-container');
+
+  const spark = (btn, event) => {
+    if (btn.classList.contains('sheet__grip')) return;
+    const pos = window.getComputedStyle(btn).position;
+    if (pos === 'static') btn.classList.add('is-fun');
+    const rect = btn.getBoundingClientRect();
+    const x = (event.clientX || rect.left + rect.width / 2) - rect.left;
+    const y = (event.clientY || rect.top + rect.height / 2) - rect.top;
+    const burst = document.createElement('span');
+    burst.className = 'btnBurst';
+    burst.setAttribute('aria-hidden', 'true');
+    burst.style.setProperty('--x', `${x}px`);
+    burst.style.setProperty('--y', `${y}px`);
+    burst.innerHTML = '<i></i><i></i><i></i><i></i><i></i><i></i>';
+    btn.appendChild(burst);
+    window.setTimeout(() => burst.remove(), 560);
+  };
+
+  document.addEventListener('pointerdown', (event) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    const btn = event.target.closest('button');
+    if (skip(btn)) return;
+    btn.classList.add('is-pressed');
+    spark(btn, event);
+  });
+
+  const release = () => {
+    document.querySelectorAll('button.is-pressed').forEach((btn) => {
+      btn.classList.remove('is-pressed');
+      btn.classList.remove('is-pop');
+      void btn.offsetWidth;
+      btn.classList.add('is-pop');
+    });
+  };
+  document.addEventListener('pointerup', release);
+  document.addEventListener('pointercancel', release);
+  document.addEventListener('animationend', (event) => {
+    if (event.animationName === 'btnPop') event.target.classList.remove('is-pop');
+  });
+}
+
 function wire() {
+  bindFunButtons();
   dom.progressButton.addEventListener('click', () => openPanel('journey'));
   const toggleGuide = () => {
     if (mapModalMode === 'choice') return;
