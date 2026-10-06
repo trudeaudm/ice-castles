@@ -455,7 +455,7 @@ body.map-moving .aurora__band { animation-play-state: paused; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: calc(var(--safe-t) + 18px) 22px calc(18px + var(--safe-b));
+  padding: calc(var(--safe-t) + 18px) max(16px, env(safe-area-inset-right, 0px)) calc(18px + var(--safe-b)) max(16px, env(safe-area-inset-left, 0px));
   background: #071526;
   color: #eef8ff;
   overflow: hidden;
@@ -480,6 +480,8 @@ body.landing-open .station { visibility: hidden; }
   text-align: center;
   margin-top: 18px;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow: visible;
 }
 .landing__crest {
@@ -491,11 +493,12 @@ body.landing-open .station { visibility: hidden; }
 }
 .landing__title {
   margin: 0;
+  max-width: 100%;
   font-family: var(--display);
   font-weight: 650;
-  font-size: clamp(36px, 12vw, 50px);
+  font-size: clamp(30px, 10vw, 50px);
   line-height: 0.95;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
   color: #f4fbff;
   text-shadow:
@@ -504,16 +507,18 @@ body.landing-open .station { visibility: hidden; }
 }
 .landing__kicker {
   margin: 10px 0 0;
+  max-width: 100%;
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.28em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: rgba(210, 236, 255, 0.78);
 }
 .landing__crew {
   position: relative;
-  width: calc(100% + 20px);
-  max-width: 420px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin-top: 16px;
 }
 .landing__talk {
@@ -603,8 +608,8 @@ body.landing-open .station { visibility: hidden; }
   color: rgba(220, 240, 255, 0.8);
 }
 .landing__realm img {
-  width: 80px;
-  height: 80px;
+  width: clamp(52px, 16vw, 80px);
+  height: clamp(52px, 16vw, 80px);
   border-radius: 50%;
   object-fit: cover;
   filter: drop-shadow(0 4px 10px rgba(4, 16, 31, 0.4));
