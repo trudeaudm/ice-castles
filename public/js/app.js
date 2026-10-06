@@ -65,6 +65,9 @@ const dom = {
   landingHow: el('landingHow'), landingMap: el('landingMap'),
   landingHowto: el('landingHowto'), landingHowtoBody: el('landingHowtoBody'),
   landingHowtoClose: el('landingHowtoClose'),
+  landingTalk: el('landingTalk'), landingBubble: el('landingBubble'),
+  landingBubbleWho: el('landingBubbleWho'), landingBubbleText: el('landingBubbleText'),
+  landingRealms: el('landingRealms'),
   mapModal: el('mapModal'), mapModalEyebrow: el('mapModalEyebrow'),
   mapModalTitle: el('mapModalTitle'), mapModalBody: el('mapModalBody'),
   mapModalPrimary: el('mapModalPrimary'), mapModalGhost: el('mapModalGhost'),
@@ -529,6 +532,85 @@ function renderPassport() {
 /* threshold / guide                                                          */
 /* -------------------------------------------------------------------------- */
 
+const LANDING_FACTS = {
+  water: [
+    { who: 'Cascade', text: 'Water is the trickiest ice to grow — it has to look like it’s still pouring!' },
+    { who: 'Cascade', text: 'Hunt for veins, ripples, and arches pressed into the walls beside you.' },
+    { who: 'Cascade', text: 'The lights in this realm cycle like a current under the ice.' },
+  ],
+  earth: [
+    { who: 'Granite', text: 'The runes are carved, not printed — they change as you walk past.' },
+    { who: 'Granite', text: 'A single archway can take two people most of a night to grow.' },
+    { who: 'Granite', text: 'Four moose hide nearby. Each one holds a letter of a builder’s word.' },
+  ],
+  fire: [
+    { who: 'Ember', text: 'Nothing here is actually burning — amber silk and LEDs do the flicker.' },
+    { who: 'Ember', text: 'Three dragons roost on the horse path. Count the fire lizards if you can!' },
+    { who: 'Ember', text: 'Those lizards are printed in-house. No two sit the same way twice.' },
+  ],
+  air: [
+    { who: 'Summit', text: 'A finished castle can hold more than twenty million pounds of ice.' },
+    { who: 'Summit', text: 'Artists harvest icicles by hand each night, then spray them until they fuse.' },
+    { who: 'Summit', text: 'Look up in the Aviary — every silk bird is painted by hand, and no two match.' },
+  ],
+  spirit: [
+    { who: 'Aurora', text: 'The Tundra stays dark on purpose. Give your eyes thirty seconds.' },
+    { who: 'Aurora', text: 'Everything you see was grown, not built — water, cold, and time.' },
+    { who: 'Aurora', text: 'Fairy Village doors are kid-height, and every silk is a different color.' },
+  ],
+};
+
+const talkCursor = { water: 0, earth: 0, fire: 0, air: 0, spirit: 0 };
+let talkDelay = 0;
+let talkPulse = 0;
+let talkHide = 0;
+
+function hideLandTalk() {
+  document.querySelectorAll('.landing__realm.is-talking').forEach((n) => n.classList.remove('is-talking'));
+  if (!dom.landingTalk) return;
+  dom.landingTalk.hidden = true;
+}
+
+function landTalk(realm, hold = 4800) {
+  const facts = LANDING_FACTS[realm];
+  if (!facts?.length || !dom.landingBubble || !dom.landingTalk) return;
+  const fact = facts[talkCursor[realm] % facts.length];
+  talkCursor[realm] += 1;
+  document.querySelectorAll('.landing__realm.is-talking').forEach((n) => n.classList.remove('is-talking'));
+  document.querySelector(`.landing__realm[data-realm="${realm}"]`)?.classList.add('is-talking');
+  const slot = (REALM_ORDER.indexOf(realm) + 0.5) / REALM_ORDER.length * 100;
+  dom.landingBubble.dataset.realm = realm;
+  dom.landingBubble.style.setProperty('--tail', `${slot}%`);
+  if (dom.landingBubbleWho) dom.landingBubbleWho.textContent = fact.who;
+  if (dom.landingBubbleText) dom.landingBubbleText.textContent = fact.text;
+  dom.landingTalk.hidden = false;
+  dom.landingBubble.classList.remove('is-fresh');
+  void dom.landingBubble.offsetWidth;
+  dom.landingBubble.classList.add('is-fresh');
+  window.clearTimeout(talkHide);
+  talkHide = window.setTimeout(hideLandTalk, hold);
+}
+
+function startLandTalk() {
+  stopLandTalk();
+  talkDelay = window.setTimeout(() => {
+    if (dom.threshold?.classList.contains('is-open')) landTalk('water');
+    talkPulse = window.setInterval(() => {
+      if (!dom.threshold?.classList.contains('is-open')) return;
+      if (dom.landingHowto && !dom.landingHowto.hidden) return;
+      const realm = REALM_ORDER[Math.floor(Math.random() * REALM_ORDER.length)];
+      landTalk(realm);
+    }, 7000);
+  }, 1400);
+}
+
+function stopLandTalk() {
+  window.clearTimeout(talkDelay);
+  window.clearInterval(talkPulse);
+  window.clearTimeout(talkHide);
+  hideLandTalk();
+}
+
 function showThreshold() {
   const tp = Store.touchByType('threshold')[0];
   const park = Store.state.park || {};
@@ -550,6 +632,7 @@ function showThreshold() {
   dom.threshold.hidden = false;
   dom.threshold.inert = false;
   dom.threshold.classList.add('is-open');
+  startLandTalk();
 }
 
 function hideLandingHowto() {
@@ -558,6 +641,7 @@ function hideLandingHowto() {
 }
 
 function hideThreshold() {
+  stopLandTalk();
   hideLandingHowto();
   document.body.classList.remove('landing-open');
   dom.threshold.classList.remove('is-open');
@@ -899,7 +983,7 @@ async function route() {
 
 function bindFunButtons() {
   const skip = (btn) =>
-    !btn || btn.disabled || btn.closest('.leaflet-container');
+    !btn || btn.disabled || btn.closest('.leaflet-container') || btn.classList.contains('landing__realm');
 
   const spark = (btn, event) => {
     if (btn.classList.contains('sheet__grip')) return;
@@ -955,9 +1039,21 @@ function wire() {
   dom.thresholdStart.addEventListener('click', () => enterFromLanding({ journeyMode: true }));
   dom.landingMap?.addEventListener('click', () => enterFromLanding({ journeyMode: false }));
   dom.landingHow?.addEventListener('click', () => {
+    hideLandTalk();
     if (dom.landingHowto) dom.landingHowto.hidden = false;
   });
   dom.landingHowtoClose?.addEventListener('click', hideLandingHowto);
+  dom.landingRealms?.addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-realm]');
+    if (!btn) return;
+    landTalk(btn.dataset.realm);
+  });
+  dom.landingRealms?.addEventListener('pointerenter', (event) => {
+    if (event.pointerType !== 'mouse') return;
+    const btn = event.target.closest('[data-realm]');
+    if (!btn || btn.classList.contains('is-talking')) return;
+    landTalk(btn.dataset.realm);
+  }, true);
 
   dom.mapModalPrimary.addEventListener('click', handleMapModalPrimary);
   dom.mapModalGhost.addEventListener('click', handleMapModalGhost);

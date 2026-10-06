@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <title>Ice Castles — Castle Quest</title>
 <meta name="description" content="Explore the castle, awaken five Realms, and become a Winter Keeper.">
-<meta name="theme-color" content="#1E3A5F">
+<meta name="theme-color" content="#62B4E0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/manifest.webmanifest">
@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap">
-<link rel="stylesheet" href="/app.css?v=31">
+<link rel="stylesheet" href="/app.css?v=34">
 </head>
 <body class="quest">
 
@@ -102,13 +102,41 @@
     <img class="landing__crest" src="/assets/art/icon-guardians.png" alt="">
     <h1 class="landing__title">Castle Quest</h1>
     <p class="landing__kicker">Awaken the five Realms</p>
-    <ul class="landing__realms" aria-label="The five Realms">
-      <li class="landing__realm landing__realm--water"><img src="/assets/art/pfp-cascade.png" alt="">Water</li>
-      <li class="landing__realm landing__realm--earth"><img src="/assets/art/pfp-granite.png" alt="">Earth</li>
-      <li class="landing__realm landing__realm--fire"><img src="/assets/art/pfp-ember.png" alt="">Fire</li>
-      <li class="landing__realm landing__realm--air"><img src="/assets/art/pfp-summit.png" alt="">Air</li>
-      <li class="landing__realm landing__realm--spirit"><img src="/assets/art/pfp-aurora.png" alt="">Spirit</li>
+    <div class="landing__crew">
+    <ul class="landing__realms" id="landingRealms" aria-label="The five Guardians. Tap one for a castle fact.">
+      <li>
+        <button class="landing__realm landing__realm--water" data-realm="water" type="button" aria-label="Cascade, Water Guardian">
+          <img src="/assets/art/pfp-cascade.png" alt="">Water
+        </button>
+      </li>
+      <li>
+        <button class="landing__realm landing__realm--earth" data-realm="earth" type="button" aria-label="Granite, Earth Guardian">
+          <img src="/assets/art/pfp-granite.png" alt="">Earth
+        </button>
+      </li>
+      <li>
+        <button class="landing__realm landing__realm--fire" data-realm="fire" type="button" aria-label="Ember, Fire Guardian">
+          <img src="/assets/art/pfp-ember.png" alt="">Fire
+        </button>
+      </li>
+      <li>
+        <button class="landing__realm landing__realm--air" data-realm="air" type="button" aria-label="Summit, Air Guardian">
+          <img src="/assets/art/pfp-summit.png" alt="">Air
+        </button>
+      </li>
+      <li>
+        <button class="landing__realm landing__realm--spirit" data-realm="spirit" type="button" aria-label="Aurora, Spirit Guardian">
+          <img src="/assets/art/pfp-aurora.png" alt="">Spirit
+        </button>
+      </li>
     </ul>
+    <div class="landing__talk" id="landingTalk" hidden>
+      <p class="landing__bubble" id="landingBubble">
+        <span class="landing__bubbleWho" id="landingBubbleWho"></span>
+        <span class="landing__bubbleText" id="landingBubbleText"></span>
+      </p>
+    </div>
+    </div>
     <p class="landing__progress" id="landingProgress">0 / 5 Realms Awakened</p>
   </div>
   <div class="landing__gate" aria-hidden="true">
@@ -199,6 +227,6 @@
 <script src="/js/api.js?v=21"></script>
 <script src="/js/map.js?v=22"></script>
 <script src="/js/scanner.js?v=19"></script>
-<script src="/js/app.js?v=26"></script>
+<script src="/js/app.js?v=27"></script>
 </body>
 </html>
