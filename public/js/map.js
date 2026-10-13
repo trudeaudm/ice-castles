@@ -83,6 +83,47 @@ const ParkMap = (() => {
     map.panBy([0, -28], { animate: false });
   }
 
+  /**
+   * Frame map-pixel points so every pin stays on screen and the view is as
+   * tight as the map pane allows. Zoom snap is bypassed so a wide row of
+   * pins can fill the width instead of stepping back to the whole park.
+   */
+  function fitToPoints(points, { animate = false } = {}) {
+    if (!map) return;
+    const usable = (points || []).filter((p) => Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)));
+    if (!usable.length) {
+      fit();
+      return;
+    }
+
+    map.invalidateSize({ animate: false });
+    const size = map.getSize();
+    if (size.x < 40 || size.y < 40) return;
+
+    const latLngs = usable.map((p) => toLatLng(Number(p.x), Number(p.y)));
+    let box = L.latLngBounds(latLngs);
+    const ne = box.getNorthEast();
+    const sw = box.getSouthWest();
+    const spanX = Math.max(ne.lng - sw.lng, 1);
+    const spanY = Math.max(ne.lat - sw.lat, 1);
+    // Padding keeps the pin art (about 44px) inside the pane.
+    const padX = 34;
+    const padY = 36;
+    const availW = Math.max(48, size.x - padX * 2);
+    const availH = Math.max(48, size.y - padY * 2);
+    const scale = Math.min(availW / spanX, availH / spanY);
+    let zoom = Math.log(scale) / Math.LN2;
+    zoom = Math.max(map.getMinZoom(), Math.min(map.getMaxZoom(), zoom));
+
+    const prevSnap = map.options.zoomSnap;
+    map.options.zoomSnap = 0;
+    map.setView(box.getCenter(), zoom, { animate });
+    map.options.zoomSnap = prevSnap;
+    // A short pane is the Guardian row. Nudge up so the park below that row
+    // stays outside the frame while the seals remain fully visible.
+    if (size.y < 280) map.panBy([0, Math.round(size.y * 0.06)], { animate: false });
+  }
+
   function buildIcon(poi, { visited, isTarget, isGlow, isDimmed, label, realm }) {
     const el = document.createElement('div');
     el.className = 'pin';
@@ -186,7 +227,7 @@ const ParkMap = (() => {
   const invalidate = () => map && map.invalidateSize();
   const getMap = () => map;
 
-  return { init, render, fit, focusOn, highlight, celebrate, invalidate, getMap, colorFor, CATEGORY_COLORS };
+  return { init, render, fit, fitToPoints, focusOn, highlight, celebrate, invalidate, getMap, colorFor, CATEGORY_COLORS };
 })();
 
 window.ParkMap = ParkMap;

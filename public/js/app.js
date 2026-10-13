@@ -658,14 +658,14 @@ async function enterFromLanding({ journeyMode }) {
   hideThreshold();
   renderProgress();
   Store.setJourneyMode(journeyMode);
-  openMapHome();
+  openMapHome({ fit: journeyMode ? 'guardians' : 'park' });
 }
 
 function hideMapModal() {
   if (!dom.mapModal) return;
   mapModalMode = null;
   mapModalStation = null;
-  dom.mapModal.classList.remove('is-open');
+  dom.mapModal.classList.remove('is-open', 'mapModal--hint');
   dom.mapModal.inert = true;
   document.body.classList.remove('map-modal-open');
   setTimeout(() => {
@@ -673,16 +673,17 @@ function hideMapModal() {
   }, 280);
 }
 
-function showMapModal({ mode, eyebrow, title, body, primary, ghost }) {
+function showMapModal({ mode, eyebrow, title, body, primary, ghost, placement }) {
   mapModalMode = mode;
   dom.mapModalEyebrow.textContent = eyebrow;
   dom.mapModalTitle.textContent = title;
   dom.mapModalBody.textContent = body;
   dom.mapModalPrimary.textContent = primary;
-  dom.mapModalGhost.textContent = ghost;
+  dom.mapModalGhost.textContent = ghost || '';
   dom.mapModalGhost.hidden = !ghost;
   dom.mapModal.hidden = false;
   dom.mapModal.inert = false;
+  dom.mapModal.classList.toggle('mapModal--hint', placement === 'hint');
   document.body.classList.add('map-modal-open');
   dom.mapModal.classList.add('is-open');
 }
@@ -710,6 +711,29 @@ function showBeginStationModal(station) {
   });
 }
 
+function showBeginGuide() {
+  showMapModal({
+    mode: 'beginGuide',
+    placement: 'hint',
+    eyebrow: 'Begin Quest',
+    title: 'Pick a Guardian',
+    body: 'These glowing seals are the five Guardians. Walk to any one, then tap its seal to meet them and play their challenge.',
+    primary: 'Got it',
+  });
+}
+
+function frameGuardians(attempt = 0) {
+  const ids = Store.guardianPoiIds();
+  const points = Store.state.pois.filter((poi) => ids.has(poi.id));
+  ParkMap.invalidate?.();
+  const size = ParkMap.getMap?.()?.getSize?.();
+  if ((!size || size.y < 40) && attempt < 6) {
+    setTimeout(() => frameGuardians(attempt + 1), 50);
+    return;
+  }
+  ParkMap.fitToPoints(points);
+}
+
 function applyMapMode(on) {
   Store.setJourneyMode(on);
   renderMap();
@@ -726,7 +750,9 @@ function handleMapModalPrimary() {
     const slug = mapModalStation.slug;
     hideMapModal();
     goStation(slug);
+    return;
   }
+  if (mapModalMode === 'beginGuide') hideMapModal();
 }
 
 function handleMapModalGhost() {
@@ -738,14 +764,25 @@ function handleMapModalGhost() {
   hideMapModal();
 }
 
-function openMapHome({ showChoice = false } = {}) {
+function openMapHome({ showChoice = false, fit = 'park' } = {}) {
   hideThreshold();
   if (!showChoice) hideMapModal();
+  document.body.classList.toggle('begin-frame', fit === 'guardians');
   const welcome = Store.touchByType('threshold')[0];
   renderStation(welcome?.slug || 'threshold');
   openGuide();
-  setTimeout(() => ParkMap.fit(), 100);
+  setTimeout(() => {
+    ParkMap.invalidate?.();
+    if (fit === 'guardians') frameGuardians();
+    else ParkMap.fit();
+  }, 80);
   if (showChoice) showChoiceModal();
+  if (fit === 'guardians') {
+    setTimeout(() => {
+      if (!document.body.classList.contains('guide-open')) return;
+      showBeginGuide();
+    }, 420);
+  }
 }
 
 function showGuardianQrLanding(station) {
@@ -774,8 +811,7 @@ function openGuide() {
 
 function closeGuide({ force = false } = {}) {
   if (!force && mapModalMode === 'choice') return;
-  if (force) hideMapModal();
-  else if (mapModalMode === 'begin') hideMapModal();
+  if (force || mapModalMode === 'begin' || mapModalMode === 'beginGuide') hideMapModal();
   document.body.classList.remove('guide-open');
   document.body.classList.remove('sheet-open');
   dom.guide.hidden = true;
@@ -1061,11 +1097,21 @@ function wire() {
   dom.mapModalGhost.addEventListener('click', handleMapModalGhost);
   dom.mapModal.addEventListener('click', (event) => {
     if (event.target !== dom.mapModal) return;
-    if (mapModalMode === 'begin') hideMapModal();
+    if (mapModalMode === 'begin' || mapModalMode === 'beginGuide') hideMapModal();
   });
 
   dom.sheetGrip.addEventListener('click', () => document.body.classList.remove('sheet-open'));
-  dom.recenter.addEventListener('click', () => { ParkMap.fit(); toast('Whole park in view'); });
+  dom.recenter.addEventListener('click', () => {
+    const framed = document.body.classList.contains('begin-frame');
+    document.body.classList.remove('begin-frame');
+    const refit = () => {
+      ParkMap.invalidate?.();
+      ParkMap.fit();
+      toast('Whole park in view');
+    };
+    if (framed) setTimeout(refit, 40);
+    else refit();
+  });
   dom.journeyButton.addEventListener('click', () => {
     const on = Store.toggleJourneyMode();
     renderMap();
@@ -1169,7 +1215,7 @@ function wire() {
     else if (!dom.award.hidden) dismissAward();
     else if (!dom.finale.hidden) hideFinale();
     else if (mapModalMode === 'choice') return;
-    else if (mapModalMode === 'begin') hideMapModal();
+    else if (mapModalMode === 'begin' || mapModalMode === 'beginGuide') hideMapModal();
     else if (currentPanel) closePanels();
     else if (document.body.classList.contains('guide-open')) closeGuide();
   });
