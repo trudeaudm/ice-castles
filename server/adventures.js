@@ -1,4 +1,5 @@
 const db = require('./db');
+const { publishedFor } = require('./parkMap');
 const { uuid, now, clean, num, bool, slugify, shortCode } = require('./helpers');
 const { ensureQuestStations } = require('./questStations');
 
@@ -245,6 +246,8 @@ async function createAdventure(locationId, fields = {}) {
     ]);
   }
 
+  const published = await publishedFor(locationId);
+
   await db.run(
     `INSERT INTO adventures
        (id, location_id, name, year, is_active,
@@ -262,9 +265,9 @@ async function createAdventure(locationId, fields = {}) {
       clean(fields.welcome_body, 2000),
       clean(fields.hours_note, 600),
       clean(fields.safety_note, 600),
-      clean(fields.map_image_url, 500) || '/assets/park-map.webp',
-      String(fields.map_width || 2000),
-      String(fields.map_height || 1400),
+      published?.published_url || clean(fields.map_image_url, 500) || '/assets/park-map.webp',
+      String(published?.width || fields.map_width || 2000),
+      String(published?.height || fields.map_height || 1400),
       String(fields.grid_cell || 100),
       ts,
       ts,

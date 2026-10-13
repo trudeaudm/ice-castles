@@ -13,6 +13,14 @@ const {
   normalizeChallengeType,
   CHALLENGE_TYPES,
 } = require('../adventures');
+const {
+  getParkMap,
+  saveParkMap,
+  saveReference,
+  readReference,
+  clearReference,
+  publishMap,
+} = require('../parkMap');
 
 const router = express.Router();
 
@@ -826,6 +834,54 @@ router.get('/station-sheet', async (req, res) => {
 </style>
 ${cards.join('\n') || '<p style="padding:2rem">No published quest stations yet.</p>'}`);
 });
+
+/* -------------------------------- park map -------------------------------- */
+
+router.get('/locations/:id/map', async (req, res) => {
+  const map = await getParkMap(req.params.id);
+  if (!map) return res.status(404).json({ error: 'not_found' });
+  res.json(map);
+});
+
+router.put('/locations/:id/map', async (req, res) => {
+  const map = await saveParkMap(req.params.id, req.body?.document || req.body);
+  if (!map) return res.status(404).json({ error: 'not_found' });
+  res.json(map);
+});
+
+router.get('/locations/:id/map/reference', async (req, res) => {
+  const found = await readReference(req.params.id);
+  if (!found) return res.status(404).json({ error: 'not_found' });
+  res.type(found.mime).sendFile(found.file);
+});
+
+router.post(
+  '/locations/:id/map/reference',
+  express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '30mb' }),
+  async (req, res) => {
+    const mime = String(req.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    const map = await saveReference(req.params.id, req.body, mime);
+    if (!map) return res.status(400).json({ error: 'bad_reference' });
+    res.json(map);
+  }
+);
+
+router.delete('/locations/:id/map/reference', async (req, res) => {
+  const map = await clearReference(req.params.id);
+  if (!map) return res.status(404).json({ error: 'not_found' });
+  res.json(map);
+});
+
+router.post(
+  '/locations/:id/map/publish',
+  express.raw({ type: ['image/webp', 'image/png'], limit: '12mb' }),
+  async (req, res) => {
+    const mime = String(req.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    const published = await publishMap(req.params.id, req.body, mime);
+    if (!published) return res.status(400).json({ error: 'bad_publish' });
+    res.json(published);
+  }
+);
 
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>

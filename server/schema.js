@@ -185,6 +185,15 @@ CREATE TABLE IF NOT EXISTS quest_events (
   created_at    TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS park_maps (
+  location_id   TEXT PRIMARY KEY REFERENCES locations(id) ON DELETE CASCADE,
+  document      TEXT NOT NULL,
+  published_url TEXT,
+  width         TEXT NOT NULL,
+  height        TEXT NOT NULL,
+  updated_at    TEXT NOT NULL
+);
+
 CREATE UNIQUE INDEX IF NOT EXISTS ux_scan_guest_poi   ON guest_scans (guest_id, poi_id);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_token_guest_stop ON guest_tokens (guest_id, hunt_stop_id);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_done_guest_hunt  ON hunt_completions (guest_id, hunt_id);

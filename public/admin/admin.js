@@ -133,6 +133,7 @@ el('tabs').addEventListener('click', (event) => {
     view.classList.toggle('is-active', view.dataset.view === tab.dataset.tab);
   });
   if (tab.dataset.tab === 'map' && map) setTimeout(() => map.invalidateSize(), 60);
+  if (tab.dataset.tab === 'draw' && window.ParkDraw) window.ParkDraw.open();
   if (tab.dataset.tab === 'signs') renderSigns();
   if (tab.dataset.tab === 'journey') renderTouchpoints();
   if (tab.dataset.tab === 'settings') loadStats();
@@ -993,6 +994,9 @@ async function loadAdventure(id) {
     setTimeout(() => map.invalidateSize(), 60);
   }
   loadStats();
+  if (document.querySelector('.tab.is-active')?.dataset.tab === 'draw' && window.ParkDraw) {
+    window.ParkDraw.open();
+  }
 }
 
 el('locationSelect').addEventListener('change', async () => {
@@ -1072,6 +1076,20 @@ async function start() {
   fillSettings();
   loadStats();
   setTimeout(() => map && map.invalidateSize(), 80);
+}
+
+if (window.ParkDraw) {
+  window.ParkDraw.attach({
+    api,
+    getToken: () => token,
+    locationId: () => el('locationSelect')?.value || state.adventure?.location_id || null,
+    toast,
+    flashSaved,
+    onAuthFail: signOut,
+    onPublished: async () => {
+      if (adventureId()) await loadAdventure(adventureId());
+    },
+  });
 }
 
 if (token) {

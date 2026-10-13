@@ -591,3 +591,73 @@ code { font-family: var(--mono); font-size: 0.9em; color: var(--aurora); }
   background: rgba(143, 232, 255, 0.12);
   color: var(--aurora);
 }
+
+/* ----------------------------------- draw --------------------------------- */
+
+.drawTitle {
+  font-family: var(--display);
+  font-size: 18px;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.drawNote { margin: 0; }
+
+.drawStage {
+  overflow: hidden;
+  background: #020812;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+.drawStage.is-select { cursor: default; }
+.drawStage.is-path,
+.drawStage.is-stamp { cursor: crosshair; }
+.drawStage.is-ref { cursor: move; }
+.drawStage.is-grabbing { cursor: grabbing; }
+
+#drawViewport { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+#drawSvg { display: block; }
+
+.drawTools { display: flex; flex-wrap: wrap; gap: 6px; }
+.drawTools button,
+.stampGrid button {
+  padding: 7px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--hairline);
+  color: var(--frost-300);
+  font-size: 12px;
+}
+.drawTools button.is-active,
+.stampGrid button.is-active {
+  border-color: var(--aurora);
+  color: var(--frost-100);
+  background: rgba(93, 240, 207, 0.08);
+}
+
+.stampGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.stampGrid button { padding: 8px 4px; }
+
+.drawFeatures {
+  display: grid;
+  gap: 4px;
+  max-height: 180px;
+  overflow: auto;
+}
+.drawFeatures button {
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  color: var(--frost-300);
+  font-size: 12.5px;
+}
+.drawFeatures button.is-active {
+  border-color: var(--hairline);
+  color: var(--frost-100);
+  background: rgba(93, 240, 207, 0.06);
+}
+.drawFeatures p { margin: 0; color: var(--frost-500); font-size: 12.5px; }
+
+#drawRefOpacity { padding: 0; accent-color: var(--aurora); }
+#drawHint { pointer-events: none; }

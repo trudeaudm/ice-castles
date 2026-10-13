@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,500;1,9..144,600;1,9..144,700&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
-<link rel="stylesheet" href="/admin/admin.css?v=2">
+<link rel="stylesheet" href="/admin/admin.css?v=3">
 </head>
 <body>
 
@@ -44,6 +44,7 @@
     </div>
     <nav class="tabs" id="tabs">
       <button class="tab is-active" data-tab="map" type="button">Map</button>
+      <button class="tab" data-tab="draw" type="button">Draw</button>
       <button class="tab" data-tab="markers" type="button">Markers</button>
       <button class="tab" data-tab="trails" type="button">Trails</button>
       <button class="tab" data-tab="journey" type="button">Journey</button>
@@ -124,6 +125,85 @@
           <button class="ghostButton" id="qrPngCopy" type="button">Copy PNG</button>
         </div>
       </form>
+    </aside>
+  </section>
+
+  <!-- ------------------------------- DRAW TAB ------------------------------ -->
+  <section class="view" data-view="draw">
+    <div class="mapWrap drawStage" id="drawStage">
+      <div id="drawViewport">
+        <svg id="drawSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div class="mapHint" id="drawHint"></div>
+    </div>
+    <aside class="inspector" id="drawInspector">
+      <div class="form" id="drawForm">
+        <div class="form__head">
+          <h2 class="drawTitle">Draw the park</h2>
+        </div>
+        <p class="pane__note drawNote">
+          Import a drone photo as a tracing guide, then place paths and buildings.
+          The snow ground is already there. Publish leaves the photo out.
+        </p>
+        <div class="drawTools" id="drawTools">
+          <button type="button" data-tool="pan">Pan</button>
+          <button type="button" data-tool="select">Select</button>
+          <button type="button" data-tool="path">Path</button>
+          <button type="button" data-tool="stamp">Stamp</button>
+          <button type="button" data-tool="reference">Photo</button>
+        </div>
+
+        <div id="drawPathOptions">
+          <label>Path
+            <select id="drawPathStyle">
+              <option value="snow">Packed snow</option>
+              <option value="boardwalk">Boardwalk</option>
+              <option value="bridge">Bridge</option>
+            </select>
+          </label>
+          <label>Width<input id="drawPathWidth" type="number" min="4" max="200" value="32"></label>
+          <button class="ghostButton" id="drawFinishPath" type="button" hidden>Finish path</button>
+        </div>
+
+        <div id="drawStampOptions">
+          <div class="stampGrid" id="drawStamps"></div>
+          <div class="form__row">
+            <label>Scale<input id="drawStampScale" type="number" min="0.2" max="8" step="0.1" value="1"></label>
+            <label>Rotation<input id="drawStampRotation" type="number" step="1" value="0"></label>
+          </div>
+        </div>
+
+        <div id="drawRefOptions">
+          <input id="drawRefFile" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+          <button class="ghostButton" id="drawRefImport" type="button">Import drone photo</button>
+          <label>Opacity<input id="drawRefOpacity" type="range" min="0" max="1" step="0.05" value="0.55"></label>
+          <div class="form__row">
+            <label>Photo width<input id="drawRefWidth" type="number" min="10" max="20000"></label>
+            <label>Photo rotation<input id="drawRefRotation" type="number" step="1" value="0"></label>
+          </div>
+          <label class="check"><input id="drawRefLock" type="checkbox"><span>Lock photo</span></label>
+          <button class="dangerButton" id="drawRefClear" type="button">Remove photo</button>
+        </div>
+
+        <h3 class="form__section">Canvas</h3>
+        <div class="form__row">
+          <label>Width<input id="drawCanvasW" type="number" min="400" max="8000" value="2000"></label>
+          <label>Height<input id="drawCanvasH" type="number" min="400" max="8000" value="1400"></label>
+        </div>
+        <button class="ghostButton" id="drawApplySize" type="button">Apply size</button>
+        <p class="pane__note drawNote">Pins use this pixel size. Changing it means dragging them again. The drawing scales with the canvas.</p>
+
+        <h3 class="form__section">On the map</h3>
+        <div class="drawFeatures" id="drawFeatureList"></div>
+        <div class="form__foot">
+          <button class="ghostButton" id="drawUndo" type="button">Undo</button>
+          <button class="ghostButton" id="drawFront" type="button" hidden>Bring to front</button>
+          <button class="dangerButton" id="drawDelete" type="button" hidden>Delete</button>
+        </div>
+        <div class="form__foot">
+          <button class="primaryButton" id="drawPublish" type="button">Publish to guests</button>
+        </div>
+      </div>
     </aside>
   </section>
 
@@ -214,7 +294,7 @@
 
         <h3 class="form__section">Map artwork</h3>
         <p class="pane__note" style="margin:0 0 14px">
-          These settings belong to the selected adventure year. Marker positions are pixels on this image.
+          The Draw tab builds this picture for the whole park. Publishing there updates every season. Marker positions are pixels on the image.
         </p>
         <label>Image URL<input name="map_image_url" maxlength="500"></label>
         <div class="form__row">
@@ -237,6 +317,7 @@
 
 <script src="/vendor/leaflet.js"></script>
 <script src="/js/grid.js"></script>
-<script src="/admin/admin.js?v=2"></script>
+<script src="/admin/draw.js?v=3"></script>
+<script src="/admin/admin.js?v=3"></script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 const path = require('path');
 const express = require('express');
 const { migrate } = require('./schema');
+const { MAPS_DIR } = require('./parkMap');
 const publicRoutes = require('./routes/public');
 const { router: adminRoutes } = require('./routes/admin');
 const db = require('./db');
@@ -8,7 +9,7 @@ const db = require('./db');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
-const RESERVED = new Set(['api', 'admin', 'assets', 'vendor', 'js', 's', 'healthz']);
+const RESERVED = new Set(['api', 'admin', 'assets', 'vendor', 'js', 's', 'healthz', 'maps']);
 
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '256kb' }));
@@ -72,7 +73,16 @@ app.get('/:locationSlug/s/:code', (req, res) => {
   return redirectScan(req, res, req.params.locationSlug);
 });
 
-app.use(express.static(PUBLIC_DIR, { maxAge: '1h', extensions: ['html'] }));
+app.use('/maps', express.static(MAPS_DIR, { maxAge: '1h' }));
+app.use(express.static(PUBLIC_DIR, {
+  maxAge: '1h',
+  extensions: ['html'],
+  setHeaders(res, filePath) {
+    if (filePath.includes(`${path.sep}admin${path.sep}`)) {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  },
+}));
 
 app.get('/admin', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin', 'index.html')));
 app.get('/admin/*', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin', 'index.html')));
