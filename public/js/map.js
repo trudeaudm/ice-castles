@@ -119,9 +119,9 @@ const ParkMap = (() => {
     map.options.zoomSnap = 0;
     map.setView(box.getCenter(), zoom, { animate });
     map.options.zoomSnap = prevSnap;
-    // A short pane is the Guardian row. Nudge up so the park below that row
-    // stays outside the frame while the seals remain fully visible.
-    if (size.y < 280) map.panBy([0, Math.round(size.y * 0.06)], { animate: false });
+    // A short pane is the Guardian row. Shift the view up so the park below
+    // that row falls outside the frame, while the seals stay fully visible.
+    if (size.y < 280) map.panBy([0, -Math.round(size.y * 0.08)], { animate: false });
   }
 
   function buildIcon(poi, { visited, isTarget, isGlow, isDimmed, label, realm }) {
