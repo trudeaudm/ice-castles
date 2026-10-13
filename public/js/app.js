@@ -2,11 +2,11 @@
 
 const ART = '/assets/art';
 const REALM_META = {
-  water: { label: 'Water', glyph: '💧', shrine: `${ART}/shrine-water.png`, portrait: `${ART}/guardian-cascade.png`, pfp: `${ART}/pfp-cascade.png` },
-  earth: { label: 'Earth', glyph: '🪨', shrine: `${ART}/shrine-earth.png`, portrait: `${ART}/guardian-granite.png`, pfp: `${ART}/pfp-granite.png` },
-  fire: { label: 'Fire', glyph: '🔥', shrine: `${ART}/shrine-fire.png`, portrait: `${ART}/guardian-ember.png`, pfp: `${ART}/pfp-ember.png` },
-  air: { label: 'Air', glyph: '🌬️', shrine: `${ART}/shrine-air.png`, portrait: `${ART}/guardian-summit.png`, pfp: `${ART}/pfp-summit.png` },
-  spirit: { label: 'Spirit', glyph: '✦', shrine: `${ART}/shrine-spirit.png`, portrait: `${ART}/guardian-aurora.png`, pfp: `${ART}/pfp-aurora.png` },
+  water: { label: 'Water', glyph: '💧', character: `${ART}/char-cascade.png`, pfp: `${ART}/pfp-cascade.png` },
+  earth: { label: 'Earth', glyph: '🪨', character: `${ART}/char-granite.png`, pfp: `${ART}/pfp-granite.png` },
+  fire: { label: 'Fire', glyph: '🔥', character: `${ART}/char-ember.png`, pfp: `${ART}/pfp-ember.png` },
+  air: { label: 'Air', glyph: '🌬️', character: `${ART}/char-summit.png`, pfp: `${ART}/pfp-summit.png` },
+  spirit: { label: 'Spirit', glyph: '✦', character: `${ART}/char-aurora.png`, pfp: `${ART}/pfp-aurora.png` },
 };
 const REALM_ORDER = ['water', 'earth', 'fire', 'air', 'spirit'];
 const TILE_ART = {
@@ -30,13 +30,15 @@ function realmIcon(realm, on = true) {
 function realmPfp(realm) {
   return REALM_META[realm]?.pfp || realmIcon(realm, true);
 }
+function realmCharacter(realm) {
+  return REALM_META[realm]?.character || realmPfp(realm);
+}
 function realmPad(realm) {
   return `${ART}/pad-${realm}.png`;
 }
 function stationArt(station) {
+  if (station.element && REALM_META[station.element]) return realmCharacter(station.element);
   if (station.imageUrl) return station.imageUrl;
-  const meta = REALM_META[station.element];
-  if (meta?.shrine) return meta.shrine;
   if (station.type === 'heart' || station.type === 'monument') return `${ART}/landing-gate.webp`;
   return '';
 }
@@ -255,7 +257,7 @@ function renderStation(slug) {
     ? `<p class="fineprint">You finished the builder quiz. This stop is optional.</p>`
     : '';
   const art = stationArt(station);
-  const portrait = REALM_META[station.element]?.portrait || '';
+  const portrait = station.element ? realmCharacter(station.element) : '';
 
   if (!gated) {
     dom.stationView.innerHTML = `

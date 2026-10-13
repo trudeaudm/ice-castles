@@ -1892,20 +1892,21 @@ body.quest .topbar {
 }
 .shrine__art {
   width: 100%;
-  max-height: 220px;
+  max-height: 280px;
   object-fit: contain;
-  border-radius: 22px;
-  margin: 12px 0 0;
+  border-radius: 0;
+  margin: 8px 0 0;
   display: block;
-  background: radial-gradient(circle at 50% 40%, rgba(20, 48, 80, 0.4), transparent 70%);
+  background: none;
+  filter: drop-shadow(0 10px 18px rgba(20, 70, 110, 0.22));
 }
-.shrine__art--small { max-height: 120px; object-fit: cover; margin: 10px 0 0; }
+.shrine__art--small { max-height: 120px; object-fit: contain; margin: 10px 0 0; }
 .shrine__portrait {
   display: block;
-  width: min(180px, 56%);
+  width: min(240px, 72%);
   margin: 0 auto 14px;
   object-fit: contain;
-  filter: drop-shadow(0 8px 18px rgba(4, 16, 31, 0.35));
+  filter: drop-shadow(0 8px 16px rgba(20, 70, 110, 0.22));
 }
 .shrine__block { margin-top: 22px; }
 .shrine__block h3,
