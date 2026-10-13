@@ -1,5 +1,6 @@
 const db = require('./db');
 const { uuid, now, clean, num, bool, slugify, shortCode } = require('./helpers');
+const { ensureQuestStations } = require('./questStations');
 
 const CHALLENGE_TYPES = [
   'scan',
@@ -48,6 +49,10 @@ async function resolveAdventure({ venueCode, locationSlug, year } = {}) {
                     FROM adventures a JOIN locations l ON l.id = a.location_id`;
 
   if (!venueCode && !locationSlug) {
+    const nh = await db.get(
+      `${select} WHERE a.is_active = 1 AND l.venue_code = 'nh' ORDER BY a.year DESC LIMIT 1`
+    );
+    if (nh) return nh;
     return db.get(`${select} WHERE a.is_active = 1 ORDER BY a.year DESC LIMIT 1`);
   }
 
@@ -175,6 +180,51 @@ async function createLocation({ name, slug, region, venue_code: venueCode }) {
   return db.get('SELECT * FROM locations WHERE id = ?', [id]);
 }
 
+/**
+ * Montreal gets its own venue code so its banners never open New Hampshire.
+ * Station slugs match NH (`/mtl/cascade`, `/mtl/heart`, …). The map stays the
+ * placeholder until that park’s artwork and markers are placed.
+ */
+async function ensureMontreal() {
+  let location = await db.get(
+    `SELECT * FROM locations WHERE venue_code = 'mtl' OR slug = 'Montreal'`
+  );
+  if (!location) {
+    location = await createLocation({
+      name: 'Ice Castles Montreal',
+      slug: 'Montreal',
+      venue_code: 'mtl',
+      region: 'Montreal, Canada',
+    });
+  }
+
+  const year = new Date().getFullYear();
+  const existing = await db.get(
+    'SELECT id FROM adventures WHERE location_id = ? AND year = ?',
+    [location.id, year]
+  );
+  if (existing) {
+    await ensureQuestStations(existing.id);
+    return existing.id;
+  }
+
+  const adventure = await createAdventure(location.id, {
+    name: `${year} Montreal`,
+    year,
+    is_active: true,
+    welcome_headline: 'Welcome, Winter Keeper',
+    welcome_body:
+      'Explore the castle. Discover the five Guardians, complete their challenges in any order, then scan The Heart to become a Winter Keeper.',
+    hours_note: 'Open nightly, weather permitting. Check the front gate for tonight’s closing time.',
+    safety_note: 'Ice is uneven and slippery. Walk, don’t run, and keep little ones in reach.',
+    map_image_url: '/assets/park-map.webp',
+    map_width: 2000,
+    map_height: 1400,
+    grid_cell: 100,
+  });
+  return adventure?.id || null;
+}
+
 async function createAdventure(locationId, fields = {}) {
   const location = await db.get('SELECT * FROM locations WHERE id = ?', [locationId]);
   if (!location) return null;
@@ -220,7 +270,60 @@ async function createAdventure(locationId, fields = {}) {
       ts,
     ]
   );
+  await carryStationUrls(locationId, id);
   return adventureById(id);
+}
+
+/**
+ * Printed Castle Quest signs encode /{venue}/{slug}. A new season keeps those
+ * slugs so last year's plaques still open this year's station. Map links are
+ * not copied; catalog stations reattach when this adventure has matching markers.
+ */
+async function carryStationUrls(locationId, adventureId) {
+  const previous = await db.get(
+    `SELECT id FROM adventures
+      WHERE location_id = ? AND id != ?
+      ORDER BY year DESC, created_at DESC
+      LIMIT 1`,
+    [locationId, adventureId]
+  );
+  if (previous) {
+    const rows = await db.all(
+      'SELECT * FROM touchpoints WHERE adventure_id = ? ORDER BY sort_order, created_at',
+      [previous.id]
+    );
+    const ts = now();
+    for (const row of rows) {
+      await db.run(
+        `INSERT INTO touchpoints
+           (id, adventure_id, type, slug, title, subtitle, body, discover_body, element, image_url, audio_url,
+            poi_id, sort_order, published, challenge_type, config, slug_locked, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [
+          uuid(),
+          adventureId,
+          row.type,
+          row.slug,
+          row.title,
+          row.subtitle,
+          row.body,
+          row.discover_body,
+          row.element,
+          row.image_url,
+          row.audio_url,
+          null,
+          row.sort_order,
+          row.published,
+          row.challenge_type,
+          row.config,
+          row.slug_locked || row.published ? 1 : 0,
+          ts,
+          ts,
+        ]
+      );
+    }
+  }
+  await ensureQuestStations(adventureId);
 }
 
 async function updateAdventure(id, patch = {}) {
@@ -443,6 +546,7 @@ module.exports = {
   setActiveAdventure,
   createLocation,
   createAdventure,
+  ensureMontreal,
   updateAdventure,
   awardStop,
   validateChallengeAnswer,

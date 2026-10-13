@@ -1,6 +1,7 @@
 const db = require('./db');
 const { uuid, now } = require('./helpers');
 const { ensureQuestStationsAll } = require('./questStations');
+const { ensureMontreal } = require('./adventures');
 
 /**
  * Schema notes
@@ -142,6 +143,7 @@ CREATE TABLE IF NOT EXISTS touchpoints (
   published       INTEGER NOT NULL DEFAULT 1,
   challenge_type  TEXT,
   config          TEXT,
+  slug_locked     INTEGER NOT NULL DEFAULT 0,
   created_at      TEXT NOT NULL,
   updated_at      TEXT NOT NULL
 );
@@ -322,6 +324,7 @@ async function migrate() {
   await ensureColumn('locations', 'venue_code', 'venue_code TEXT');
   await ensureColumn('touchpoints', 'discover_body', 'discover_body TEXT');
   await ensureColumn('touchpoints', 'challenge_type', 'challenge_type TEXT');
+  await ensureColumn('touchpoints', 'slug_locked', 'slug_locked INTEGER NOT NULL DEFAULT 0');
 
   await db.exec(INDEX_DDL);
 
@@ -362,7 +365,12 @@ async function migrate() {
     ['/assets/park-map.webp', '/assets/park-map.svg']
   );
 
+  await db.run(
+    'UPDATE touchpoints SET slug_locked = 1 WHERE published = 1 AND slug_locked = 0'
+  );
+
   await ensureDefaultAdventure();
+  await ensureMontreal();
   await ensureQuestStationsAll();
   return ts;
 }

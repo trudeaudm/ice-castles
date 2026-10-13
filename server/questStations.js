@@ -228,13 +228,13 @@ async function ensureQuestStations(adventureId) {
       await db.run(
         `INSERT INTO touchpoints
            (id, adventure_id, type, slug, title, subtitle, body, discover_body, element, image_url, audio_url,
-            poi_id, sort_order, published, challenge_type, config, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            poi_id, sort_order, published, challenge_type, config, slug_locked, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           uuid(), adventureId, tp.type, tp.slug, tp.title, tp.subtitle, tp.body,
           tp.discover_body || null, tp.element || null, null, null, poiId,
           tp.sort_order, 1, tp.challenge?.type || null,
-          tp.challenge ? JSON.stringify(tp.challenge.config) : null, ts, ts,
+          tp.challenge ? JSON.stringify(tp.challenge.config) : null, 1, ts, ts,
         ]
       );
       added += 1;

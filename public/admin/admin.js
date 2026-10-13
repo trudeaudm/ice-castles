@@ -713,7 +713,7 @@ function renderTouchpoints() {
           <h3 class="huntCard__title">${escapeHtml(tp.title)}</h3>
           <p class="huntCard__meta">${escapeHtml(tp.type)} · ${escapeHtml(tp.slug)}${poi ? ` · ${escapeHtml(poi.name)}` : ''}</p>
         </div>
-        <button class="dangerButton" data-del-touch="${escapeHtml(tp.id)}" type="button">Delete</button>
+        ${tp.slug_locked ? '' : `<button class="dangerButton" data-del-touch="${escapeHtml(tp.id)}" type="button">Delete</button>`}
       </div>
       <form class="form" data-touch-form="${escapeHtml(tp.id)}">
         <div class="form__row">
@@ -724,7 +724,12 @@ function renderTouchpoints() {
           </label>
           <label>Element<input name="element" value="${escapeHtml(tp.element || '')}" maxlength="40" placeholder="water"></label>
         </div>
-        <label>Permanent URL slug<input name="slug" value="${escapeHtml(tp.slug)}" maxlength="60" placeholder="cascade"></label>
+        <label>Sign URL
+          <input name="slug" value="${escapeHtml(tp.slug)}" maxlength="60" placeholder="cascade"${tp.slug_locked ? ' readonly' : ''}>
+        </label>
+        <p class="fieldHint">${tp.slug_locked
+          ? `Banners use /${escapeHtml(locationSlug())}/${escapeHtml(tp.slug)}. Renaming this station does not change the printed code.`
+          : 'Set this before you publish. Publishing freezes the URL for the season’s banners.'}</p>
         <label>Title<input name="title" value="${escapeHtml(tp.title)}" maxlength="120"></label>
         <label>Subtitle<input name="subtitle" value="${escapeHtml(tp.subtitle || '')}" maxlength="200"></label>
         <label>Meet / story<textarea name="body" rows="4" maxlength="8000">${escapeHtml(tp.body || '')}</textarea></label>
@@ -746,7 +751,7 @@ function renderTouchpoints() {
             ${state.pois.map((p) => `<option value="${escapeHtml(p.id)}"${p.id === tp.poi_id ? ' selected' : ''}>${escapeHtml(p.name)}</option>`).join('')}
           </select>
         </label>
-        <label class="check"><input type="checkbox" name="published"${tp.published ? ' checked' : ''}><span>Visible to guests</span></label>
+        <label class="check"><input type="checkbox" name="published"${tp.published ? ' checked' : ''}${tp.slug_locked ? ' disabled' : ''}><span>${tp.slug_locked ? 'On the printed banner' : 'Visible to guests'}</span></label>
         <div class="form__foot"><button class="primaryButton" type="submit">Save</button></div>
       </form>
     </article>`;
@@ -812,7 +817,12 @@ el('touchList')?.addEventListener('click', async (event) => {
   const del = event.target.closest('[data-del-touch]');
   if (!del) return;
   if (!confirm('Delete this journey page?')) return;
-  await api(`/touchpoints/${del.dataset.delTouch}`, { method: 'DELETE' }).catch(() => null);
+  try {
+    await api(`/touchpoints/${del.dataset.delTouch}`, { method: 'DELETE' });
+  } catch {
+    toast('That station is on a printed banner.', true);
+    return;
+  }
   state.touchpoints = state.touchpoints.filter((t) => t.id !== del.dataset.delTouch);
   renderTouchpoints();
   toast('Deleted.');
@@ -841,8 +851,15 @@ async function copyQrPng(url) {
 
 function renderSigns() {
   const venue = locationSlug();
+  const base = String(state.publicBaseUrl || location.origin).replace(/\/$/, '');
   const stations = (state.touchpoints || []).filter((t) => t.published);
-  el('baseUrlSample').textContent = `${location.origin}/${venue}/cascade`;
+  el('baseUrlSample').textContent = `${base}/${venue}/cascade`;
+  let localHost = false;
+  try {
+    const host = new URL(base).hostname;
+    localHost = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+  } catch { /* leave the warning hidden */ }
+  if (el('signHostWarning')) el('signHostWarning').hidden = !localHost;
   const stationCards = stations.map((tp) => {
     const svg = qrAuth(`/station-qr/${tp.id}.svg`);
     const png = qrAuth(`/station-qr/${tp.id}.png`);
@@ -852,9 +869,9 @@ function renderSigns() {
         <img src="${escapeHtml(svg)}" alt="QR for ${escapeHtml(tp.title)}">
       </div>
       <p class="signCard__name">${escapeHtml(tp.title)}</p>
-      <p class="signCard__code">/${escapeHtml(venue)}/${escapeHtml(tp.slug)}</p>
+      <p class="signCard__code">${escapeHtml(base)}/${escapeHtml(venue)}/${escapeHtml(tp.slug)}</p>
       <div class="signCard__actions">
-        <a class="ghostButton" href="${escapeHtml(svg)}" download="${escapeHtml(tp.slug)}-qr.svg">SVG</a>
+        <a class="ghostButton" href="${escapeHtml(svg)}" download="${escapeHtml(tp.slug)}-qr.svg">SVG for banner</a>
         <a class="ghostButton" href="${escapeHtml(png)}" download="${escapeHtml(tp.slug)}-qr.png">PNG</a>
         <button class="ghostButton" type="button" data-copy-qr="${escapeHtml(png)}">Copy PNG</button>
       </div>
@@ -930,7 +947,7 @@ function fillAdventureSelects() {
 
   const currentLocId = state.adventure?.location_id || locations[0]?.id;
   locSelect.innerHTML = locations.map((loc) =>
-    `<option value="${escapeHtml(loc.id)}"${loc.id === currentLocId ? ' selected' : ''}>${escapeHtml(loc.name)} (${escapeHtml(loc.slug)})</option>`
+    `<option value="${escapeHtml(loc.id)}"${loc.id === currentLocId ? ' selected' : ''}>${escapeHtml(loc.name)} (${escapeHtml(loc.venue_code || loc.slug)})</option>`
   ).join('');
 
   const location = locations.find((l) => l.id === (locSelect.value || currentLocId)) || locations[0];
@@ -960,6 +977,7 @@ async function loadAdventure(id) {
   renderHunts();
   renderTable();
   renderTouchpoints();
+  renderSigns();
   if (map) {
     map.eachLayer((layer) => {
       if (layer instanceof L.ImageOverlay) map.removeLayer(layer);

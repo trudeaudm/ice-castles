@@ -53,7 +53,9 @@ router.get('/state', async (req, res) => {
     adventure = await db.get(
       `SELECT a.*, l.name AS location_name, l.slug AS location_slug, l.venue_code, l.region
          FROM adventures a JOIN locations l ON l.id = a.location_id
-        WHERE a.is_active = 1 ORDER BY a.year DESC LIMIT 1`
+        WHERE a.is_active = 1
+        ORDER BY CASE WHEN l.venue_code = 'nh' THEN 0 ELSE 1 END, a.year DESC
+        LIMIT 1`
     );
   }
   if (!adventure) {
@@ -87,6 +89,7 @@ router.get('/state', async (req, res) => {
 
   res.json({
     tree: await listTree(),
+    publicBaseUrl: originOf(req),
     adventure,
     settings: {
       park_name: adventure.location_name,
@@ -542,13 +545,14 @@ router.post('/touchpoints', async (req, res) => {
   if (!adventureId) return res.status(400).json({ error: 'missing_adventure' });
   const type = TOUCH_TYPES.includes(b.type) ? b.type : 'guardian';
   const title = clean(b.title, 120) || 'Untitled stop';
+  const published = bool(b.published === undefined ? true : b.published);
   const id = uuid();
   const ts = now();
   await db.run(
     `INSERT INTO touchpoints
        (id, adventure_id, type, slug, title, subtitle, body, discover_body, element, image_url, audio_url,
-        poi_id, sort_order, published, challenge_type, config, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        poi_id, sort_order, published, challenge_type, config, slug_locked, created_at, updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       id,
       adventureId,
@@ -563,9 +567,10 @@ router.post('/touchpoints', async (req, res) => {
       clean(b.audio_url, 500),
       clean(b.poi_id, 80),
       num(b.sort_order, 0),
-      bool(b.published === undefined ? true : b.published),
+      published,
       clean(b.challenge_type, 40),
       b.config ? (typeof b.config === 'string' ? b.config : JSON.stringify(b.config)) : null,
+      published,
       ts,
       ts,
     ]
@@ -579,15 +584,21 @@ router.patch('/touchpoints/:id', async (req, res) => {
   const b = req.body || {};
   const title = b.title !== undefined ? clean(b.title, 120) || existing.title : existing.title;
   const type = b.type !== undefined && TOUCH_TYPES.includes(b.type) ? b.type : existing.type;
+  const locked = existing.slug_locked === 1 || existing.slug_locked === true;
+  const published = locked ? 1 : (b.published !== undefined ? bool(b.published) : existing.published);
+  const slug = locked
+    ? existing.slug
+    : b.slug !== undefined
+      ? await uniqueTouchSlug(existing.adventure_id, b.slug || null, existing.id)
+      : existing.slug;
   await db.run(
     `UPDATE touchpoints SET type=?, slug=?, title=?, subtitle=?, body=?, discover_body=?, element=?,
-       image_url=?, audio_url=?, poi_id=?, sort_order=?, published=?, challenge_type=?, config=?, updated_at=?
+       image_url=?, audio_url=?, poi_id=?, sort_order=?, published=?, challenge_type=?, config=?,
+       slug_locked=?, updated_at=?
      WHERE id=?`,
     [
       type,
-      b.slug !== undefined
-        ? await uniqueTouchSlug(existing.adventure_id, b.slug || null, existing.id)
-        : existing.slug,
+      slug,
       title,
       b.subtitle !== undefined ? clean(b.subtitle, 200) : existing.subtitle,
       b.body !== undefined ? clean(b.body, 8000) : existing.body,
@@ -597,7 +608,7 @@ router.patch('/touchpoints/:id', async (req, res) => {
       b.audio_url !== undefined ? clean(b.audio_url, 500) : existing.audio_url,
       b.poi_id !== undefined ? clean(b.poi_id, 80) : existing.poi_id,
       b.sort_order !== undefined ? num(b.sort_order, existing.sort_order) : existing.sort_order,
-      b.published !== undefined ? bool(b.published) : existing.published,
+      published,
       b.challenge_type !== undefined ? clean(b.challenge_type, 40) : existing.challenge_type,
       b.config !== undefined
         ? b.config
@@ -606,6 +617,7 @@ router.patch('/touchpoints/:id', async (req, res) => {
             : JSON.stringify(b.config)
           : null
         : existing.config,
+      locked || published ? 1 : 0,
       now(),
       existing.id,
     ]
@@ -614,6 +626,11 @@ router.patch('/touchpoints/:id', async (req, res) => {
 });
 
 router.delete('/touchpoints/:id', async (req, res) => {
+  const existing = await db.get('SELECT slug_locked FROM touchpoints WHERE id = ?', [req.params.id]);
+  if (!existing) return res.status(404).json({ error: 'not_found' });
+  if (existing.slug_locked === 1 || existing.slug_locked === true) {
+    return res.status(409).json({ error: 'banner_printed' });
+  }
   await db.run('DELETE FROM touchpoints WHERE id = ?', [req.params.id]);
   res.json({ ok: true });
 });
@@ -635,12 +652,14 @@ function stationUrl(req, venueCode, slug) {
   return `${originOf(req)}/${venueCode || 'nh'}/${slug}`;
 }
 
-async function qrPng(text) {
+const STATION_QR = { margin: 4, errorCorrectionLevel: 'H', width: 2400 };
+
+async function qrPng(text, options = {}) {
   return QRCode.toBuffer(text, {
     type: 'png',
-    margin: 1,
-    errorCorrectionLevel: 'M',
-    width: 1024,
+    margin: options.margin ?? 1,
+    errorCorrectionLevel: options.errorCorrectionLevel || 'M',
+    width: options.width || 1024,
   });
 }
 
@@ -740,8 +759,8 @@ router.get('/station-qr/:id.svg', async (req, res) => {
   if (!row) return res.status(404).send('Not found');
   const svg = await QRCode.toString(stationUrl(req, row.venue_code, row.slug), {
     type: 'svg',
-    margin: 1,
-    errorCorrectionLevel: 'M',
+    margin: STATION_QR.margin,
+    errorCorrectionLevel: STATION_QR.errorCorrectionLevel,
   });
   res.type('image/svg+xml').send(svg);
 });
@@ -756,7 +775,7 @@ router.get('/station-qr/:id.png', async (req, res) => {
     [req.params.id]
   );
   if (!row) return res.status(404).send('Not found');
-  const png = await qrPng(stationUrl(req, row.venue_code, row.slug));
+  const png = await qrPng(stationUrl(req, row.venue_code, row.slug), STATION_QR);
   res.type('image/png').send(png);
 });
 
@@ -777,15 +796,15 @@ router.get('/station-sheet', async (req, res) => {
       const url = stationUrl(req, t.venue_code, t.slug);
       const svg = await QRCode.toString(url, {
         type: 'svg',
-        margin: 0,
-        errorCorrectionLevel: 'M',
+        margin: STATION_QR.margin,
+        errorCorrectionLevel: STATION_QR.errorCorrectionLevel,
       });
       return `<section class="card">
         <div class="zone">${escapeHtml(t.type)}</div>
         <h1>${escapeHtml(t.title)}</h1>
         <div class="qr">${svg}</div>
         <p class="hint">Scan with your phone camera</p>
-        <p class="code">/${escapeHtml(t.venue_code || 'nh')}/${escapeHtml(t.slug)}</p>
+        <p class="code">${escapeHtml(url)}</p>
       </section>`;
     })
   );
@@ -802,7 +821,7 @@ router.get('/station-sheet', async (req, res) => {
   .qr { width: 4.6in; height: 4.6in; }
   .qr svg { width: 100%; height: 100%; display: block; }
   .hint { font-size: 15pt; margin: 0; color: #333; }
-  .code { font-family: ui-monospace, monospace; font-size: 16pt; letter-spacing: .08em; margin: 0; }
+  .code { font-family: ui-monospace, monospace; font-size: 13pt; letter-spacing: .04em; margin: 0; word-break: break-all; max-width: 7in; }
   @media screen { body { padding: 24px; background: #eef2f6; } .card { background:#fff; margin: 0 auto 24px; width: 8.5in; box-shadow: 0 2px 12px rgba(0,0,0,.15); } }
 </style>
 ${cards.join('\n') || '<p style="padding:2rem">No published quest stations yet.</p>'}`);

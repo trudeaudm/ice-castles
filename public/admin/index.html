@@ -169,7 +169,7 @@
         <button class="primaryButton" id="addTouchButton" type="button">Add touchpoint</button>
       </div>
       <p class="pane__note">
-        Permanent Castle Quest URLs. Leave the slug blank on create to get a random code until you name it.
+        Each location has one sign URL, <code>/nh/cascade</code> and the rest. You can set it until the station is published. After that it stays put when the title, story, or season changes.
         First-time guests see the Castle Quest landing. Begin Quest opens Guardian stops; Map opens the full park. An unfinished Guardian QR (live session) opens a zoomed map with a begin modal. Monument and Heart still open the station page.
       </p>
       <div id="touchList"></div>
@@ -184,8 +184,12 @@
         <button class="primaryButton" id="printSheet" type="button">Open print sheet</button>
       </div>
       <p class="pane__note">
-        Quest station QRs encode a permanent path such as <code id="baseUrlSample">/nh/cascade</code>.
-        Print these for Castle Quest signs. Amenity map codes are separate and do not start the quest.
+        Download the SVG for each banner. Leave the white border around the code.
+        The URL, such as <code id="baseUrlSample">/nh/cascade</code>, stays the same for the season, so a story or challenge change does not need a reprint.
+        Amenity map codes are separate and do not start the quest.
+      </p>
+      <p class="pane__note pane__note--warn" id="signHostWarning" hidden>
+        These codes point at this computer. Set <code>PUBLIC_BASE_URL</code> to the live site before you print.
       </p>
       <div class="signGrid" id="signGrid"></div>
     </div>
