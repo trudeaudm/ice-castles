@@ -28,28 +28,7 @@ app.use('/api/admin', adminRoutes);
 app.get('/healthz', async (_req, res) => {
   try {
     await db.get('SELECT 1 AS ok');
-    const map = await db.get(
-      `SELECT m.document
-         FROM park_maps m
-         JOIN locations l ON l.id = m.location_id
-        WHERE l.venue_code = 'nh'`
-    );
-    let features = 0;
-    let revision = '';
-    if (map?.document) {
-      try {
-        const doc = JSON.parse(map.document);
-        features = Array.isArray(doc.features) ? doc.features.length : 0;
-        revision = String(doc.bundleRevision || '');
-      } catch {
-        features = 0;
-      }
-    }
-    res.json({
-      ok: true,
-      engine: db.usingPostgres ? 'postgres' : 'sqlite',
-      nhMap: { revision, features },
-    });
+    res.json({ ok: true, engine: db.usingPostgres ? 'postgres' : 'sqlite' });
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err.message || err) });
   }
