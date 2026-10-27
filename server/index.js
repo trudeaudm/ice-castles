@@ -2,6 +2,7 @@ const path = require('path');
 const express = require('express');
 const { migrate } = require('./schema');
 const { MAPS_DIR } = require('./parkMap');
+const { installBundledMaps } = require('./installBundledMaps');
 const publicRoutes = require('./routes/public');
 const { router: adminRoutes } = require('./routes/admin');
 const db = require('./db');
@@ -114,6 +115,7 @@ app.use((err, _req, res, _next) => {
 });
 
 migrate()
+  .then(() => installBundledMaps())
   .then(() => {
     app.listen(PORT, () => {
       console.log(

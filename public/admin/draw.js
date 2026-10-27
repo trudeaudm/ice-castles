@@ -6,18 +6,34 @@
  */
 const ParkDraw = (() => {
   const STAMPS = [
+    ['turret', 'Turret'],
+    ['tower', 'Spire'],
+    ['tower2', 'Spire 2'],
     ['fir1', 'Fir'],
     ['fir2', 'Fir 2'],
     ['fir3', 'Small'],
     ['hut', 'Hut'],
     ['lamp', 'Lamp'],
-    ['tower', 'Tower'],
     ['wall', 'Wall'],
   ];
   const STAMP_LABEL = Object.fromEntries(STAMPS);
-  const STYLE_LABEL = { snow: 'Snow path', boardwalk: 'Boardwalk', bridge: 'Bridge' };
-  const STAMP_R = { fir1: 28, fir2: 24, fir3: 20, hut: 48, lamp: 36, tower: 78, wall: 52 };
-  const ISLAND = 'M300 250 q220 -110 520 -80 q210 22 400 -14 q250 -46 400 90 q150 128 96 330 q-52 196 -240 300 q-190 104 -470 122 q-300 20 -560 -34 q-260 -54 -336 -230 q-76 -176 24 -330 q94 -146 166 -154 Z';
+  STAMP_LABEL.keep = 'Castle';
+  const STYLE_LABEL = { ground: 'Snow ground', snow: 'Snow path', boardwalk: 'Boardwalk', bridge: 'Bridge', wall: 'Castle wall' };
+  const STAMP_R = { fir1: 44, fir2: 38, fir3: 26, hut: 50, lamp: 39, tower: 55, tower2: 55, turret: 48, keep: 110, wall: 55 };
+  const PATH_WIDTH = 6;
+  const WALL_WIDTH = 11;
+  const ISLAND_CURVES = [
+    { c: [520, 140], e: [820, 170] },
+    { c: [1030, 192], e: [1220, 156] },
+    { c: [1470, 110], e: [1620, 246] },
+    { c: [1770, 374], e: [1716, 576] },
+    { c: [1664, 772], e: [1476, 876] },
+    { c: [1286, 980], e: [1006, 998] },
+    { c: [706, 1018], e: [446, 964] },
+    { c: [186, 910], e: [110, 734] },
+    { c: [34, 558], e: [134, 404] },
+    { c: [228, 258], e: [300, 250] },
+  ];
 
   const DEFS = `
     <linearGradient id="sky" x1="0" y1="0" x2="0.25" y2="1">
@@ -37,52 +53,34 @@ const ParkDraw = (() => {
     </linearGradient>
     <radialGradient id="lampGlow"><stop offset="0" stop-color="#ffc978" stop-opacity=".55"/><stop offset="1" stop-color="#ffc978" stop-opacity="0"/></radialGradient>
     <filter id="soft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="9"/></filter>
-    <g id="fir1">
-      <path d="M0 20 q-4 2 -13 1 q3 -6 8 -9 q-8 1 -14 -1 q5 -8 12 -13 q-7 0 -12 -2 q7 -11 19 -21 q12 10 19 21 q-5 2 -12 2 q7 5 12 13 q-6 2 -14 1 q5 3 8 9 q-9 1 -13 -1 Z" fill="#1f6b63" stroke="#0c3a3c" stroke-width="2.5" stroke-linejoin="round"/>
-      <path d="M0 -25 q-8 9 -12 18 q6 1 12 -2 Z" fill="#dff3f7" opacity=".5"/>
-      <rect x="-2.5" y="19" width="5" height="9" rx="2" fill="#43281a"/>
+    <g id="fir1">${stampImage('fir1', 71.6, 88)}</g>
+    <g id="fir2">${stampImage('fir2', 74.3, 72)}</g>
+    <g id="fir3">${stampImage('fir3', 41.4, 52)}</g>
+    <g id="hut">${stampImage('hut', 100, 97.9)}</g>
+    <g id="lamp">${stampImage('lamp', 62.2, 78)}</g>
+    <g id="tower">${stampImage('tower', 62.8, 110)}</g>
+    <g id="tower2">${stampImage('tower2', 51.9, 110)}</g>
+    <g id="turret">${stampImage('turret', 96, 83.3)}</g>
+    <g id="keep">
+      <ellipse cx="0" cy="48" rx="84" ry="14" fill="#071422" opacity=".25"/>
+      <use href="#tower" xlink:href="#tower" transform="translate(0 -16) scale(0.82)"/>
+      <path d="M-62 18 L64 10 L60 36 L-58 42 Z" fill="url(#iceSide)" stroke="#2f6f95" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M-66 6 L68 -2 L64 18 L-62 24 Z" fill="url(#iceFace)" stroke="#2f6f95" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M-60 26 L62 18" fill="none" stroke="#eaf9ff" stroke-width="1.1" opacity=".4"/>
+      <use href="#tower" xlink:href="#tower" transform="translate(-52 14) scale(0.46)"/>
+      <use href="#tower" xlink:href="#tower" transform="translate(56 16) scale(0.4)"/>
     </g>
-    <g id="fir2">
-      <path d="M0 16 q-4 2 -11 1 q3 -5 7 -8 q-7 1 -12 -1 q4 -7 10 -11 q-6 0 -10 -2 q6 -9 16 -18 q10 9 16 18 q-4 2 -10 2 q6 4 10 11 q-5 2 -12 1 q4 3 7 8 q-7 1 -11 -1 Z" fill="#2a7d6b" stroke="#0c3a3c" stroke-width="2.5" stroke-linejoin="round"/>
-      <path d="M0 -21 q-7 8 -10 15 q5 1 10 -2 Z" fill="#dff3f7" opacity=".45"/>
-      <rect x="-2" y="15" width="4" height="8" rx="2" fill="#43281a"/>
-    </g>
-    <g id="fir3">
-      <path d="M0 12 q-3 2 -9 1 q2 -4 6 -7 q-6 1 -10 -1 q4 -6 9 -9 q-5 0 -8 -2 q5 -8 12 -14 q7 6 12 14 q-3 2 -8 2 q5 3 9 9 q-4 2 -10 1 q4 3 6 7 q-6 1 -9 -1 Z" fill="#18594f" stroke="#0c3a3c" stroke-width="2.2" stroke-linejoin="round"/>
-      <rect x="-1.8" y="11" width="3.6" height="7" rx="1.8" fill="#43281a"/>
-    </g>
-    <g id="hut">
-      <path d="M-34 6 L0 -12 L34 6 L34 30 L0 46 L-34 30 Z" fill="#8d6a4f" stroke="#3a2415" stroke-width="3" stroke-linejoin="round"/>
-      <path d="M0 -12 L34 6 L34 30 L0 46 Z" fill="#6f5240"/>
-      <path d="M-42 8 L0 -22 L42 8 L0 20 Z" fill="#e9f6fb" stroke="#3a2415" stroke-width="3" stroke-linejoin="round"/>
-      <path d="M-14 20 L-14 34 L0 42 L0 26 Z" fill="#ffcf86" stroke="#3a2415" stroke-width="2.4"/>
-      <path d="M12 20 L12 32 L24 26 L24 14 Z" fill="#ffcf86" stroke="#3a2415" stroke-width="2.4" opacity=".8"/>
-    </g>
-    <g id="lamp">
-      <circle cx="0" cy="-26" r="26" fill="url(#lampGlow)"/>
-      <rect x="-2.2" y="-24" width="4.4" height="30" rx="2" fill="#2b3f52"/>
-      <path d="M0 -38 l9 9 l-9 10 l-9 -10 Z" fill="#ffd08f" stroke="#2b3f52" stroke-width="2.2"/>
-    </g>
-    <g id="tower">
-      <path d="M-28 48 L-28 -20 L-16 -58 L0 -86 L16 -58 L28 -20 L28 48 Z" fill="url(#iceFace)" stroke="#2f6f95" stroke-width="3" stroke-linejoin="round"/>
-      <path d="M0 -86 L16 -58 L28 -20 L28 48 L0 60 Z" fill="url(#iceSide)" opacity=".85"/>
-      <path d="M-10 48 L-10 10 q10 -16 20 0 L10 48 Z" fill="#1c4f73" stroke="#2f6f95" stroke-width="2"/>
-      <path d="M0 -86 L0 -108" stroke="#2f6f95" stroke-width="2" fill="none"/>
-      <path d="M0 -108 l16 6 l-16 7 Z" fill="#7fe8c8"/>
-      <g fill="#f2fcff" opacity=".9">
-        <path d="M-28 48 l8 16 l8 -16 Z"/><path d="M-8 48 l8 20 l8 -20 Z"/><path d="M12 48 l8 14 l8 -14 Z"/>
-      </g>
-    </g>
-    <g id="wall">
-      <path d="M-48 10 L-48 -8 L-32 -8 L-32 -22 L-16 -22 L-16 -8 L0 -8 L0 -22 L16 -22 L16 -8 L32 -8 L32 -22 L48 -22 L48 10 Z" fill="url(#iceFace)" stroke="#2f6f95" stroke-width="2.5" stroke-linejoin="round"/>
-      <path d="M-48 10 L48 10 L48 20 L-48 20 Z" fill="url(#iceSide)"/>
-    </g>
+    <g id="wall">${stampImage('wall', 110, 68.9)}</g>
   `;
 
   const HINTS = {
     pan: 'Drag to move around. Scroll to zoom.',
     select: 'Click a path or stamp, then drag it. Delete removes it.',
+    points: 'Drag a point to move it. Click a point, then Delete to remove it. Drag the line to move the whole path.',
+    wallOpen: 'Drag a point to move it. Click a point, then Delete to remove it. Click the wall again to open or close a tunnel.',
     path: 'Click to add points. Double-click or Finish path when the line is done.',
+    ground: 'Click around the snow. Double-click to close the shape. Opacity fades this base layer.',
+    wall: 'Click along the wall. The pale band is the top of the ice, and the blue face hangs toward the bottom of the map. Double-click to finish.',
     stamp: 'Click the map to place the chosen stamp. Drag it with Select.',
     reference: 'Drag the photo until it lines up, then lock it. Publish leaves it out.',
   };
@@ -100,8 +98,9 @@ const ParkDraw = (() => {
   let currentId = null;
   let blobUrl = null;
   let tool = 'pan';
-  let stampKind = 'tower';
+  let stampKind = 'turret';
   let selectedId = null;
+  let vertexIndex = null;
   let draft = [];
   let undo = [];
   let pointer = null;
@@ -192,17 +191,47 @@ const ParkDraw = (() => {
     return Math.hypot(px - (a.x + t * dx), py - (a.y + t * dy));
   }
 
+  function pointInPoly(x, y, points) {
+    let inside = false;
+    for (let i = 0, j = points.length - 1; i < points.length; j = i, i += 1) {
+      const xi = points[i].x;
+      const yi = points[i].y;
+      const xj = points[j].x;
+      const yj = points[j].y;
+      const crosses = (yi > y) !== (yj > y);
+      const xCross = ((xj - xi) * (y - yi)) / ((yj - yi) || 1e-9) + xi;
+      if (crosses && x < xCross) inside = !inside;
+    }
+    return inside;
+  }
+
   function hitFeature(x, y) {
-    for (let i = doc.features.length - 1; i >= 0; i -= 1) {
-      const feature = doc.features[i];
+    const hitOne = (feature) => {
       if (feature.type === 'stamp') {
         const radius = (STAMP_R[feature.kind] || 30) * feature.scale;
-        if (Math.hypot(x - feature.x, y - feature.y) <= radius) return feature;
-      } else if (feature.type === 'path') {
-        const limit = feature.width / 2 + 8;
-        for (let p = 1; p < feature.points.length; p += 1) {
-          if (distToSeg(x, y, feature.points[p - 1], feature.points[p]) <= limit) return feature;
+        return Math.hypot(x - feature.x, y - feature.y) <= radius;
+      }
+      if (feature.type !== 'path') return false;
+      if (isGround(feature)) {
+        if (pointInPoly(x, y, feature.points)) return true;
+        for (let p = 0; p < feature.points.length; p += 1) {
+          const next = feature.points[(p + 1) % feature.points.length];
+          if (distToSeg(x, y, feature.points[p], next) <= 14) return true;
         }
+        return false;
+      }
+      const pad = feature.style === 'wall' ? Math.max(12, feature.width * 0.65) : 8;
+      const limit = feature.width / 2 + pad;
+      for (let p = 1; p < feature.points.length; p += 1) {
+        if (distToSeg(x, y, feature.points[p - 1], feature.points[p]) <= limit) return true;
+      }
+      return false;
+    };
+    for (let pass = 0; pass < 2; pass += 1) {
+      for (let i = doc.features.length - 1; i >= 0; i -= 1) {
+        const feature = doc.features[i];
+        if (isGround(feature) !== (pass === 1)) continue;
+        if (hitOne(feature)) return feature;
       }
     }
     return null;
@@ -212,9 +241,275 @@ const ParkDraw = (() => {
     return points.map((p, i) => `${i ? 'L' : 'M'}${r1(p.x)} ${r1(p.y)}`).join(' ');
   }
 
+  function polyLength(points) {
+    let total = 0;
+    for (let i = 1; i < points.length; i += 1) {
+      total += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+    }
+    return total;
+  }
+
+  function pointAlong(points, dist) {
+    let remain = Math.max(0, dist);
+    for (let i = 1; i < points.length; i += 1) {
+      const a = points[i - 1];
+      const b = points[i];
+      const seg = Math.hypot(b.x - a.x, b.y - a.y);
+      if (seg < 0.001) continue;
+      if (remain <= seg) {
+        const tx = (b.x - a.x) / seg;
+        const ty = (b.y - a.y) / seg;
+        const t = remain / seg;
+        return {
+          x: a.x + (b.x - a.x) * t,
+          y: a.y + (b.y - a.y) * t,
+          tx,
+          ty,
+          nx: -ty,
+          ny: tx,
+          d: dist,
+        };
+      }
+      remain -= seg;
+    }
+    const a = points[points.length - 2];
+    const b = points[points.length - 1];
+    const seg = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    const tx = (b.x - a.x) / seg;
+    const ty = (b.y - a.y) / seg;
+    return { x: b.x, y: b.y, tx, ty, nx: -ty, ny: tx, d: dist };
+  }
+
+  function roundCorners(points, radius) {
+    if (points.length < 3) return points;
+    const out = [points[0]];
+    for (let i = 1; i < points.length - 1; i += 1) {
+      const prev = points[i - 1];
+      const curr = points[i];
+      const next = points[i + 1];
+      const inLen = Math.hypot(curr.x - prev.x, curr.y - prev.y);
+      const outLen = Math.hypot(next.x - curr.x, next.y - curr.y);
+      const cut = Math.min(radius, inLen * 0.46, outLen * 0.46);
+      if (cut < 6 || inLen < 1 || outLen < 1) {
+        out.push(curr);
+        continue;
+      }
+      const inX = (curr.x - prev.x) / inLen;
+      const inY = (curr.y - prev.y) / inLen;
+      const outX = (next.x - curr.x) / outLen;
+      const outY = (next.y - curr.y) / outLen;
+      const start = { x: curr.x - inX * cut, y: curr.y - inY * cut };
+      const end = { x: curr.x + outX * cut, y: curr.y + outY * cut };
+      const steps = 7;
+      for (let s = 0; s <= steps; s += 1) {
+        const t = s / steps;
+        const u = 1 - t;
+        out.push({
+          x: u * u * start.x + 2 * u * t * curr.x + t * t * end.x,
+          y: u * u * start.y + 2 * u * t * curr.y + t * t * end.y,
+        });
+      }
+    }
+    out.push(points[points.length - 1]);
+    return out;
+  }
+
+  function roundCap(from, to, outward, radius) {
+    const len = Math.hypot(outward.x, outward.y) || 1;
+    const ox = outward.x / len;
+    const oy = outward.y / len;
+    const pts = [];
+    const steps = 5;
+    for (let i = 1; i < steps; i += 1) {
+      const t = i / steps;
+      const bulge = Math.sin(Math.PI * t) * radius;
+      pts.push({
+        x: from.x + (to.x - from.x) * t + ox * bulge,
+        y: from.y + (to.y - from.y) * t + oy * bulge,
+      });
+    }
+    return pts;
+  }
+
+  function ringPath(parts) {
+    const pts = parts.flat();
+    if (pts.length < 3) return '';
+    return `${pathD(pts)} Z`;
+  }
+
+  function ribbonPath(railA, railB, outwardStart, outwardEnd) {
+    const chord = Math.hypot(railA[0].x - railB[0].x, railA[0].y - railB[0].y);
+    const capR = chord * 0.34;
+    const endCap = roundCap(railA[railA.length - 1], railB[railB.length - 1], outwardEnd, capR);
+    const startCap = roundCap(railB[0], railA[0], outwardStart, capR);
+    return ringPath([railA, endCap, [...railB].reverse(), startCap]);
+  }
+
+  function closestAlong(points, x, y) {
+    let best = null;
+    let walked = 0;
+    for (let i = 1; i < points.length; i += 1) {
+      const a = points[i - 1];
+      const b = points[i];
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const len2 = dx * dx + dy * dy || 1;
+      const seg = Math.sqrt(len2);
+      let t = ((x - a.x) * dx + (y - a.y) * dy) / len2;
+      t = Math.max(0, Math.min(1, t));
+      const px = a.x + dx * t;
+      const py = a.y + dy * t;
+      const dist = Math.hypot(x - px, y - py);
+      if (!best || dist < best.dist) best = { d: walked + seg * t, dist };
+      walked += seg;
+    }
+    return best;
+  }
+
+  function tunnelMetrics(thick) {
+    const faceH = Math.max(3, thick * 0.58);
+    const mouthW = Math.max(thick * 2.4, 9);
+    return { faceH, mouthW, span: mouthW * 0.55 };
+  }
+
+  function tunnelArch(cx, cy, ox, oy, radius) {
+    const tx = oy;
+    const ty = -ox;
+    const x0 = cx - tx * radius;
+    const y0 = cy - ty * radius;
+    const x1 = cx + tx * radius;
+    const y1 = cy + ty * radius;
+    const r = r1(radius);
+    const dome = `M${r1(x0)} ${r1(y0)} A${r} ${r} 0 0 1 ${r1(x1)} ${r1(y1)}`;
+    return { dome, shape: `${dome} Z` };
+  }
+
+  function wallMarkup(feature) {
+    const thick = Math.max(feature.width, 4);
+    const rounded = roundCorners(feature.points, Math.max(8, thick * 0.65));
+    const total = polyLength(rounded);
+    if (total < 6 || rounded.length < 2) return '';
+    const step = Math.max(4, Math.min(9, thick * 0.16));
+    const raw = [];
+    for (let d = 0; d <= total; d += step) raw.push(pointAlong(rounded, Math.min(d, total)));
+    if (raw[raw.length - 1].d < total - 0.4) raw.push(pointAlong(rounded, total));
+    const samples = raw.map((sample, index) => {
+      const prev = raw[Math.max(0, index - 1)];
+      const next = raw[Math.min(raw.length - 1, index + 1)];
+      let nx = prev.nx + sample.nx + next.nx;
+      let ny = prev.ny + sample.ny + next.ny;
+      const mag = Math.hypot(nx, ny) || 1;
+      nx /= mag;
+      ny /= mag;
+      return { ...sample, nx, ny };
+    });
+
+    const half = thick * 0.5;
+    const { faceH, mouthW, span } = tunnelMetrics(thick);
+    const left = samples.map((s) => ({ x: s.x + s.nx * half, y: s.y + s.ny * half }));
+    const right = samples.map((s) => ({ x: s.x - s.nx * half, y: s.y - s.ny * half }));
+    const rawLen = polyLength(feature.points) || 1;
+    const tunnelPts = (feature.tunnels || []).map((dist, index) => ({
+      at: pointAlong(rounded, (dist / rawLen) * total),
+      dist: (dist / rawLen) * total,
+      index,
+    }));
+    const sunkLeft = left.map((point) => ({ x: point.x, y: point.y + faceH }));
+    const sunkRight = right.map((point) => ({ x: point.x, y: point.y + faceH }));
+    const start = samples[0];
+    const end = samples[samples.length - 1];
+    const capStart = { x: -start.tx, y: -start.ty };
+    const capEnd = { x: end.tx, y: end.ty };
+    const snow = ribbonPath(left, right, capStart, capEnd);
+    const ice = ribbonPath(sunkLeft, sunkRight, capStart, capEnd);
+    const arches = tunnelPts.map((tunnel) => {
+      let best = 0;
+      for (let i = 1; i < samples.length; i += 1) {
+        if (Math.abs(samples[i].d - tunnel.dist) < Math.abs(samples[best].d - tunnel.dist)) best = i;
+      }
+      const sample = samples[best];
+      let ox = sample.nx;
+      let oy = sample.ny;
+      if (oy < 0) {
+        ox = -ox;
+        oy = -oy;
+      }
+      const mag = Math.hypot(ox, oy) || 1;
+      ox /= mag;
+      oy /= mag;
+      const extra = faceH * oy;
+      const radius = Math.max(half * 1.15, faceH * 0.9);
+      const cx = sample.x + ox * (half + extra);
+      const cy = sample.y + oy * (half + extra);
+      return {
+        id: `tunnel-${feature.id || 'draft'}-${tunnel.index}`,
+        cx,
+        cy,
+        radius,
+        ox,
+        oy,
+        ...tunnelArch(cx, cy, ox, oy, radius),
+      };
+    });
+    const clip = `wall-${feature.id || 'draft'}`;
+    const ink = '#2c241f';
+    const stroke = r1(Math.max(2.2, thick * 0.1));
+    const flutes = [];
+    const spots = [];
+    const nearest = (dist) => samples.reduce((best, sample, index) => (
+      Math.abs(sample.d - dist) < Math.abs(samples[best].d - dist) ? index : best
+    ), 0);
+    for (let dist = thick * 0.65; dist < total - thick * 0.3; dist += Math.max(14, thick * 0.7)) {
+      if (tunnelPts.some((opening) => Math.abs(opening.dist - dist) < span)) continue;
+      const index = nearest(dist);
+      const low = left[index].y >= right[index].y ? left[index] : right[index];
+      flutes.push(`<path d="M${r1(low.x)} ${r1(low.y)} L${r1(low.x)} ${r1(low.y + faceH)}" fill="none" stroke="#e7f7ff" stroke-width="${r1(Math.max(1.5, thick * 0.12))}" stroke-linecap="round" opacity="0.75"/>`);
+    }
+    for (let dist = thick * 0.85; dist < total - thick * 0.2; dist += Math.max(28, thick * 1.8)) {
+      const index = nearest(dist);
+      const midX = (left[index].x + right[index].x) / 2;
+      const midY = (left[index].y + right[index].y) / 2;
+      spots.push(`<ellipse cx="${r1(midX)}" cy="${r1(midY)}" rx="${r1(thick * 0.18)}" ry="${r1(Math.max(1.3, thick * 0.07))}" fill="#d5e9f4" opacity="0.5"/>`);
+    }
+    const shadow = pathD(samples.map((s) => ({ x: s.x, y: s.y + faceH + half * 0.35 })));
+    const hole = `${clip}-hole`;
+    const holes = arches.map((arch) => `<path d="${arch.shape}" fill="black"/>`).join('');
+    const mouths = arches.map((arch) => `<linearGradient id="${arch.id}" gradientUnits="userSpaceOnUse" x1="${r1(arch.cx - arch.ox * arch.radius)}" y1="${r1(arch.cy - arch.oy * arch.radius)}" x2="${r1(arch.cx)}" y2="${r1(arch.cy)}">
+        <stop offset="0" stop-color="#16324c"/>
+        <stop offset="1" stop-color="#3e6d8f"/>
+      </linearGradient>
+      <path d="${arch.shape}" fill="url(#${arch.id})"/>`).join('');
+    const lips = arches.map((arch) => `<path d="${arch.dome}" fill="none" stroke="${ink}" stroke-width="${stroke}" stroke-linecap="round"/>`).join('');
+
+    return `<g>
+      <defs>
+        <clipPath id="${clip}"><path d="${snow}"/><path d="${ice}"/></clipPath>
+        <mask id="${hole}" maskUnits="userSpaceOnUse">
+          <rect x="-500" y="-500" width="4000" height="4000" fill="white"/>
+          ${holes}
+        </mask>
+      </defs>
+      <path d="${shadow}" fill="none" stroke="#06101c" stroke-width="${r1(thick * 0.45)}" stroke-linecap="round" opacity="0.16" filter="url(#soft)"/>
+      <g mask="url(#${hole})">
+        <path d="${ice}" fill="${ink}" stroke="${ink}" stroke-width="${stroke}" stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="${snow}" fill="${ink}" stroke="${ink}" stroke-width="${stroke}" stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="${ice}" fill="#7ec4ee"/>
+        <path d="${snow}" fill="#f7fbff"/>
+        <g clip-path="url(#${clip})">
+          ${flutes.join('')}
+          ${spots.join('')}
+        </g>
+      </g>
+      <g clip-path="url(#${clip})">${mouths}</g>
+      <g clip-path="url(#${clip})">${lips}</g>
+    </g>`;
+  }
+
   function pathMarkup(feature) {
     const d = pathD(feature.points);
     const w = feature.width;
+    if (feature.style === 'ground') return groundShape(feature);
+    if (feature.style === 'wall') return wallMarkup(feature);
     if (feature.style === 'bridge') {
       return `<g>
         <path d="${d}" fill="none" stroke="#1c3348" stroke-width="${w + 16}" stroke-linecap="round" stroke-linejoin="round"/>
@@ -249,19 +544,53 @@ const ParkDraw = (() => {
     }
     const body = pathMarkup(feature);
     if (!selected) return body;
-    const d = pathD(feature.points);
-    return `<path d="${d}" fill="none" stroke="#5df0cf" stroke-width="${r1(feature.width + 14)}" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>${body}`;
+    const d = `${pathD(feature.points)}${isGround(feature) ? ' Z' : ''}`;
+    const halo = feature.style === 'wall' ? feature.width * 1.7 : isGround(feature) ? 16 : feature.width + 14;
+    const handleR = 7 / Math.max(view.z, 0.05);
+    const handleStroke = 1.6 / Math.max(view.z, 0.05);
+    const handles = feature.points.map((point, index) => {
+      const hot = index === vertexIndex;
+      return `<circle cx="${r1(point.x)}" cy="${r1(point.y)}" r="${r1(handleR)}" fill="${hot ? '#5df0cf' : '#f7fbff'}" stroke="#16324c" stroke-width="${r1(handleStroke)}"/>`;
+    }).join('');
+    return `<path d="${d}" fill="none" stroke="#5df0cf" stroke-width="${r1(halo)}" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>${body}${handles}`;
   }
 
-  function groundMarkup(drawing) {
-    const sx = drawing.width / 2000;
-    const sy = drawing.height / 1400;
-    return `
-      <rect width="${drawing.width}" height="${drawing.height}" fill="url(#sky)"/>
-      <g transform="scale(${sx} ${sy})">
-        <path d="${ISLAND}" fill="#0a1c31" transform="translate(14 22)" filter="url(#soft)" opacity=".85"/>
-        <path d="${ISLAND}" fill="url(#snow)" stroke="#cfe9f8" stroke-width="5" stroke-linejoin="round"/>
-      </g>`;
+  function isGround(feature) {
+    return feature?.type === 'path' && feature.style === 'ground';
+  }
+
+  function islandPoints(width, height) {
+    const sx = width / 2000;
+    const sy = height / 1400;
+    let x = 300;
+    let y = 250;
+    const points = [];
+    ISLAND_CURVES.forEach((curve) => {
+      for (let step = 0; step < 6; step += 1) {
+        const t = step / 6;
+        const u = 1 - t;
+        points.push({
+          x: (u * u * x + 2 * u * t * curve.c[0] + t * t * curve.e[0]) * sx,
+          y: (u * u * y + 2 * u * t * curve.c[1] + t * t * curve.e[1]) * sy,
+        });
+      }
+      x = curve.e[0];
+      y = curve.e[1];
+    });
+    return points;
+  }
+
+  function groundShape(feature) {
+    const d = `${pathD(feature.points)} Z`;
+    const opacity = clamp(num(feature.opacity, 1), 0, 1);
+    return `<g opacity="${opacity}">
+      <path d="${d}" fill="#0a1c31" transform="translate(8 12)" filter="url(#soft)" opacity="0.85"/>
+      <path d="${d}" fill="url(#snow)" stroke="#cfe9f8" stroke-width="5" stroke-linejoin="round"/>
+    </g>`;
+  }
+
+  function skyMarkup(drawing) {
+    return `<rect width="${drawing.width}" height="${drawing.height}" fill="url(#sky)"/>`;
   }
 
   function referenceMarkup() {
@@ -278,20 +607,25 @@ const ParkDraw = (() => {
   }
 
   function sceneMarkup(drawing, { reference = false, editor = false } = {}) {
-    const features = drawing.features.map((feature) => featureMarkup(feature, editor && feature.id === selectedId)).join('');
+    const paint = (feature) => featureMarkup(feature, editor && feature.id === selectedId);
+    const grounds = drawing.features.filter(isGround).map(paint).join('');
+    const features = drawing.features.filter((feature) => !isGround(feature)).map(paint).join('');
     let draftMarkup = '';
     if (editor && draft.length) {
+      const style = $('drawPathStyle').value;
       draftMarkup = featureMarkup({
         type: 'path',
-        style: $('drawPathStyle').value,
-        width: clamp(Math.round(num($('drawPathWidth').value, 32)), 4, 200),
+        style,
+        width: clamp(Math.round(num($('drawPathWidth').value, style === 'wall' ? WALL_WIDTH : PATH_WIDTH)), 4, 200),
+        opacity: style === 'ground' ? clamp(num($('drawGroundOpacity').value, 1), 0, 1) : 1,
         points: draft.length === 1 ? [draft[0], draft[0]] : draft,
       }, false);
     }
     const frame = editor
       ? `<rect x="1" y="1" width="${drawing.width - 2}" height="${drawing.height - 2}" fill="none" stroke="rgba(166,203,226,0.45)" stroke-width="${r1(2 / Math.max(view.z, 0.05))}"/>`
       : '';
-    return `${groundMarkup(drawing)}${reference ? referenceMarkup() : ''}${features}${draftMarkup}${frame}`;
+    const photo = reference ? referenceMarkup() : '';
+    return `${skyMarkup(drawing)}${grounds}${photo}${features}${draftMarkup}${frame}`;
   }
 
   function svgText(markup, drawing) {
@@ -336,13 +670,22 @@ const ParkDraw = (() => {
     $('drawPathOptions').hidden = !showPath;
     $('drawStampOptions').hidden = !showStamp;
     $('drawRefOptions').hidden = tool !== 'reference';
-    $('drawFinishPath').hidden = tool !== 'path' || draft.length < 2;
+    const style = selected?.type === 'path' ? selected.style : $('drawPathStyle').value;
+    const ground = showPath && style === 'ground';
+    $('drawPathWidth').closest('label').hidden = ground;
+    $('drawGroundOpacity').closest('label').hidden = !ground;
+    const finish = $('drawFinishPath');
+    finish.hidden = tool !== 'path' || draft.length < (style === 'ground' ? 3 : 2);
+    finish.textContent = style === 'ground' ? 'Finish shape' : 'Finish path';
     $('drawDelete').hidden = !selected;
     $('drawFront').hidden = !selected;
 
     const hint = $('drawHint');
     if (hint) {
-      hint.innerHTML = `<strong>${tool === 'reference' ? 'Line up the photo.' : 'Draw what the photo can’t show.'}</strong>${HINTS[tool] || ''}`;
+      let hintKey = tool;
+      if (tool === 'select' && selected?.type === 'path') hintKey = selected.style === 'wall' ? 'wallOpen' : 'points';
+      else if (tool === 'path' && (style === 'wall' || style === 'ground')) hintKey = style;
+      hint.innerHTML = `<strong>${tool === 'reference' ? 'Line up the photo.' : 'Draw what the photo can’t show.'}</strong>${HINTS[hintKey] || ''}`;
     }
 
     const list = $('drawFeatureList');
@@ -369,6 +712,7 @@ const ParkDraw = (() => {
     if (selected?.type === 'path') {
       $('drawPathStyle').value = selected.style;
       $('drawPathWidth').value = String(selected.width);
+      if (selected.style === 'ground') $('drawGroundOpacity').value = String(num(selected.opacity, 1));
     }
     if (selected?.type === 'stamp') {
       stampKind = selected.kind;
@@ -394,7 +738,8 @@ const ParkDraw = (() => {
   }
 
   function setTool(next) {
-    if (tool === 'path' && next !== 'path') finishDraft();
+    if (tool === 'path' && next !== tool) finishDraft();
+    if (next !== tool) vertexIndex = null;
     tool = next;
     updateChrome();
   }
@@ -408,17 +753,31 @@ const ParkDraw = (() => {
     }
     const points = draft.map((p) => ({ x: p.x, y: p.y }));
     const style = $('drawPathStyle').value;
-    const width = clamp(Math.round(num($('drawPathWidth').value, 32)), 4, 200);
+    if (style === 'ground' && points.length < 3) {
+      draft = [];
+      render();
+      updateChrome();
+      return;
+    }
+    const width = clamp(Math.round(num($('drawPathWidth').value, style === 'wall' ? WALL_WIDTH : PATH_WIDTH)), 4, 200);
+    const opacity = clamp(num($('drawGroundOpacity').value, 1), 0, 1);
     draft = [];
     edit(() => {
       const id = nextId();
-      doc.features.push({ id, type: 'path', style, width, points });
+      const feature = { id, type: 'path', style, width, points };
+      if (style === 'ground') {
+        feature.opacity = opacity;
+        const at = doc.features.findIndex((item) => !isGround(item));
+        doc.features.splice(at < 0 ? doc.features.length : at, 0, feature);
+      } else {
+        doc.features.push(feature);
+      }
       selectedId = id;
     });
   }
 
   function placeStamp(x, y) {
-    const scale = clamp(num($('drawStampScale').value, 1), 0.2, 8);
+    const scale = clamp(num($('drawStampScale').value, 0.2), 0.04, 8);
     const rotation = num($('drawStampRotation').value, 0);
     edit(() => {
       const id = nextId();
@@ -443,7 +802,12 @@ const ParkDraw = (() => {
       const index = doc.features.findIndex((feature) => feature.id === id);
       if (index < 0) return;
       const [item] = doc.features.splice(index, 1);
-      doc.features.push(item);
+      if (isGround(item)) {
+        const at = doc.features.findIndex((feature) => !isGround(feature));
+        doc.features.splice(at < 0 ? doc.features.length : at, 0, item);
+      } else {
+        doc.features.push(item);
+      }
     });
   }
 
@@ -452,6 +816,7 @@ const ParkDraw = (() => {
     if (!prev) return;
     doc = JSON.parse(prev);
     selectedId = null;
+    vertexIndex = null;
     draft = [];
     rev += 1;
     syncInputs();
@@ -512,6 +877,23 @@ const ParkDraw = (() => {
     blobUrl = URL.createObjectURL(await res.blob());
   }
 
+  function ensureBase() {
+    if (!doc || doc.baseSeeded) return;
+    doc.baseSeeded = true;
+    if (!doc.features.some(isGround)) {
+      doc.features.unshift({
+        id: nextId(),
+        type: 'path',
+        style: 'ground',
+        width: 4,
+        opacity: 1,
+        points: islandPoints(doc.width, doc.height),
+      });
+    }
+    rev += 1;
+    scheduleSave();
+  }
+
   async function load(id) {
     currentId = id;
     fittedFor = null;
@@ -522,6 +904,7 @@ const ParkDraw = (() => {
     const body = await deps.api(`/locations/${id}/map`);
     if (currentId !== id) return;
     doc = body.document;
+    ensureBase();
     await loadReference(id);
     if (currentId !== id) return;
     syncInputs();
@@ -617,9 +1000,37 @@ const ParkDraw = (() => {
     updateChrome();
   }
 
-  function rasterize(svgMarkup, width, height) {
+  const stampData = new Map();
+
+  function stampImage(kind, width, height) {
+    const href = `/admin/stamps/${kind}.png`;
+    const x = Math.round((-width / 2) * 10) / 10;
+    const y = Math.round((-height / 2) * 10) / 10;
+    return `<image href="${href}" xlink:href="${href}" x="${x}" y="${y}" width="${width}" height="${height}"/>`;
+  }
+
+  async function inlineStampArt(markup) {
+    const names = [...new Set([...markup.matchAll(/\/admin\/stamps\/([a-z0-9]+)\.png/g)].map((match) => match[1]))];
+    await Promise.all(names.map(async (name) => {
+      if (stampData.has(name)) return;
+      const response = await fetch(`/admin/stamps/${name}.png`);
+      if (!response.ok) throw new Error('stamp');
+      const blob = await response.blob();
+      const data = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('stamp'));
+        reader.readAsDataURL(blob);
+      });
+      stampData.set(name, data);
+    }));
+    return markup.replace(/\/admin\/stamps\/([a-z0-9]+)\.png/g, (href, name) => stampData.get(name) || href);
+  }
+
+  async function rasterize(svgMarkup, width, height) {
+    const inlined = await inlineStampArt(svgMarkup);
     return new Promise((resolve, reject) => {
-      const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
+      const blob = new Blob([inlined], { type: 'image/svg+xml;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const img = new Image();
       img.onload = () => {
@@ -661,6 +1072,41 @@ const ParkDraw = (() => {
     }
   }
 
+  function vertexAt(feature, x, y) {
+    if (!feature || feature.type !== 'path' || !feature.points) return -1;
+    const limit = 10 / Math.max(view.z, 0.05);
+    let best = -1;
+    let bestDist = limit;
+    feature.points.forEach((point, index) => {
+      const dist = Math.hypot(x - point.x, y - point.y);
+      if (dist <= bestDist) {
+        best = index;
+        bestDist = dist;
+      }
+    });
+    return best;
+  }
+
+  function trimTunnels(feature) {
+    if (feature?.style !== 'wall' || !Array.isArray(feature.tunnels)) return;
+    const total = polyLength(feature.points);
+    feature.tunnels = feature.tunnels.filter((dist) => dist > 0 && dist < total - 0.5);
+  }
+
+  function deleteVertex() {
+    const feature = selectedFeature();
+    if (!feature || feature.type !== 'path' || vertexIndex == null) return false;
+    const min = isGround(feature) ? 3 : 2;
+    if (feature.points.length <= min) return false;
+    const index = vertexIndex;
+    vertexIndex = Math.min(index, feature.points.length - 2);
+    edit(() => {
+      feature.points.splice(index, 1);
+      trimTunnels(feature);
+    });
+    return true;
+  }
+
   function onPointerDown(event) {
     if (!doc || event.button === 2) return;
     if (event.target.closest?.('#drawHint')) return;
@@ -674,7 +1120,7 @@ const ParkDraw = (() => {
     if (tool === 'reference') {
       if (!doc.reference || doc.reference.locked) return;
       snapshot();
-      pointer = { mode: 'ref', x0: world.x, y0: world.y, ox: doc.reference.x, oy: doc.reference.y, moved: false };
+      pointer = { mode: 'ref', x0: world.x, y0: world.y, sx: event.clientX, sy: event.clientY, ox: doc.reference.x, oy: doc.reference.y, moved: false };
       return;
     }
     if (tool === 'stamp') {
@@ -688,6 +1134,32 @@ const ParkDraw = (() => {
       return;
     }
     const hit = hitFeature(world.x, world.y);
+    const selected = selectedFeature();
+    if (selected?.type === 'path') {
+      const index = vertexAt(selected, world.x, world.y);
+      if (index >= 0) {
+        vertexIndex = index;
+        snapshot();
+        pointer = {
+          mode: 'vertex',
+          id: selected.id,
+          index,
+          x0: world.x,
+          y0: world.y,
+          sx: event.clientX,
+          sy: event.clientY,
+          ox: selected.points[index].x,
+          oy: selected.points[index].y,
+          moved: false,
+        };
+        syncInputs();
+        updateChrome();
+        render();
+        return;
+      }
+    }
+    vertexIndex = null;
+    const tunnel = Boolean(hit && hit.id === selectedId && hit.type === 'path' && hit.style === 'wall');
     selectedId = hit?.id || null;
     syncInputs();
     updateChrome();
@@ -699,10 +1171,13 @@ const ParkDraw = (() => {
       id: hit.id,
       x0: world.x,
       y0: world.y,
+      sx: event.clientX,
+      sy: event.clientY,
       ox: hit.x,
       oy: hit.y,
       points: hit.points ? hit.points.map((p) => ({ ...p })) : null,
       moved: false,
+      tunnel,
     };
   }
 
@@ -717,10 +1192,22 @@ const ParkDraw = (() => {
     const world = toWorld(event);
     const dx = world.x - pointer.x0;
     const dy = world.y - pointer.y0;
-    if (Math.hypot(dx, dy) > 0.5) pointer.moved = true;
+    const screenDx = event.clientX - (pointer.sx ?? event.clientX);
+    const screenDy = event.clientY - (pointer.sy ?? event.clientY);
+    if (Math.hypot(screenDx, screenDy) > 4) pointer.moved = true;
     if (pointer.mode === 'ref' && doc.reference) {
       doc.reference.x = pointer.ox + dx;
       doc.reference.y = pointer.oy + dy;
+      rev += 1;
+      render();
+      return;
+    }
+    if (pointer.mode === 'vertex') {
+      const feature = doc.features.find((item) => item.id === pointer.id);
+      const point = feature?.points?.[pointer.index];
+      if (!point) return;
+      point.x = pointer.ox + dx;
+      point.y = pointer.oy + dy;
       rev += 1;
       render();
       return;
@@ -739,16 +1226,37 @@ const ParkDraw = (() => {
     }
   }
 
+  function toggleTunnel(id, x, y) {
+    const feature = doc.features.find((item) => item.id === id);
+    if (!feature || feature.type !== 'path' || feature.style !== 'wall') return;
+    const along = closestAlong(feature.points, x, y);
+    const total = polyLength(feature.points);
+    if (!along || total < 8) return;
+    const thick = Math.max(feature.width, 4);
+    const mouth = tunnelMetrics(thick).span;
+    const edge = Math.min(mouth * 0.55, total * 0.2);
+    const dist = clamp(along.d, edge, Math.max(edge, total - edge));
+    edit(() => {
+      const tunnels = Array.isArray(feature.tunnels) ? feature.tunnels.slice() : [];
+      const index = tunnels.findIndex((item) => Math.abs(item - dist) < mouth * 0.55);
+      if (index >= 0) tunnels.splice(index, 1);
+      else tunnels.push(Math.round(dist * 10) / 10);
+      feature.tunnels = tunnels;
+    });
+  }
+
   function onPointerUp() {
     stage?.classList.remove('is-grabbing');
     if (!pointer) return;
-    const { moved, mode } = pointer;
+    const { moved, mode, tunnel, id, x0, y0 } = pointer;
     pointer = null;
-    if ((mode === 'ref' || mode === 'feature') && !moved && undo.length) {
+    if ((mode === 'ref' || mode === 'feature' || mode === 'vertex') && !moved && undo.length) {
       if (undo[undo.length - 1] === JSON.stringify(doc)) undo.pop();
-    } else if (moved && (mode === 'ref' || mode === 'feature')) {
+    } else if (moved && (mode === 'ref' || mode === 'feature' || mode === 'vertex')) {
+      if (mode === 'vertex') trimTunnels(doc.features.find((item) => item.id === id));
       scheduleSave();
     }
+    if (tunnel && !moved) toggleTunnel(id, x0, y0);
   }
 
   function onWheel(event) {
@@ -763,7 +1271,7 @@ const ParkDraw = (() => {
     view.z = clamp(view.z * factor, 0.05, 6);
     view.x = px - beforeX * view.z;
     view.y = py - beforeY * view.z;
-    applyView();
+    render();
   }
 
   function onDoubleClick() {
@@ -786,13 +1294,15 @@ const ParkDraw = (() => {
     if (event.key === 'Escape') {
       draft = [];
       selectedId = null;
+      vertexIndex = null;
       render();
       updateChrome();
     } else if (event.key === 'Enter' && tool === 'path') {
       finishDraft();
     } else if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
-      deleteSelected();
+      if (vertexIndex != null) deleteVertex();
+      else deleteSelected();
     }
   }
 
@@ -823,6 +1333,7 @@ const ParkDraw = (() => {
       const btn = event.target.closest('[data-id]');
       if (!btn) return;
       if (tool === 'path') finishDraft();
+      vertexIndex = null;
       selectedId = btn.dataset.id;
       tool = 'select';
       syncInputs();
@@ -852,20 +1363,50 @@ const ParkDraw = (() => {
     });
     $('drawPathStyle').addEventListener('change', () => {
       if (syncing) return;
+      const style = $('drawPathStyle').value;
       const selected = selectedFeature();
-      if (selected?.type === 'path') edit(() => { selected.style = $('drawPathStyle').value; });
-      else render();
+      if (selected?.type === 'path') {
+        edit(() => {
+          selected.style = style;
+          if (style === 'ground') selected.opacity = clamp(num(selected.opacity, 1), 0, 1);
+          else delete selected.opacity;
+          if (style !== 'wall') delete selected.tunnels;
+        });
+        return;
+      }
+      if (style === 'wall') $('drawPathWidth').value = String(WALL_WIDTH);
+      else if (Number($('drawPathWidth').value) === WALL_WIDTH) $('drawPathWidth').value = String(PATH_WIDTH);
+      render();
+      updateChrome();
+    });
+    $('drawGroundOpacity').addEventListener('pointerdown', () => {
+      if (isGround(selectedFeature())) snapshot();
+    });
+    $('drawGroundOpacity').addEventListener('input', () => {
+      if (syncing) return;
+      const opacity = clamp(num($('drawGroundOpacity').value, 1), 0, 1);
+      const selected = selectedFeature();
+      if (isGround(selected)) {
+        selected.opacity = opacity;
+        rev += 1;
+        render();
+      } else if ($('drawPathStyle').value === 'ground' && draft.length) {
+        render();
+      }
+    });
+    $('drawGroundOpacity').addEventListener('change', () => {
+      if (isGround(selectedFeature())) scheduleSave();
     });
     $('drawPathWidth').addEventListener('change', () => {
       if (syncing) return;
-      const width = clamp(Math.round(num($('drawPathWidth').value, 32)), 4, 200);
+      const width = clamp(Math.round(num($('drawPathWidth').value, PATH_WIDTH)), 4, 200);
       const selected = selectedFeature();
       if (selected?.type === 'path') edit(() => { selected.width = width; });
       else $('drawPathWidth').value = String(width);
     });
     $('drawStampScale').addEventListener('change', () => {
       if (syncing) return;
-      const scale = clamp(num($('drawStampScale').value, 1), 0.2, 8);
+      const scale = clamp(num($('drawStampScale').value, 0.2), 0.04, 8);
       const selected = selectedFeature();
       if (selected?.type === 'stamp') edit(() => { selected.scale = scale; });
       $('drawStampScale').value = String(scale);

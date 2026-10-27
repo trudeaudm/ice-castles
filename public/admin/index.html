@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,500;1,9..144,600;1,9..144,700&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
-<link rel="stylesheet" href="/admin/admin.css?v=3">
+<link rel="stylesheet" href="/admin/admin.css?v=4">
 </head>
 <body>
 
@@ -142,8 +142,8 @@
           <h2 class="drawTitle">Draw the park</h2>
         </div>
         <p class="pane__note drawNote">
-          Import a drone photo as a tracing guide, then place paths and buildings.
-          The snow ground is already there. Publish leaves the photo out.
+          Import a drone photo as a tracing guide, then draw paths and buildings.
+          Snow ground is the base layer. Draw it with Path, and fade it with Opacity. Publish leaves the photo out.
         </p>
         <div class="drawTools" id="drawTools">
           <button type="button" data-tool="pan">Pan</button>
@@ -156,19 +156,22 @@
         <div id="drawPathOptions">
           <label>Path
             <select id="drawPathStyle">
-              <option value="snow">Packed snow</option>
+              <option value="ground">Snow ground</option>
+              <option value="snow" selected>Packed snow</option>
               <option value="boardwalk">Boardwalk</option>
               <option value="bridge">Bridge</option>
+              <option value="wall">Castle wall</option>
             </select>
           </label>
-          <label>Width<input id="drawPathWidth" type="number" min="4" max="200" value="32"></label>
+          <label>Width<input id="drawPathWidth" type="number" min="4" max="200" value="6"></label>
+          <label>Opacity<input id="drawGroundOpacity" type="range" min="0" max="1" step="0.05" value="1"></label>
           <button class="ghostButton" id="drawFinishPath" type="button" hidden>Finish path</button>
         </div>
 
         <div id="drawStampOptions">
           <div class="stampGrid" id="drawStamps"></div>
           <div class="form__row">
-            <label>Scale<input id="drawStampScale" type="number" min="0.2" max="8" step="0.1" value="1"></label>
+            <label>Scale<input id="drawStampScale" type="number" min="0.04" max="8" step="0.05" value="0.2"></label>
             <label>Rotation<input id="drawStampRotation" type="number" step="1" value="0"></label>
           </div>
         </div>
@@ -317,7 +320,7 @@
 
 <script src="/vendor/leaflet.js"></script>
 <script src="/js/grid.js"></script>
-<script src="/admin/draw.js?v=3"></script>
-<script src="/admin/admin.js?v=3"></script>
+<script src="/admin/draw.js?v=49"></script>
+<script src="/admin/admin.js?v=4"></script>
 </body>
 </html>

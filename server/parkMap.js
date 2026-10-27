@@ -10,8 +10,8 @@ const { now, num } = require('./helpers');
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const MAPS_DIR = path.join(DATA_DIR, 'maps');
 
-const STAMPS = new Set(['fir1', 'fir2', 'fir3', 'hut', 'lamp', 'tower', 'wall']);
-const PATH_STYLES = new Set(['snow', 'boardwalk', 'bridge']);
+const STAMPS = new Set(['fir1', 'fir2', 'fir3', 'hut', 'lamp', 'tower', 'tower2', 'turret', 'keep', 'wall']);
+const PATH_STYLES = new Set(['ground', 'snow', 'boardwalk', 'bridge', 'wall']);
 const REF_EXTS = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -40,19 +40,32 @@ function normalizeFeature(raw) {
       x: num(raw.x),
       y: num(raw.y),
       rotation: num(raw.rotation),
-      scale: clamp(num(raw.scale, 1), 0.2, 8),
+      scale: clamp(num(raw.scale, 0.2), 0.04, 8),
     };
   }
   if (raw.type === 'path' && PATH_STYLES.has(raw.style) && Array.isArray(raw.points)) {
     const points = raw.points.slice(0, 500).map((p) => ({ x: num(p?.x), y: num(p?.y) })).filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
-    if (points.length < 2) return null;
-    return {
+    if (points.length < (raw.style === 'ground' ? 3 : 2)) return null;
+    const feature = {
       id,
       type: 'path',
       style: raw.style,
       width: clamp(Math.round(num(raw.width, 32)), 4, 200),
       points,
     };
+    if (raw.style === 'ground') feature.opacity = clamp(num(raw.opacity, 1), 0, 1);
+    if (raw.style === 'wall' && Array.isArray(raw.tunnels)) {
+      let length = 0;
+      for (let i = 1; i < points.length; i += 1) {
+        length += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+      }
+      feature.tunnels = raw.tunnels
+        .slice(0, 40)
+        .map((item) => num(item))
+        .filter((dist) => dist > 0 && dist < length)
+        .slice(0, 40);
+    }
+    return feature;
   }
   return null;
 }
@@ -79,7 +92,10 @@ function normalizeDocument(input, locationId) {
       locked: Boolean(ref.locked),
     };
   }
-  return { width, height, reference, features };
+  const bundleRevision = String(src.bundleRevision || '').replace(/[^A-Za-z0-9._-]/g, '').slice(0, 64);
+  const document = { width, height, reference, features, baseSeeded: Boolean(src.baseSeeded) };
+  if (bundleRevision) document.bundleRevision = bundleRevision;
+  return document;
 }
 
 async function readRow(locationId) {
@@ -244,6 +260,7 @@ async function publishMap(locationId, buffer, mime) {
 
 module.exports = {
   MAPS_DIR,
+  normalizeDocument,
   getParkMap,
   saveParkMap,
   saveReference,
