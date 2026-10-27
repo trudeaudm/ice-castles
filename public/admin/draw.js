@@ -585,7 +585,7 @@ const ParkDraw = (() => {
     const opacity = clamp(num(feature.opacity, 1), 0, 1);
     return `<g opacity="${opacity}">
       <path d="${d}" fill="#0a1c31" transform="translate(8 12)" filter="url(#soft)" opacity="0.85"/>
-      <path d="${d}" fill="url(#snow)" stroke="#cfe9f8" stroke-width="5" stroke-linejoin="round"/>
+      <path d="${d}" fill="#ffffff" stroke="#3d8ec4" stroke-width="5" stroke-linejoin="round"/>
     </g>`;
   }
 
