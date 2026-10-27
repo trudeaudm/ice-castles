@@ -3,8 +3,9 @@
  * Render's database is not this computer's database, and its disk starts empty,
  * so the New Hampshire drawing ships with the site and is copied in on boot.
  *
- * A park that already has a drawing is left alone. A missing tracing photo is
- * put back, because a new container does not keep files from the last deploy.
+ * The copy runs once. After that, edits made on the server stay put.
+ * A missing tracing photo is put back, because a new container does not
+ * keep files from the last deploy.
  */
 const fs = require('fs');
 const path = require('path');
@@ -40,9 +41,8 @@ async function installBundledMaps() {
         existing = null;
       }
     }
-    const count = Array.isArray(existing?.features) ? existing.features.length : 0;
     const dest = path.join(MAPS_DIR, location.id, 'reference.jpg');
-    const installed = existing?.bundleRevision === bundle.revision || count >= 3;
+    const installed = existing?.bundleRevision === bundle.revision;
 
     if (!installed) {
       const raw = JSON.parse(fs.readFileSync(documentPath, 'utf8'));
