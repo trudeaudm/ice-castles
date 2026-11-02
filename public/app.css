@@ -2704,12 +2704,15 @@ button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm).is-pop {
 body.map-moving .realmSky i,
 body.map-moving .realmSky .lick,
 body.map-moving .realmSky .ember,
+body.map-moving .realmSky .borealis span,
 body.guide-open .realmSky i,
 body.guide-open .realmSky .lick,
 body.guide-open .realmSky .ember,
+body.guide-open .realmSky .borealis span,
 body.landing-open .realmSky i,
 body.landing-open .realmSky .lick,
-body.landing-open .realmSky .ember { animation-play-state: paused; }
+body.landing-open .realmSky .ember,
+body.landing-open .realmSky .borealis span { animation-play-state: paused; }
 
 body[data-realm] .shrine__kicker,
 body[data-realm] .shrineGate.is-focus .shrineIcon.is-on .shrineIcon__label {
@@ -2838,9 +2841,10 @@ body[data-realm="fire"] .hearth {
   position: absolute;
   left: 50%;
   bottom: 0;
-  width: 130%;
+  width: 104%;
   height: auto;
   transform: translateX(-50%);
+  transform-origin: center bottom;
   pointer-events: none;
   opacity: 0;
 }
@@ -2925,20 +2929,80 @@ body[data-realm="spirit"] .realmSky::before {
   filter: blur(8px);
   animation: spiritOrb 7s ease-in-out infinite;
 }
-body[data-realm="spirit"] .realmSky i {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 10px #ecd8ff;
-  animation: twinkle 2.8s ease-in-out infinite;
+body[data-realm="spirit"] .borealis {
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  top: 0;
+  height: 62%;
+  overflow: hidden;
+  pointer-events: none;
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 8%, #000 58%, transparent 100%);
 }
-body[data-realm="spirit"] .realmSky i:nth-child(1) { left: 14%; top: 18%; animation-delay: -0.4s; }
-body[data-realm="spirit"] .realmSky i:nth-child(2) { left: 32%; top: 30%; width: 4px; height: 4px; animation-delay: -1.2s; }
-body[data-realm="spirit"] .realmSky i:nth-child(3) { left: 58%; top: 16%; animation-delay: -2s; }
-body[data-realm="spirit"] .realmSky i:nth-child(4) { left: 76%; top: 28%; width: 8px; height: 8px; animation-delay: -0.8s; }
-body[data-realm="spirit"] .realmSky i:nth-child(5) { left: 22%; top: 52%; animation-delay: -1.8s; }
-body[data-realm="spirit"] .realmSky i:nth-child(6) { left: 84%; top: 48%; width: 5px; height: 5px; animation-delay: -2.4s; }
+body[data-realm="spirit"] .borealis span {
+  position: absolute;
+  top: -8%;
+  height: 112%;
+  width: 26%;
+  border-radius: 46% 54% 42% 58%;
+  filter: blur(14px);
+  mix-blend-mode: screen;
+  transform-origin: 50% 0;
+  animation: borealis 9s ease-in-out infinite;
+}
+body[data-realm="spirit"] .borealis span:nth-child(1) {
+  left: 0;
+  background: linear-gradient(to bottom, transparent 0%, rgba(125, 255, 178, 0.85) 24%, rgba(90, 230, 255, 0.35) 58%, transparent 86%);
+  animation-duration: 8.5s;
+}
+body[data-realm="spirit"] .borealis span:nth-child(2) {
+  left: 16%;
+  width: 20%;
+  background: linear-gradient(to bottom, transparent 0%, rgba(120, 245, 255, 0.7) 30%, rgba(180, 140, 255, 0.28) 62%, transparent 88%);
+  animation-duration: 11s;
+  animation-delay: -3s;
+}
+body[data-realm="spirit"] .borealis span:nth-child(3) {
+  left: 32%;
+  width: 30%;
+  background: linear-gradient(to bottom, transparent 4%, rgba(196, 120, 255, 0.72) 28%, rgba(255, 150, 214, 0.3) 60%, transparent 90%);
+  animation-duration: 10s;
+  animation-delay: -1.4s;
+  animation-direction: reverse;
+}
+body[data-realm="spirit"] .borealis span:nth-child(4) {
+  left: 50%;
+  width: 24%;
+  background: linear-gradient(to bottom, transparent 0%, rgba(150, 255, 196, 0.8) 22%, rgba(110, 255, 230, 0.32) 55%, transparent 84%);
+  animation-duration: 7.6s;
+  animation-delay: -4.2s;
+}
+body[data-realm="spirit"] .borealis span:nth-child(5) {
+  left: 66%;
+  width: 28%;
+  background: linear-gradient(to bottom, transparent 0%, rgba(255, 170, 220, 0.62) 26%, rgba(150, 110, 255, 0.36) 58%, transparent 88%);
+  animation-duration: 12s;
+  animation-delay: -2.2s;
+}
+body[data-realm="spirit"] .borealis span:nth-child(6) {
+  left: 82%;
+  width: 22%;
+  background: linear-gradient(to bottom, transparent 6%, rgba(190, 255, 140, 0.55) 30%, rgba(120, 255, 210, 0.28) 64%, transparent 92%);
+  animation-duration: 9.4s;
+  animation-delay: -5.5s;
+  animation-direction: reverse;
+}
+body[data-realm="spirit"] .realmSky i {
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 8px var(--c), 0 0 16px color-mix(in srgb, var(--c) 70%, transparent);
+  animation: spiritTwinkle var(--t) ease-in-out infinite;
+  animation-delay: var(--d);
+}
 
 @keyframes waterWave {
   0%, 100% { transform: translateX(-3%) scaleY(1); }
@@ -2963,9 +3027,17 @@ body[data-realm="spirit"] .realmSky i:nth-child(6) { left: 84%; top: 48%; width:
   12% { opacity: 1; }
   100% { transform: translate3d(var(--drift, 16px), -68vh, 0) scale(0.35); opacity: 0; }
 }
-@keyframes twinkle {
-  0%, 100% { opacity: 0.15; transform: scale(0.55); }
-  50% { opacity: 1; transform: scale(1.35); }
+@keyframes spiritTwinkle {
+  0%, 100% { opacity: 0.06; transform: scale(0.35); }
+  14% { opacity: 1; transform: scale(1.55); }
+  26% { opacity: 0.16; transform: scale(0.55); }
+  42% { opacity: 0.95; transform: scale(1.25); }
+  64% { opacity: 0.1; transform: scale(0.4); }
+}
+@keyframes borealis {
+  0%, 100% { transform: translate3d(0, 0, 0) skewX(-8deg) scaleY(0.9); opacity: 0.42; }
+  40% { transform: translate3d(16px, 10px, 0) skewX(8deg) scaleY(1.16); opacity: 0.88; }
+  72% { transform: translate3d(-12px, 4px, 0) skewX(-3deg) scaleY(1.02); opacity: 0.58; }
 }
 @keyframes spiritOrb {
   0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.55; }

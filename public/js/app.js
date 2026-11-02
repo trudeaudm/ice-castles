@@ -95,6 +95,7 @@ const SUMMON_RATIO = {
   ice: [819, 1024],
 };
 const SUMMON_SWIRL_MS = 1500;
+const SUMMON_FRAME_MS = 100;
 const summonJobs = new Set();
 let summonRaf = 0;
 
@@ -439,21 +440,20 @@ function stepSummon(job, now) {
   }
   if (job.phase === 'wait') {
     if (!job.ready && job.img.complete && job.img.naturalWidth > 0) job.ready = true;
-    if (job.reduce || job.failed) {
+    if (job.failed) {
       showSummon(job, true);
       return;
     }
     if (!summonVisible(job.frame)) return;
     startSwirl(job, now);
-    return;
   }
   if (job.phase === 'swirl') {
-    if (!summonVisible(job.frame)) {
-      job.t0 = now - job.elapsed;
+    if (!summonVisible(job.frame) || !layoutSummon(job)) {
+      job.seen = now;
       return;
     }
-    if (!layoutSummon(job)) return;
-    job.elapsed = now - job.t0;
+    if (job.seen) job.elapsed += Math.min(SUMMON_FRAME_MS, Math.max(0, now - job.seen));
+    job.seen = now;
     const t = job.elapsed / 1000;
     positionSwirl(job, t);
     const ripe = (job.ready || job.failed || job.elapsed > 12000) && job.elapsed >= SUMMON_SWIRL_MS;
@@ -499,7 +499,6 @@ function armSummon(frame) {
     img,
     canvas,
     spec: SUMMON_REALMS[realm],
-    reduce: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     ready: img.complete && img.naturalWidth > 0,
     failed: img.complete && img.naturalWidth === 0,
     phase: 'wait',
@@ -514,7 +513,7 @@ function armSummon(frame) {
     }, { once: true });
     img.addEventListener('error', () => { job.failed = true; }, { once: true });
   }
-  if (job.reduce || job.failed) {
+  if (job.failed) {
     showSummon(job, true);
     return;
   }
@@ -777,7 +776,30 @@ function realmSkyHtml(element) {
     return `<div class="realmSky" aria-hidden="true">${hearthHtml()}${embers}</div>`;
   }
   if (element === 'air') return airSkyHtml();
+  if (element === 'spirit') return spiritSkyHtml();
   return `<div class="realmSky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>`;
+}
+
+function spiritSkyHtml() {
+  const stars = [
+    ['11%', '12%', '5px', '#ffffff', '1.05s', '-0.2s'],
+    ['24%', '20%', '3px', '#d7b4ff', '1.35s', '-0.7s'],
+    ['38%', '9%', '4px', '#7ef3ff', '1.15s', '-0.4s'],
+    ['52%', '18%', '7px', '#fff4c8', '1.55s', '-1.1s'],
+    ['67%', '11%', '3px', '#b8ffd4', '1.2s', '-0.3s'],
+    ['81%', '16%', '5px', '#ffb7e8', '1.4s', '-0.9s'],
+    ['16%', '36%', '4px', '#c9a6ff', '1.25s', '-0.5s'],
+    ['33%', '44%', '3px', '#9af7ff', '1.1s', '-1.3s'],
+    ['48%', '34%', '6px', '#ffffff', '1.6s', '-0.15s'],
+    ['61%', '42%', '3px', '#e7ffb0', '1.3s', '-0.85s'],
+    ['76%', '33%', '4px', '#ff9ad8', '1.45s', '-1.6s'],
+    ['90%', '40%', '3px', '#d7b4ff', '1.2s', '-0.55s'],
+  ];
+  const marks = stars.map(([x, y, s, c, t, d]) =>
+    `<i style="--x:${x};--y:${y};--s:${s};--c:${c};--t:${t};--d:${d}"></i>`
+  ).join('');
+  const veils = '<span></span>'.repeat(6);
+  return `<div class="realmSky" aria-hidden="true"><div class="borealis" aria-hidden="true">${veils}</div>${marks}</div>`;
 }
 
 let windField = null;
@@ -1052,7 +1074,7 @@ function startHearth() {
         try { secondary.currentTime = 0; } catch { /* kept warm */ }
       }).catch(() => {});
     }
-    paint();
+    requestAnimationFrame(paint);
   };
   if (primary.readyState >= 2) boot();
   else primary.addEventListener('loadeddata', boot, { once: true });
