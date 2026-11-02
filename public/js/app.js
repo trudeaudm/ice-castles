@@ -268,12 +268,21 @@ const LISTEN_ICON = `<svg class="listenButton__icon" viewBox="0 0 24 24" aria-hi
   <path d="M18.4 6.8a7.2 7.2 0 0 1 0 10.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
 </svg>`;
 
+function realmSkyHtml(element) {
+  if (element === 'fire') {
+    const flames = '<span class="flame"></span>'.repeat(7);
+    const embers = '<span class="ember"></span>'.repeat(14);
+    return `<div class="realmSky" aria-hidden="true">${flames}${embers}</div>`;
+  }
+  return `<div class="realmSky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>`;
+}
+
 function listenButtonHtml(src) {
-  if (!src) return '';
+  const audio = src ? `<audio preload="none" src="${escapeHtml(src)}"></audio>` : '';
   return `<button class="listenButton" type="button" data-listen aria-pressed="false" aria-label="Play this story">
     ${LISTEN_ICON}<span class="listenButton__label">Listen</span>
   </button>
-  <audio preload="none" src="${escapeHtml(src)}"></audio>`;
+  ${audio}`;
 }
 
 let storyAudio = null;
@@ -340,9 +349,7 @@ function renderStation(slug) {
     : '';
   const art = stationArt(station);
   const portrait = station.element ? realmCharacter(station.element) : '';
-  const sky = station.type === 'guardian'
-    ? `<div class="realmSky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>`
-    : '';
+  const sky = station.type === 'guardian' ? realmSkyHtml(station.element) : '';
 
   if (!gated) {
     dom.stationView.innerHTML = `

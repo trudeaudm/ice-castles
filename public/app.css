@@ -2587,8 +2587,20 @@ button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm).is-pop {
   will-change: transform, opacity;
 }
 body.map-moving .realmSky i,
+body.map-moving .realmSky .flame,
+body.map-moving .realmSky .flame::before,
+body.map-moving .realmSky .flame::after,
+body.map-moving .realmSky .ember,
 body.guide-open .realmSky i,
-body.landing-open .realmSky i { animation-play-state: paused; }
+body.guide-open .realmSky .flame,
+body.guide-open .realmSky .flame::before,
+body.guide-open .realmSky .flame::after,
+body.guide-open .realmSky .ember,
+body.landing-open .realmSky i,
+body.landing-open .realmSky .flame,
+body.landing-open .realmSky .flame::before,
+body.landing-open .realmSky .flame::after,
+body.landing-open .realmSky .ember { animation-play-state: paused; }
 
 body[data-realm] .shrine__kicker,
 body[data-realm] .shrineGate.is-focus .shrineIcon.is-on .shrineIcon__label {
@@ -2710,34 +2722,96 @@ body[data-realm="fire"] .realmSky::before {
   content: "";
   position: absolute;
   left: -10%; right: -10%; bottom: 0;
-  height: 34%;
-  background: radial-gradient(60% 90% at 50% 100%, rgba(255, 150, 40, 0.62), transparent 72%);
-  animation: fireGlow 1.7s ease-in-out infinite;
+  height: 28%;
+  background: radial-gradient(70% 100% at 50% 100%, rgba(255, 120, 20, 0.55), transparent 70%);
+  animation: fireGlow 1.6s ease-in-out infinite;
 }
-body[data-realm="fire"] .realmSky i { transform-origin: bottom center; }
-body[data-realm="fire"] .realmSky i:nth-child(-n+4) {
-  bottom: 4%;
-  width: 34px;
-  height: 64px;
-  border-radius: 50% 50% 42% 42%;
-  background: radial-gradient(circle at 50% 78%, #fff6c8, #ffc14a 36%, #f04a12 72%, transparent 74%);
-  animation: flame 1.25s ease-in-out infinite;
+body[data-realm="fire"] .realmSky::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 54px;
+  background: linear-gradient(to top, rgba(48, 8, 2, 0.72), transparent);
 }
-body[data-realm="fire"] .realmSky i:nth-child(1) { left: 8%;  animation-delay: -0.2s; height: 72px; }
-body[data-realm="fire"] .realmSky i:nth-child(2) { left: 28%; animation-delay: -0.7s; width: 26px; height: 48px; }
-body[data-realm="fire"] .realmSky i:nth-child(3) { left: 62%; animation-delay: -0.4s; height: 80px; }
-body[data-realm="fire"] .realmSky i:nth-child(4) { left: 82%; animation-delay: -1s;  width: 22px; height: 44px; }
-body[data-realm="fire"] .realmSky i:nth-child(n+5) {
-  bottom: 12%;
-  width: 5px;
-  height: 5px;
+body[data-realm="fire"] .flame {
+  position: absolute;
+  bottom: -16px;
+  width: 86px;
+  height: 150px;
+  background:
+    radial-gradient(ellipse 50% 28% at 50% 92%, rgba(255, 236, 170, 0.95), transparent 72%),
+    linear-gradient(to top, rgba(90, 8, 0, 0) 0%, #9a140c 10%, #e0270e 32%, #ff6a12 54%, #ffc14a 76%, rgba(255, 244, 196, 0.2) 90%, transparent 100%);
+  border-radius: 50% 50% 46% 46% / 78% 78% 22% 22%;
+  transform-origin: 50% 100%;
+  filter: blur(0.4px);
+  animation: flameLick 0.9s ease-in-out infinite;
+}
+body[data-realm="fire"] .flame::before,
+body[data-realm="fire"] .flame::after {
+  content: "";
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  transform-origin: 50% 100%;
+  border-radius: 50% 50% 46% 46% / 74% 74% 26% 26%;
+}
+body[data-realm="fire"] .flame::before {
+  width: 58%;
+  height: 76%;
+  margin-left: -29%;
+  background: linear-gradient(to top, transparent 0%, #ff4d10 24%, #ff9a22 52%, #ffe07a 82%, rgba(255, 255, 255, 0.85) 100%);
+  animation: flameLick 0.58s ease-in-out infinite reverse;
+}
+body[data-realm="fire"] .flame::after {
+  width: 28%;
+  height: 48%;
+  margin-left: -14%;
+  background: linear-gradient(to top, rgba(255, 210, 90, 0.15), #fff6d2 62%, #fff 100%);
+  filter: blur(0.5px);
+  animation: flameLick 0.42s ease-in-out infinite;
+}
+body[data-realm="fire"] .flame:nth-child(1) { left: -4%; height: 120px; width: 92px; animation-delay: -0.2s; }
+body[data-realm="fire"] .flame:nth-child(2) { left: 10%; height: 168px; width: 78px; animation-duration: 0.72s; animation-delay: -0.45s; }
+body[data-realm="fire"] .flame:nth-child(3) { left: 22%; height: 200px; width: 100px; animation-duration: 1.05s; animation-delay: -0.1s; }
+body[data-realm="fire"] .flame:nth-child(4) { left: 36%; height: 140px; width: 84px; animation-duration: 0.8s;  animation-delay: -0.6s; }
+body[data-realm="fire"] .flame:nth-child(5) { left: 48%; height: 214px; width: 108px; animation-duration: 0.95s; animation-delay: -0.3s; }
+body[data-realm="fire"] .flame:nth-child(6) { left: 64%; height: 160px; width: 90px; animation-duration: 0.78s; animation-delay: -0.55s; }
+body[data-realm="fire"] .flame:nth-child(7) { left: 78%; height: 124px; width: 86px; animation-duration: 0.68s; animation-delay: -0.15s; }
+body[data-realm="fire"] .ember {
+  position: absolute;
+  bottom: 10%;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #ffe7a0;
-  box-shadow: 0 0 8px #ffb03a;
-  animation: sparkUp 2.6s linear infinite;
+  background: #fff8e4;
+  box-shadow: 0 0 12px 4px rgba(255, 90, 12, 0.95), 0 0 2px 1px #fff;
+  animation: emberRise ease-out infinite;
 }
-body[data-realm="fire"] .realmSky i:nth-child(5) { left: 40%; animation-delay: -0.8s; }
-body[data-realm="fire"] .realmSky i:nth-child(6) { left: 70%; animation-delay: -1.8s; animation-duration: 2.1s; }
+body[data-realm="fire"] .ember::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 2px;
+  height: 14px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, rgba(255, 186, 70, 0.9), transparent);
+}
+body[data-realm="fire"] .ember:nth-child(8)  { left: 12%; animation-duration: 3.6s; animation-delay: -0.4s; --drift: 16px; width: 5px; height: 5px; }
+body[data-realm="fire"] .ember:nth-child(9)  { left: 22%; animation-duration: 4.8s; animation-delay: -1.6s; --drift: -22px; }
+body[data-realm="fire"] .ember:nth-child(10) { left: 31%; animation-duration: 3.2s; animation-delay: -2.2s; --drift: 28px; width: 6px; height: 6px; }
+body[data-realm="fire"] .ember:nth-child(11) { left: 39%; animation-duration: 5.2s; animation-delay: -0.8s; --drift: -12px; }
+body[data-realm="fire"] .ember:nth-child(12) { left: 48%; animation-duration: 3.9s; animation-delay: -2.8s; --drift: 20px; width: 5px; height: 5px; }
+body[data-realm="fire"] .ember:nth-child(13) { left: 57%; animation-duration: 4.4s; animation-delay: -1.1s; --drift: -26px; }
+body[data-realm="fire"] .ember:nth-child(14) { left: 64%; animation-duration: 3.4s; animation-delay: -3.1s; --drift: 14px; width: 7px; height: 7px; }
+body[data-realm="fire"] .ember:nth-child(15) { left: 72%; animation-duration: 5s;   animation-delay: -0.2s; --drift: -18px; }
+body[data-realm="fire"] .ember:nth-child(16) { left: 18%; animation-duration: 4.1s; animation-delay: -3.6s; --drift: 24px; background: #ffb15a; }
+body[data-realm="fire"] .ember:nth-child(17) { left: 44%; animation-duration: 3.5s; animation-delay: -1.9s; --drift: -8px; width: 3px; height: 3px; }
+body[data-realm="fire"] .ember:nth-child(18) { left: 60%; animation-duration: 4.6s; animation-delay: -2.5s; --drift: 30px; }
+body[data-realm="fire"] .ember:nth-child(19) { left: 78%; animation-duration: 3.8s; animation-delay: -0.6s; --drift: -20px; width: 5px; height: 5px; }
+body[data-realm="fire"] .ember:nth-child(20) { left: 86%; animation-duration: 4.9s; animation-delay: -3.4s; --drift: 12px; background: #ff8a2a; }
+body[data-realm="fire"] .ember:nth-child(21) { left: 34%; animation-duration: 5.4s; animation-delay: -4s;   --drift: -16px; width: 3px; height: 3px; }
 
 body[data-realm="air"] {
   --realm-ink: #3a627c;
@@ -2758,12 +2832,12 @@ body[data-realm="air"] .realmSky i {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
   animation: gust linear infinite;
 }
-body[data-realm="air"] .realmSky i:nth-child(1) { top: 16%; width: 140px; animation-duration: 4.6s; }
-body[data-realm="air"] .realmSky i:nth-child(2) { top: 27%; animation-duration: 5.4s; animation-delay: -1.6s; }
-body[data-realm="air"] .realmSky i:nth-child(3) { top: 36%; width: 80px;  animation-duration: 3.8s; animation-delay: -2.4s; }
-body[data-realm="air"] .realmSky i:nth-child(4) { top: 48%; width: 160px; animation-duration: 6.2s; animation-delay: -0.8s; }
-body[data-realm="air"] .realmSky i:nth-child(5) { top: 62%; animation-duration: 4.2s; animation-delay: -3s; }
-body[data-realm="air"] .realmSky i:nth-child(6) { top: 74%; width: 90px;  animation-duration: 5s;   animation-delay: -2s; }
+body[data-realm="air"] .realmSky i:nth-child(1) { top: 16%; width: 140px; animation-duration: 3.54s; }
+body[data-realm="air"] .realmSky i:nth-child(2) { top: 27%; animation-name: gustSpiral; animation-duration: 8.31s; animation-delay: -1.2s; }
+body[data-realm="air"] .realmSky i:nth-child(3) { top: 36%; width: 80px;  animation-duration: 2.92s; animation-delay: -1.8s; }
+body[data-realm="air"] .realmSky i:nth-child(4) { top: 48%; width: 160px; animation-name: gustSpiral; animation-duration: 9.54s; animation-delay: -0.6s; }
+body[data-realm="air"] .realmSky i:nth-child(5) { top: 62%; animation-duration: 3.23s; animation-delay: -2.3s; }
+body[data-realm="air"] .realmSky i:nth-child(6) { top: 74%; width: 90px;  animation-name: gustSpiral; animation-duration: 7.69s; animation-delay: -1.5s; }
 
 body[data-realm="spirit"] {
   --realm-ink: #5b2d86;
@@ -2818,23 +2892,38 @@ body[data-realm="spirit"] .realmSky i:nth-child(6) { left: 84%; top: 48%; width:
   10% { opacity: 0.9; }
   100% { transform: translate3d(36px, 108vh, 0) rotate(240deg); opacity: 0.15; }
 }
-@keyframes flame {
-  0%, 100% { transform: scaleY(0.92) scaleX(1) translateY(0); opacity: 0.72; }
-  50% { transform: scaleY(1.28) scaleX(0.78) translateY(-14px); opacity: 1; }
+@keyframes flameLick {
+  0%   { transform: scaleY(0.94) scaleX(1.04) rotate(-3deg); }
+  35%  { transform: scaleY(1.16) scaleX(0.78) rotate(4deg); }
+  70%  { transform: scaleY(1.02) scaleX(1.08) rotate(-5deg); }
+  100% { transform: scaleY(1.2) scaleX(0.74) rotate(2deg); }
 }
 @keyframes fireGlow {
-  0%, 100% { opacity: 0.62; }
+  0%, 100% { opacity: 0.55; }
   50% { opacity: 1; }
 }
-@keyframes sparkUp {
-  0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0; }
-  15% { opacity: 1; }
-  100% { transform: translate3d(10px, -46vh, 0) scale(0.4); opacity: 0; }
+@keyframes emberRise {
+  0% { transform: translate3d(0, 8px, 0) scale(0.7); opacity: 0; }
+  12% { opacity: 1; }
+  100% { transform: translate3d(var(--drift, 16px), -68vh, 0) scale(0.35); opacity: 0; }
 }
 @keyframes gust {
   0% { transform: translate3d(-140px, 0, 0); opacity: 0; }
   18% { opacity: 0.95; }
   100% { transform: translate3d(460px, 10px, 0); opacity: 0; }
+}
+@keyframes gustSpiral {
+  0% { transform: translate3d(-140px, 0, 0) rotate(0deg); opacity: 0; }
+  8% { opacity: 0.95; }
+  46% { transform: translate3d(460px, 8px, 0) rotate(0deg); opacity: 0; }
+  50% { transform: translate3d(-140px, 6px, 0) rotate(0deg); opacity: 0; }
+  58% { opacity: 0.95; }
+  68% { transform: translate3d(60px, 4px, 0) rotate(-8deg); opacity: 0.95; }
+  73% { transform: translate3d(98px, -22px, 0) rotate(16deg); }
+  78% { transform: translate3d(140px, -2px, 0) rotate(6deg); }
+  83% { transform: translate3d(112px, 20px, 0) rotate(-14deg); }
+  88% { transform: translate3d(180px, 2px, 0) rotate(0deg); }
+  100% { transform: translate3d(460px, 8px, 0) rotate(0deg); opacity: 0; }
 }
 @keyframes twinkle {
   0%, 100% { opacity: 0.15; transform: scale(0.55); }
