@@ -135,9 +135,21 @@ async function sessionWithRealms(guestId, adventureId) {
   return { row, realms, public: publicSession(row, realms) };
 }
 
-async function startSession(guestId, adventureId, startingStation, req) {
-  const existing = await loadSession(guestId, adventureId);
+function clampParty(value) {
+  if (value === '' || value == null) return null;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 1 || n > 20) return null;
+  return n;
+}
+
+async function startSession(guestId, adventureId, startingStation, req, partySize) {
+  const size = clampParty(partySize);
+  let existing = await loadSession(guestId, adventureId);
   if (existing) {
+    if (size && !existing.quest_complete_at && Number(existing.party_size) !== size) {
+      await db.run('UPDATE quest_sessions SET party_size = ? WHERE id = ?', [size, existing.id]);
+      existing = await db.get('SELECT * FROM quest_sessions WHERE id = ?', [existing.id]);
+    }
     const realms = await realmsFor(existing.id);
     return { row: existing, realms, public: publicSession(existing, realms), created: false };
   }
@@ -152,14 +164,14 @@ async function startSession(guestId, adventureId, startingStation, req) {
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       id, guestId, adventureId, clean(startingStation, 80), operatingDateKey(),
-      null, null, null, 0,
+      size, null, null, 0,
       null, null, null, null, ts,
     ]
   );
   const row = await db.get('SELECT * FROM quest_sessions WHERE id = ?', [id]);
   await track(row, 'quest_started', {
     station: startingStation,
-    payload: { startingStation, operatingDate: row.operating_date },
+    payload: { startingStation, operatingDate: row.operating_date, partySize: size },
   }, req);
   return { row, realms: [], public: publicSession(row, []), created: true };
 }
@@ -223,7 +235,10 @@ async function finishQuest(session, { names, partySize, email, marketingOptIn })
     .map((n) => clean(n, 40))
     .filter(Boolean)
     .slice(0, 20);
-  const size = Math.max(1, Math.min(20, num(partySize, keeperNames.length || 1)));
+  const stored = session.party_size == null ? null : Number(session.party_size);
+  const size = stored >= 1
+    ? Math.max(1, Math.min(20, stored))
+    : Math.max(1, Math.min(20, num(partySize, keeperNames.length || 1)));
   const mail = clean(email, 200);
   const optIn = bool(marketingOptIn);
   const ts = now();

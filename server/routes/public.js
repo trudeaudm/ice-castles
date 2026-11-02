@@ -401,7 +401,9 @@ router.post('/quest/session', async (req, res) => {
   const ctx = await guestAndAdventure(req, res);
   if (!ctx) return;
   const starting = clean(req.body?.station, 80);
-  const started = await quest.startSession(ctx.guest.id, ctx.adventure.id, starting, req);
+  const started = await quest.startSession(
+    ctx.guest.id, ctx.adventure.id, starting, req, req.body?.partySize
+  );
   res.json({
     ...(await refreshPack(ctx.guest.id, ctx.adventure)),
     created: started.created,

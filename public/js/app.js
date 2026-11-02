@@ -606,9 +606,12 @@ const dom = {
   journeyButton: el('journeyButton'),
   threshold: el('threshold'), thresholdStart: el('thresholdStart'),
   landingPlace: el('landingPlace'), landingProgress: el('landingProgress'),
-  landingHow: el('landingHow'), landingMap: el('landingMap'),
-  landingHowto: el('landingHowto'), landingHowtoBody: el('landingHowtoBody'),
-  landingHowtoClose: el('landingHowtoClose'),
+  landingMap: el('landingMap'),
+  landingParty: el('landingParty'), landingPartySize: el('landingPartySize'),
+  landingPartyHint: el('landingPartyHint'),
+  beginBrief: el('beginBrief'), beginBriefClose: el('beginBriefClose'),
+  beginHow: el('beginHow'), beginContinue: el('beginContinue'),
+  beginSteps: el('beginSteps'), beginStory: el('beginStory'),
   landingTalk: el('landingTalk'), landingBubble: el('landingBubble'),
   landingBubbleWho: el('landingBubbleWho'), landingBubbleText: el('landingBubbleText'),
   landingRealms: el('landingRealms'),
@@ -669,6 +672,12 @@ function goStation(slug) {
   if (`${location.pathname}` !== path) history.pushState({ station: slug }, '', path);
   Store.state.path = Store.pathContext();
   hideMapModal();
+  if (slug === 'threshold' || Store.touchBySlug(slug)?.type === 'threshold') {
+    closePanels();
+    closeGuide({ force: true });
+    showThreshold();
+    return;
+  }
   openStation(slug);
 }
 
@@ -1506,11 +1515,15 @@ function renderHeartSlot(heartResult) {
 }
 
 function keepersFormHtml() {
+  const known = Store.state.session?.partySize;
+  const sizeField = known
+    ? `<p class="fineprint">Party of ${known}.</p>`
+    : `<label>How many adventurers?
+      <input class="challenge__input" name="partySize" type="number" min="1" max="20" value="1" required>
+    </label>`;
   return `<form class="challenge keepers" id="keepersForm">
     <p class="challenge__prompt">The Heart is open. Enter the Winter Keepers in your party.</p>
-    <label>How many adventurers?
-      <input class="challenge__input" name="partySize" type="number" min="1" max="20" value="1" required>
-    </label>
+    ${sizeField}
     <label>First names
       <input class="challenge__input" name="names" placeholder="Ada, Sam, Juniper" required>
     </label>
@@ -1551,7 +1564,7 @@ function sealHtml(session) {
 
 async function submitKeepers(form) {
   const names = String(form.names.value || '').split(/[,;/]+/).map((n) => n.trim()).filter(Boolean);
-  const partySize = Number(form.partySize.value || names.length || 1);
+  const partySize = Store.state.session?.partySize || Number(form.partySize?.value || names.length || 1);
   await Store.finishQuest({
     names,
     partySize,
@@ -2077,7 +2090,7 @@ async function runWave(realm, mode, paintHost, wavingHost, gen) {
 function landingCanWave() {
   return document.body.classList.contains('landing-open')
     && Boolean(dom.threshold?.classList.contains('is-open'))
-    && !(dom.landingHowto && !dom.landingHowto.hidden);
+    && !(dom.beginBrief && !dom.beginBrief.hidden);
 }
 
 function armLandWaves(realm) {
@@ -2153,7 +2166,7 @@ function startLandTalk() {
     if (dom.threshold?.classList.contains('is-open')) landTalk('water');
     talkPulse = window.setInterval(() => {
       if (!dom.threshold?.classList.contains('is-open')) return;
-      if (dom.landingHowto && !dom.landingHowto.hidden) return;
+      if (dom.beginBrief && !dom.beginBrief.hidden) return;
       const realm = REALM_ORDER[Math.floor(Math.random() * REALM_ORDER.length)];
       landTalk(realm);
     }, 7000);
@@ -2168,7 +2181,6 @@ function stopLandTalk() {
 }
 
 function showThreshold() {
-  const tp = Store.touchByType('threshold')[0];
   const park = Store.state.park || {};
   if (dom.landingPlace) {
     dom.landingPlace.textContent = park.locationName || park.name || 'Ice Castles';
@@ -2176,14 +2188,12 @@ function showThreshold() {
   if (dom.landingProgress) {
     dom.landingProgress.textContent = `${Store.realmsAwakened()} / 5 Realms Awakened`;
   }
-  if (dom.landingHowtoBody) {
-    const story = tp?.body || park.welcomeBody ||
-      'Explore the castle, complete five Guardian challenges in any order, then scan The Heart.';
-    const discover = tp?.discoverBody ||
-      'Guardians can be done in any order. The Heart finishes the quest.';
-    dom.landingHowtoBody.textContent = `${story} ${discover}`;
+  hideBeginBrief();
+  clearPartyReminder();
+  const known = Store.state.session?.partySize;
+  if (dom.landingPartySize && known && !String(dom.landingPartySize.value || '').trim()) {
+    dom.landingPartySize.value = String(known);
   }
-  hideLandingHowto();
   document.body.classList.add('landing-open');
   dom.threshold.hidden = false;
   dom.threshold.inert = false;
@@ -2191,15 +2201,61 @@ function showThreshold() {
   startLandTalk();
 }
 
-function hideLandingHowto() {
-  if (!dom.landingHowto) return;
-  dom.landingHowto.hidden = true;
+function readPartySize() {
+  const raw = String(dom.landingPartySize?.value || '').trim();
+  if (!raw) return null;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1 || n > 20) return null;
+  return n;
+}
+
+function clearPartyReminder() {
+  dom.landingPartyHint?.classList.remove('is-on');
+  dom.landingParty?.classList.remove('is-nudge');
+  dom.landingPartySize?.removeAttribute('aria-invalid');
+}
+
+function remindPartySize() {
+  const raw = String(dom.landingPartySize?.value || '').trim();
+  if (dom.landingPartyHint) {
+    dom.landingPartyHint.textContent = raw
+      ? 'Enter a party size from 1 to 20.'
+      : 'Enter your party size to continue.';
+    dom.landingPartyHint.classList.add('is-on');
+  }
+  dom.landingPartySize?.setAttribute('aria-invalid', 'true');
+  if (dom.landingParty) {
+    dom.landingParty.classList.remove('is-nudge');
+    void dom.landingParty.offsetWidth;
+    dom.landingParty.classList.add('is-nudge');
+  }
+  dom.landingPartySize?.focus();
+}
+
+function hideBeginBrief() {
+  if (!dom.beginBrief) return;
+  dom.beginBrief.hidden = true;
+  dom.beginSteps?.classList.remove('is-flash');
+}
+
+function openBeginBrief() {
+  if (!readPartySize()) {
+    remindPartySize();
+    return;
+  }
+  clearPartyReminder();
+  hideLandTalk();
+  if (dom.beginStory) dom.beginStory.open = false;
+  if (dom.beginBrief) {
+    dom.beginBrief.hidden = false;
+    dom.beginBrief.querySelector('.beginBrief__scroll')?.scrollTo(0, 0);
+  }
 }
 
 function hideThreshold() {
   stopLandTalk();
   haltWaves();
-  hideLandingHowto();
+  hideBeginBrief();
   document.body.classList.remove('landing-open');
   dom.threshold.classList.remove('is-open');
   dom.threshold.inert = true;
@@ -2207,13 +2263,25 @@ function hideThreshold() {
 }
 
 async function enterFromLanding({ journeyMode }) {
+  const partySize = readPartySize();
+  if (!partySize) {
+    hideBeginBrief();
+    remindPartySize();
+    return;
+  }
+  try {
+    await Store.startSession(Store.intendedStation(), partySize);
+  } catch {
+    toast('Couldn’t start just yet. Try again in a moment.');
+    return;
+  }
   stripWelcomePreview();
-  await Store.startSession(Store.intendedStation());
   Store.setIntendedStation(null);
+  if (!journeyMode) Store.showAllCategories();
+  Store.setJourneyMode(journeyMode);
   goVenueHome();
   hideThreshold();
   renderProgress();
-  Store.setJourneyMode(journeyMode);
   openMapHome({ fit: journeyMode ? 'guardians' : 'park' });
 }
 
@@ -2548,9 +2616,11 @@ async function route() {
   const slug = Store.state.path.station;
   const live = Store.hasLiveSession();
 
-  if (!live || wantsWelcomePreview()) {
+  if (!live || wantsWelcomePreview() || slug === 'threshold') {
     if (!live && slug && slug !== 'threshold') Store.setIntendedStation(slug);
     hideMapModal();
+    closePanels();
+    closeGuide({ force: true });
     showThreshold();
     const welcome = Store.touchByType('threshold')[0];
     renderStation(welcome?.slug || 'threshold');
@@ -2559,7 +2629,7 @@ async function route() {
 
   hideThreshold();
 
-  if (!slug || slug === 'threshold') {
+  if (!slug) {
     Store.setIntendedStation(null);
     openMapHome();
     return;
@@ -2668,13 +2738,21 @@ function wire() {
   dom.guideToggle.addEventListener('click', toggleGuide);
   if (dom.headerMap) dom.headerMap.addEventListener('click', toggleGuide);
 
-  dom.thresholdStart.addEventListener('click', () => enterFromLanding({ journeyMode: true }));
+  dom.thresholdStart.addEventListener('click', openBeginBrief);
   dom.landingMap?.addEventListener('click', () => enterFromLanding({ journeyMode: false }));
-  dom.landingHow?.addEventListener('click', () => {
-    hideLandTalk();
-    if (dom.landingHowto) dom.landingHowto.hidden = false;
+  dom.landingPartySize?.addEventListener('input', () => {
+    if (readPartySize()) clearPartyReminder();
   });
-  dom.landingHowtoClose?.addEventListener('click', hideLandingHowto);
+  dom.beginContinue?.addEventListener('click', () => enterFromLanding({ journeyMode: true }));
+  dom.beginBriefClose?.addEventListener('click', hideBeginBrief);
+  dom.beginHow?.addEventListener('click', () => {
+    const steps = dom.beginSteps;
+    if (!steps) return;
+    steps.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    steps.classList.remove('is-flash');
+    void steps.offsetWidth;
+    steps.classList.add('is-flash');
+  });
   dom.landingRealms?.addEventListener('click', (event) => {
     const btn = event.target.closest('[data-realm]');
     if (!btn) return;
@@ -2823,6 +2901,7 @@ function wire() {
   window.addEventListener('pagehide', stopStoryAudio);
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
+    if (dom.beginBrief && !dom.beginBrief.hidden) { hideBeginBrief(); return; }
     if (Scanner.isOpen()) Scanner.close();
     else if (!dom.award.hidden) dismissAward();
     else if (!dom.finale.hidden) hideFinale();

@@ -184,10 +184,10 @@ const Store = (() => {
     return slug ? `/${venue}/${slug}` : `/${venue}`;
   }
 
-  async function startSession(station) {
+  async function startSession(station, partySize) {
     const data = await request(`/api/quest/session${bootstrapQuery()}`, {
       method: 'POST',
-      body: JSON.stringify({ station: station || intendedStation() }),
+      body: JSON.stringify({ station: station || intendedStation(), partySize }),
     });
     applyQuest(data);
     return data;
@@ -377,6 +377,12 @@ const Store = (() => {
     emit();
   }
 
+  function showAllCategories() {
+    state.hiddenCategories = new Set();
+    write(KEY_SEEN, { hidden: [] });
+    emit();
+  }
+
   function toggleJourneyMode() {
     setJourneyMode(!state.journeyMode);
     return state.journeyMode;
@@ -390,7 +396,7 @@ const Store = (() => {
     scannedIds, tokenIds, huntProgress, stopsForPoi, poiBySlug, poiById, stopById,
     touchBySlug, touchByType, touchForPoi, journeyComplete, journeyPoiIds,
     guardianPoiIds, completedGuardianPoiIds, totals,
-    toggleCategory, setJourneyMode, toggleJourneyMode, queue, pathContext,
+    toggleCategory, showAllCategories, setJourneyMode, toggleJourneyMode, queue, pathContext,
     hasLiveSession, realmsAwakened, intendedStation, setIntendedStation, stationPath,
     startSession, visitStation, completeStation, scanHeart, finishQuest,
   };
