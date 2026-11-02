@@ -825,6 +825,7 @@ function realmSkyHtml(element) {
     return `<div class="realmSky" aria-hidden="true">${hearthHtml()}${embers}</div>`;
   }
   if (element === 'air') return airSkyHtml();
+  if (element === 'earth') return earthSkyHtml();
   if (element === 'spirit') return spiritSkyHtml();
   return `<div class="realmSky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>`;
 }
@@ -855,6 +856,219 @@ let windField = null;
 
 function airSkyHtml() {
   return `<div class="realmSky" aria-hidden="true"><canvas class="wind" aria-hidden="true"></canvas></div>`;
+}
+
+function earthSkyHtml() {
+  return `<div class="realmSky" aria-hidden="true"><canvas class="leaves" aria-hidden="true"></canvas></div>`;
+}
+
+const LEAF_COLORS = ['#6ea84a', '#c4a15a', '#3f7a34', '#8f6a32', '#d2c06a', '#4e8a3e'];
+let leafField = null;
+
+function createLeafFall(canvas, paused) {
+  const ctx = canvas.getContext('2d');
+  const AIR = 12;
+  let width = 0;
+  let height = 0;
+  let dpr = 1;
+  let raf = 0;
+  let running = false;
+  let last = 0;
+  let built = false;
+  let bins = 1;
+  let maxH = 120;
+  let heights = [0];
+  const falling = [];
+  const pile = [];
+
+  function layout() {
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.round(rect.width || canvas.clientWidth || 0);
+    const h = Math.round(rect.height || canvas.clientHeight || 0);
+    if (w < 2 || h < 2) return false;
+    const next = Math.min(window.devicePixelRatio || 1, 2);
+    const bw = Math.round(w * next);
+    const bh = Math.round(h * next);
+    if (canvas.width !== bw || canvas.height !== bh || dpr !== next) {
+      canvas.width = bw;
+      canvas.height = bh;
+      dpr = next;
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const resized = width !== w;
+    width = w;
+    height = h;
+    if (resized || !built) {
+      bins = Math.max(12, Math.round(w / 18));
+      maxH = Math.min(200, h * 0.2);
+      heights = Array(bins).fill(0);
+      built = false;
+    }
+    return true;
+  }
+
+  function spawnX() {
+    const u = (Math.random() + Math.random() + Math.random()) / 3;
+    return width * (0.16 + u * 0.68);
+  }
+
+  function launch(leaf, fromTop) {
+    leaf.x = spawnX();
+    leaf.y = fromTop ? -24 - Math.random() * 90 : Math.random() * height;
+    leaf.vy = 72 + Math.random() * 58;
+    leaf.sway = 14 + Math.random() * 26;
+    leaf.freq = 0.7 + Math.random() * 1.1;
+    leaf.phase = Math.random() * Math.PI * 2;
+    leaf.rot = Math.random() * Math.PI * 2;
+    leaf.spin = (Math.random() - 0.5) * 2.4;
+    leaf.w = 16 + Math.random() * 12;
+    leaf.h = leaf.w * (1.05 + Math.random() * 0.35);
+    leaf.color = LEAF_COLORS[(Math.random() * LEAF_COLORS.length) | 0];
+  }
+
+  function groundAt(x) {
+    const f = (x / width) * (bins - 1);
+    const i = Math.max(0, Math.min(bins - 2, Math.floor(f)));
+    const t = f - i;
+    return height - 26 - (heights[i] * (1 - t) + heights[i + 1] * t);
+  }
+
+  function settle(x, y, leaf) {
+    const landed = {
+      x: Math.max(10, Math.min(width - 10, x + (Math.random() - 0.5) * 14)),
+      y: y + (Math.random() - 0.5) * 5,
+      rot: leaf.rot,
+      w: leaf.w,
+      h: leaf.h,
+      color: leaf.color,
+    };
+    if (pile.length >= 150) {
+      const start = (pile.length * 0.5) | 0;
+      pile[start + ((Math.random() * (pile.length - start)) | 0)] = landed;
+      return;
+    }
+    pile.push(landed);
+    const i = Math.max(0, Math.min(bins - 1, Math.round((x / width) * (bins - 1))));
+    const gain = 6 + Math.random() * 4;
+    heights[i] = Math.min(maxH, heights[i] + gain);
+    if (i > 0) heights[i - 1] = Math.min(maxH, heights[i - 1] + gain * 0.38);
+    if (i < bins - 1) heights[i + 1] = Math.min(maxH, heights[i + 1] + gain * 0.38);
+  }
+
+  function step(dt) {
+    for (const leaf of falling) {
+      leaf.y += leaf.vy * dt;
+      leaf.rot += leaf.spin * dt;
+      const drift = Math.sin(leaf.y * 0.012 + leaf.phase) * leaf.sway;
+      const x = leaf.x + drift;
+      const ground = groundAt(x);
+      if (leaf.y >= ground) {
+        settle(x, ground, leaf);
+        launch(leaf, true);
+      }
+    }
+  }
+
+  function drawLeaf(leaf) {
+    ctx.save();
+    ctx.translate(leaf.x, leaf.y);
+    ctx.rotate(leaf.rot);
+    ctx.fillStyle = leaf.color;
+    ctx.beginPath();
+    ctx.moveTo(0, -leaf.h * 0.5);
+    ctx.quadraticCurveTo(leaf.w * 0.72, -leaf.h * 0.08, 0, leaf.h * 0.5);
+    ctx.quadraticCurveTo(-leaf.w * 0.72, leaf.h * 0.08, 0, -leaf.h * 0.5);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(48, 62, 24, 0.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, -leaf.h * 0.38);
+    ctx.lineTo(0, leaf.h * 0.38);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    const settled = pile.slice().sort((a, b) => a.y - b.y);
+    for (const leaf of settled) drawLeaf(leaf);
+    for (const leaf of falling) {
+      const drift = Math.sin(leaf.y * 0.012 + leaf.phase) * leaf.sway;
+      drawLeaf({ ...leaf, x: leaf.x + drift });
+    }
+  }
+
+  function prime() {
+    falling.length = 0;
+    pile.length = 0;
+    heights.fill(0);
+    for (let i = 0; i < AIR; i += 1) {
+      const leaf = {};
+      launch(leaf, false);
+      falling.push(leaf);
+    }
+    let guard = 0;
+    while (pile.length < 140 && guard < 4000) {
+      step(0.05);
+      guard += 1;
+    }
+    built = true;
+  }
+
+  function frame(now) {
+    raf = 0;
+    if (!running) return;
+    if (!layout()) {
+      raf = window.requestAnimationFrame(frame);
+      return;
+    }
+    if (!built) prime();
+    const hidden = document.hidden || (typeof paused === 'function' && paused());
+    if (!hidden) {
+      const dt = Math.min(0.05, last ? (now - last) / 1000 : 0.016);
+      last = now;
+      step(dt);
+    } else last = 0;
+    draw();
+    raf = window.requestAnimationFrame(frame);
+  }
+
+  return {
+    start() {
+      if (running) return;
+      running = true;
+      document.addEventListener('visibilitychange', onHide);
+      raf = window.requestAnimationFrame(frame);
+    },
+    stop() {
+      running = false;
+      document.removeEventListener('visibilitychange', onHide);
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    },
+  };
+
+  function onHide() {
+    if (document.hidden) last = 0;
+  }
+}
+
+function stopLeaves() {
+  if (!leafField) return;
+  leafField.stop();
+  leafField = null;
+}
+
+function startLeaves() {
+  stopLeaves();
+  const canvas = document.querySelector('.realmSky .leaves');
+  if (!canvas) return;
+  leafField = createLeafFall(canvas, () => (
+    document.body.classList.contains('map-moving')
+    || document.body.classList.contains('guide-open')
+    || document.body.classList.contains('landing-open')
+  ));
+  leafField.start();
 }
 
 function stopWind() {
@@ -1133,6 +1347,7 @@ function renderStation(slug) {
   stopStoryAudio();
   stopHearth();
   stopWind();
+  stopLeaves();
   if (!document.body.classList.contains('landing-open')) haltWaves();
   const station = Store.touchBySlug(slug) || Store.touchByType('threshold')[0];
   if (!station) {
@@ -1229,6 +1444,7 @@ function renderStation(slug) {
   if (waveRealm && !document.body.classList.contains('landing-open')) armShrineWaves(waveRealm);
   if (station.element === 'fire') startHearth();
   if (station.element === 'air') startWind();
+  if (station.element === 'earth') startLeaves();
 }
 
 async function openStation(slug, { recordVisit = true } = {}) {

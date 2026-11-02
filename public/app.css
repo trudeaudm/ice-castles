@@ -2810,19 +2810,14 @@ body[data-realm="earth"] .realmSky::before {
   height: 24%;
   background: linear-gradient(to top, rgba(62, 46, 22, 0.38), transparent);
 }
-body[data-realm="earth"] .realmSky i {
-  top: -20px;
-  width: 13px;
-  height: 18px;
-  border-radius: 0 80% 0 80%;
-  animation: earthFall linear infinite;
+body[data-realm="earth"] .leaves {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
 }
-body[data-realm="earth"] .realmSky i:nth-child(1) { left: 10%; background: #6ea84a; animation-duration: 9s; }
-body[data-realm="earth"] .realmSky i:nth-child(2) { left: 26%; background: #c4a15a; animation-duration: 12s; animation-delay: -3s; width: 10px; height: 14px; }
-body[data-realm="earth"] .realmSky i:nth-child(3) { left: 42%; background: #3f7a34; animation-duration: 10s; animation-delay: -6s; }
-body[data-realm="earth"] .realmSky i:nth-child(4) { left: 58%; background: #8f6a32; animation-duration: 13s; animation-delay: -1.5s; width: 11px; height: 15px; }
-body[data-realm="earth"] .realmSky i:nth-child(5) { left: 74%; background: #d2c06a; animation-duration: 8.5s; animation-delay: -4s; }
-body[data-realm="earth"] .realmSky i:nth-child(6) { left: 88%; background: #4e8a3e; animation-duration: 11s; animation-delay: -8s; width: 15px; height: 20px; }
 
 body[data-realm="fire"] {
   --realm-ink: #9a2a10;
@@ -3018,11 +3013,6 @@ body[data-realm="spirit"] .realmSky i {
   0% { transform: translate3d(0, 12px, 0) scale(0.55); opacity: 0; }
   12% { opacity: 0.9; }
   100% { transform: translate3d(16px, -108vh, 0) scale(1.15); opacity: 0; }
-}
-@keyframes earthFall {
-  0% { transform: translate3d(0, -12px, 0) rotate(0deg); opacity: 0; }
-  10% { opacity: 0.9; }
-  100% { transform: translate3d(36px, 108vh, 0) rotate(240deg); opacity: 0.15; }
 }
 @keyframes lick {
   0%, 100% { transform: scaleY(0.94) scaleX(1.05) skewX(-3deg); }
