@@ -2,19 +2,19 @@
 
 const ART = '/assets/art';
 const REALM_META = {
-  water: { label: 'Water', glyph: '💧', character: `${ART}/char-cascade.png?v=1600`, pfp: `${ART}/pfp-cascade.png`, wave: `${ART}/wave-cascade.mp4` },
-  earth: { label: 'Earth', glyph: '🪨', character: `${ART}/char-granite.png?v=1600`, pfp: `${ART}/pfp-granite.png`, wave: `${ART}/wave-granite.mp4` },
-  fire: { label: 'Fire', glyph: '🔥', character: `${ART}/char-ember.png?v=1600`, pfp: `${ART}/pfp-ember.png`, wave: `${ART}/wave-ember.mp4` },
-  air: { label: 'Air', glyph: '🌬️', character: `${ART}/char-summit.png?v=1600`, pfp: `${ART}/pfp-summit.png`, wave: `${ART}/wave-summit.mp4` },
-  spirit: { label: 'Spirit', glyph: '✦', character: `${ART}/char-aurora.png?v=1600`, pfp: `${ART}/pfp-aurora.png`, wave: `${ART}/wave-aurora.mp4` },
+  water: { label: 'Water', glyph: '💧', character: `${ART}/char-cascade.png?v=1600`, pfp: `${ART}/pfp-cascade.png`, wave: `${ART}/wave-cascade.mp4?v=2` },
+  earth: { label: 'Earth', glyph: '🪨', character: `${ART}/char-granite.png?v=1600`, pfp: `${ART}/pfp-granite.png`, wave: `${ART}/wave-granite.mp4?v=2` },
+  fire: { label: 'Fire', glyph: '🔥', character: `${ART}/char-ember.png?v=1600`, pfp: `${ART}/pfp-ember.png`, wave: `${ART}/wave-ember.mp4?v=2` },
+  air: { label: 'Air', glyph: '🌬️', character: `${ART}/char-summit.png?v=1600`, pfp: `${ART}/pfp-summit.png`, wave: `${ART}/wave-summit.mp4?v=2` },
+  spirit: { label: 'Spirit', glyph: '✦', character: `${ART}/char-aurora.png?v=1600`, pfp: `${ART}/pfp-aurora.png`, wave: `${ART}/wave-aurora.mp4?v=2` },
 };
-/* Head crop inside the landing circle: source square as a fraction of frame width, top as a fraction of frame height. */
+/* These clips are already square. zoom is the source square as a fraction of frame width; top is a fraction of frame height. */
 const WAVE_FACE = {
-  water: { zoom: 0.72, top: 0.02 },
-  earth: { zoom: 0.78, top: 0.0 },
-  fire: { zoom: 0.7, top: 0.02 },
-  air: { zoom: 0.7, top: 0.0 },
-  spirit: { zoom: 0.72, top: 0.01 },
+  water: { zoom: 1, top: 0 },
+  earth: { zoom: 1, top: 0 },
+  fire: { zoom: 1, top: 0 },
+  air: { zoom: 1, top: 0 },
+  spirit: { zoom: 1, top: 0 },
 };
 const REALM_ORDER = ['water', 'earth', 'fire', 'air', 'spirit'];
 const TILE_ART = {
