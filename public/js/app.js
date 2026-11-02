@@ -731,7 +731,9 @@ function frameGuardians(attempt = 0) {
     setTimeout(() => frameGuardians(attempt + 1), 50);
     return;
   }
-  ParkMap.fitToPoints(points);
+  const card = document.querySelector('.mapModal.is-open .mapModal__card');
+  const insetBottom = card ? Math.ceil(card.getBoundingClientRect().height) + 28 : 0;
+  ParkMap.fitToPoints(points, { insetBottom });
 }
 
 function applyMapMode(on) {
@@ -781,6 +783,7 @@ function openMapHome({ showChoice = false, fit = 'park' } = {}) {
     setTimeout(() => {
       if (!document.body.classList.contains('guide-open')) return;
       showBeginGuide();
+      frameGuardians();
     }, 420);
   }
 }

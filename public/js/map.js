@@ -88,7 +88,7 @@ const ParkMap = (() => {
    * tight as the map pane allows. Zoom snap is bypassed so a wide row of
    * pins can fill the width instead of stepping back to the whole park.
    */
-  function fitToPoints(points, { animate = false } = {}) {
+  function fitToPoints(points, { animate = false, insetBottom = 0 } = {}) {
     if (!map) return;
     const usable = (points || []).filter((p) => Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)));
     if (!usable.length) {
@@ -109,15 +109,18 @@ const ParkMap = (() => {
     // Padding keeps the pin art (about 44px) inside the pane.
     const padX = 34;
     const padY = 36;
+    const bottom = Math.max(0, insetBottom);
     const availW = Math.max(48, size.x - padX * 2);
-    const availH = Math.max(48, size.y - padY * 2);
+    const availH = Math.max(48, size.y - padY * 2 - bottom);
     const scale = Math.min(availW / spanX, availH / spanY);
     let zoom = Math.log(scale) / Math.LN2;
     zoom = Math.max(map.getMinZoom(), Math.min(map.getMaxZoom(), zoom));
 
     const prevSnap = map.options.zoomSnap;
     map.options.zoomSnap = 0;
-    map.setView(box.getCenter(), zoom, { animate });
+    const viewCenterY = (size.y - bottom) / 2;
+    const projected = map.project(box.getCenter(), zoom).add([0, size.y / 2 - viewCenterY]);
+    map.setView(map.unproject(projected, zoom), zoom, { animate });
     map.options.zoomSnap = prevSnap;
   }
 
