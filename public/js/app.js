@@ -8,13 +8,14 @@ const REALM_META = {
   air: { label: 'Air', glyph: '🌬️', character: `${ART}/char-summit.png?v=1600`, pfp: `${ART}/pfp-summit.png`, wave: `${ART}/wave-summit.mp4?v=2` },
   spirit: { label: 'Spirit', glyph: '✦', character: `${ART}/char-aurora.png?v=1600`, pfp: `${ART}/pfp-aurora.png`, wave: `${ART}/wave-aurora.mp4?v=2` },
 };
-/* These clips are already square. zoom is the source square as a fraction of frame width; top is a fraction of frame height. */
+/* Landing circles use the same bust crop as the profile portraits.
+   zoom is the source square as a fraction of frame width; top is a fraction of frame height. */
 const WAVE_FACE = {
-  water: { zoom: 1, top: 0 },
-  earth: { zoom: 1, top: 0 },
-  fire: { zoom: 1, top: 0 },
-  air: { zoom: 1, top: 0 },
-  spirit: { zoom: 1, top: 0 },
+  water: { zoom: 0.72, top: 0.04 },
+  earth: { zoom: 0.78, top: 0 },
+  fire: { zoom: 0.7, top: 0.05 },
+  air: { zoom: 0.76, top: 0.01 },
+  spirit: { zoom: 0.7, top: 0.07 },
 };
 const REALM_ORDER = ['water', 'earth', 'fire', 'air', 'spirit'];
 const TILE_ART = {
@@ -1799,6 +1800,91 @@ function keyBackdrop(image) {
     if (x + 1 < w) push(x + 1, y);
     if (y > 0) push(x, y - 1);
     if (y + 1 < h) push(x, y + 1);
+  }
+  // Black showing through a pose, such as the gap between Ember's face and
+  // raised arm, or between a wing and the tail. Those pockets never reach
+  // the frame edge, so the flood above leaves them. Pupils are smaller.
+  if (!keyBackdrop.seen || keyBackdrop.seen.length !== count) {
+    keyBackdrop.seen = new Uint8Array(count);
+    keyBackdrop.stack = new Int32Array(count);
+    keyBackdrop.comp = new Int32Array(count);
+  }
+  const seen = keyBackdrop.seen;
+  const stack = keyBackdrop.stack;
+  const comp = keyBackdrop.comp;
+  seen.fill(0);
+  const minPocket = Math.max(12, Math.round(count * 0.00085));
+  for (let start = 0; start < count; start += 1) {
+    if (bg[start] || seen[start]) continue;
+    const s0 = start * 4;
+    if (Math.max(data[s0], data[s0 + 1], data[s0 + 2]) >= 24) continue;
+    let sp = 0;
+    let cp = 0;
+    let touchLinks = 0;
+    let pure = 0;
+    stack[sp] = start;
+    sp += 1;
+    seen[start] = 1;
+    while (sp) {
+      sp -= 1;
+      const q = stack[sp];
+      comp[cp] = q;
+      cp += 1;
+      const qi = q * 4;
+      const qm = data[qi] > data[qi + 1]
+        ? (data[qi] > data[qi + 2] ? data[qi] : data[qi + 2])
+        : (data[qi + 1] > data[qi + 2] ? data[qi + 1] : data[qi + 2]);
+      if (qm < 14) pure += 1;
+      const x = q % w;
+      const y = (q / w) | 0;
+      let ni = x > 0 ? q - 1 : -1;
+      if (ni >= 0 && bg[ni]) touchLinks += 1;
+      else if (ni >= 0 && !seen[ni]) {
+        const o = ni * 4;
+        if (Math.max(data[o], data[o + 1], data[o + 2]) < 24) {
+          seen[ni] = 1;
+          stack[sp] = ni;
+          sp += 1;
+        }
+      }
+      ni = x + 1 < w ? q + 1 : -1;
+      if (ni >= 0 && bg[ni]) touchLinks += 1;
+      else if (ni >= 0 && !seen[ni]) {
+        const o = ni * 4;
+        if (Math.max(data[o], data[o + 1], data[o + 2]) < 24) {
+          seen[ni] = 1;
+          stack[sp] = ni;
+          sp += 1;
+        }
+      }
+      ni = y > 0 ? q - w : -1;
+      if (ni >= 0 && bg[ni]) touchLinks += 1;
+      else if (ni >= 0 && !seen[ni]) {
+        const o = ni * 4;
+        if (Math.max(data[o], data[o + 1], data[o + 2]) < 24) {
+          seen[ni] = 1;
+          stack[sp] = ni;
+          sp += 1;
+        }
+      }
+      ni = y + 1 < h ? q + w : -1;
+      if (ni >= 0 && bg[ni]) touchLinks += 1;
+      else if (ni >= 0 && !seen[ni]) {
+        const o = ni * 4;
+        if (Math.max(data[o], data[o + 1], data[o + 2]) < 24) {
+          seen[ni] = 1;
+          stack[sp] = ni;
+          sp += 1;
+        }
+      }
+    }
+    // A gap between a wing and a tail can touch the backdrop through one or two
+    // brighter pixels. That neck is tiny beside a pocket of real black. Pupils
+    // and Cascade's blue-black feathers never match both tests.
+    const pinched = touchLinks > 0 && touchLinks <= 12 && pure * 20 >= cp * 17;
+    if (cp >= minPocket && (touchLinks === 0 || pinched)) {
+      for (let k = 0; k < cp; k += 1) bg[comp[k]] = 1;
+    }
   }
   for (let p = 0; p < count; p += 1) {
     if (bg[p]) data[p * 4 + 3] = 0;
