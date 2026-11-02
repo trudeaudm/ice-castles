@@ -526,9 +526,12 @@ function publicChallengeConfig(type, config) {
     case 'multi_sequence':
       return {
         prompt: cfg.prompt || 'Repeat the sequence you see.',
+        hint: cfg.hint || '',
         kind: cfg.kind || 'symbol',
         options: cfg.options || [],
         length: Number(cfg.length) || (cfg.correct || [])[0]?.length || 5,
+        submitLabel: cfg.submitLabel || '',
+        clearLabel: cfg.clearLabel || '',
       };
     case 'quiz':
       return {

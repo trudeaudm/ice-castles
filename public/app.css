@@ -2240,6 +2240,39 @@ body.award-open .guideFab { display: none; }
 }
 .seqRow { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 10px; }
 .seqReadout { margin: 0; color: var(--ink-text); font-weight: 700; min-height: 1.4em; }
+.seqSlots {
+  display: grid;
+  grid-template-columns: repeat(var(--slots, 4), minmax(0, 1fr));
+  gap: 8px;
+}
+.seqSlot {
+  display: grid;
+  place-items: center;
+  min-height: 54px;
+  border-radius: 12px;
+  border: 2px solid #e7a15a;
+  background: var(--snow);
+}
+.seqSlot__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8aa0b4;
+}
+.seqSlot img { width: 40px; height: 40px; object-fit: contain; }
+.challenge__clear {
+  justify-self: start;
+  margin: 2px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #c45a2a;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 
 .quizQ {
   border: 2px solid var(--ice-card);

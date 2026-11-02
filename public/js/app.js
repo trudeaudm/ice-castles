@@ -210,11 +210,20 @@ function challengeHtml(station) {
         <span>${escapeHtml(label)}</span>
       </button>`;
     }).join('');
-    return `<div class="challenge" data-station="${escapeHtml(station.slug)}" data-seq-len="${challenge.length || 5}">
+    const len = challenge.length || 5;
+    const slots = Array.from({ length: len }, () =>
+      '<span class="seqSlot" data-seq-slot><span class="seqSlot__dot"></span></span>'
+    ).join('');
+    const clearLabel = challenge.clearLabel || 'Clear';
+    return `<div class="challenge" data-station="${escapeHtml(station.slug)}" data-seq-len="${len}">
       <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
-      <p class="seqReadout" data-seq-readout>Tap the sequence</p>
+      ${challenge.hint ? `<p class="challenge__hint">${escapeHtml(challenge.hint)}</p>` : ''}
+      ${challenge.kind === 'color'
+        ? `<div class="seqSlots" data-seq-readout style="--slots:${len}" aria-label="Chosen lanterns">${slots}</div>`
+        : '<p class="seqReadout" data-seq-readout>Tap the sequence</p>'}
       <div class="seqRow">${opts}</div>
-      <button class="textButton" data-seq-clear type="button">Clear</button>
+      <button class="${challenge.clearLabel ? 'challenge__clear' : 'textButton'}" data-seq-clear type="button">${escapeHtml(clearLabel)}</button>
+      ${challenge.submitLabel ? `<button class="textButton textButton--play" data-seq-submit type="button">${escapeHtml(challenge.submitLabel)}</button>` : ''}
     </div>`;
   }
 
@@ -1137,6 +1146,41 @@ function bindFunButtons() {
   });
 }
 
+function paintSequence(root) {
+  if (!root) return;
+  const slots = root.querySelectorAll('[data-seq-slot]');
+  if (slots.length) {
+    const buttons = [...root.querySelectorAll('[data-seq]')];
+    slots.forEach((slot, index) => {
+      const id = sequenceBuffer[index];
+      slot.classList.toggle('is-filled', Boolean(id));
+      slot.replaceChildren();
+      if (!id) {
+        const dot = document.createElement('span');
+        dot.className = 'seqSlot__dot';
+        slot.appendChild(dot);
+        return;
+      }
+      const source = buttons.find((btn) => btn.dataset.seq === id)?.querySelector('img');
+      if (source) {
+        const img = source.cloneNode(true);
+        img.alt = '';
+        slot.appendChild(img);
+        return;
+      }
+      const mark = document.createElement('span');
+      mark.className = 'seqSlot__dot';
+      slot.appendChild(mark);
+    });
+    return;
+  }
+  const readout = root.querySelector('[data-seq-readout]');
+  if (!readout) return;
+  readout.textContent = sequenceBuffer.length
+    ? sequenceBuffer.map((id) => REALM_META[id]?.label || id).join(' → ')
+    : 'Tap the sequence';
+}
+
 function wire() {
   bindFunButtons();
   dom.progressButton.addEventListener('click', () => openPanel('journey'));
@@ -1253,10 +1297,10 @@ function wire() {
     if (seq) {
       const root = seq.closest('[data-station]');
       const len = Number(root.dataset.seqLen || 5);
+      if (sequenceBuffer.length >= len) return;
       sequenceBuffer.push(seq.dataset.seq);
-      root.querySelector('[data-seq-readout]').textContent = sequenceBuffer
-        .map((id) => (REALM_META[id]?.label || id)).join(' → ');
-      if (sequenceBuffer.length >= len) {
+      paintSequence(root);
+      if (!root.querySelector('[data-seq-submit]') && sequenceBuffer.length >= len) {
         const answer = { sequence: [...sequenceBuffer] };
         sequenceBuffer = [];
         handleStationChallenge(root.dataset.station, answer);
@@ -1265,8 +1309,20 @@ function wire() {
     }
     if (event.target.closest('[data-seq-clear]')) {
       sequenceBuffer = [];
-      const readout = event.target.closest('.challenge')?.querySelector('[data-seq-readout]');
-      if (readout) readout.textContent = 'Tap the sequence';
+      paintSequence(event.target.closest('[data-station]'));
+      return;
+    }
+    if (event.target.closest('[data-seq-submit]')) {
+      const root = event.target.closest('[data-station]');
+      const len = Number(root.dataset.seqLen || 5);
+      if (sequenceBuffer.length < len) {
+        toast('Tap the full sequence first.');
+        return;
+      }
+      const answer = { sequence: [...sequenceBuffer] };
+      sequenceBuffer = [];
+      paintSequence(root);
+      handleStationChallenge(root.dataset.station, answer);
       return;
     }
     if (event.target.closest('[data-challenge-submit]')) {

@@ -93,7 +93,10 @@ const CHALLENGES = {
   ember: {
     type: 'sequence',
     config: {
-      prompt: 'Tap the four lantern colors in the order you see them.',
+      prompt: 'Watch Ember’s four lanterns glow in sequence. Then tap their colors on your screen in the same order.',
+      hint: 'Look for the clues on the monument around you.',
+      clearLabel: 'Clear sequence',
+      submitLabel: 'Awaken Fire',
       kind: 'color',
       length: 4,
       options: [
@@ -167,6 +170,12 @@ const PREVIOUS_COPY = {
     discover_body: 'Four physical moose are hidden nearby. Each one reveals a letter. Together they spell a builder’s word.',
     prompt: 'Four moose hide the letters. Enter the word they spell.',
   },
+  ember: {
+    subtitle: 'Guardian of Fire',
+    body: 'Ember is warm light through cold silk — flicker without flame. Stand still in the fire realm and the heat is almost believable.',
+    discover_body: 'Four colored lanterns hang in a fixed order this season. Watch them, then tap that sequence on your phone.',
+    prompt: 'Tap the four lantern colors in the order you see them.',
+  },
 };
 
 const QUEST_STATIONS = [
@@ -213,12 +222,12 @@ const QUEST_STATIONS = [
     type: 'guardian',
     slug: 'ember',
     title: 'Ember',
-    subtitle: 'Guardian of Fire',
+    subtitle: 'Fire Realm · Dragon',
     element: 'fire',
     body:
-      'Ember is warm light through cold silk — flicker without flame. Stand still in the fire realm and the heat is almost believable.',
+      'Ember is a dragon who belongs in the snow. He loves the moment blue ice turns gold and lantern light dances across a frozen wall. Bold and a little mischievous, Ember knows fire and ice can share a story without one conquering the other.\n\nHe also honors the creative fire in the hearts of Ice Castles artisans: the imagination and purpose that help keep them warm in spirit through the coldest nights as they shape the castle. Watch closely; Ember’s clues flicker and change.',
     discover_body:
-      'Four colored lanterns hang in a fixed order this season. Watch them, then tap that sequence on your phone.',
+      'Fire does not have to mean a flame inside the castle. Here, light changes how guests see ice: it reveals color, bubbles, shadows, and texture that daylight may hide. Ember also celebrates the creative fire artisans carry as they bring the castle to life. Their imagination and purpose keep them warm in spirit through the coldest nights.\n\nTemperature matters too; cold helps water freeze, while warmth can change or limit the build. After dark, the same passage can feel like a different place.\n\nEmber asks explorers to notice how contrast brings the frozen world to life.',
     sort_order: 3,
     poi: 'Mystic Forest — Fire',
     challenge: CHALLENGES.ember,
@@ -461,7 +470,7 @@ async function ensureQuestStations(adventureId) {
         try { cfg = JSON.parse(row.config); } catch { cfg = null; }
         if (cfg && cfg.prompt === previous.prompt) {
           cfg.prompt = tp.challenge.config.prompt;
-          for (const key of ['hint', 'fieldLabel', 'placeholder', 'submitLabel']) {
+          for (const key of ['hint', 'fieldLabel', 'placeholder', 'submitLabel', 'clearLabel']) {
             if (tp.challenge.config[key]) cfg[key] = tp.challenge.config[key];
           }
           await db.run(
