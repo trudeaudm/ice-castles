@@ -969,32 +969,96 @@ body.landing-open .station { visibility: hidden; }
   color: rgba(230, 242, 252, 0.94);
 }
 .beginStory {
-  border-radius: 14px;
-  border: 1px solid rgba(186, 214, 240, 0.38);
-  background: rgba(5, 22, 44, 0.35);
-}
-.beginStory summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  width: 100%;
   padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(186, 214, 240, 0.38);
+  background: rgba(5, 22, 44, 0.35);
+  color: #e8f4ff;
   font-weight: 750;
   font-size: 16px;
-  cursor: pointer;
-  list-style: none;
+  text-align: left;
 }
-.beginStory summary::-webkit-details-marker { display: none; }
-.beginStory summary::after {
+.beginStory::after {
   content: "+";
   font-size: 22px;
   font-weight: 500;
   line-height: 1;
   color: rgba(220, 236, 250, 0.9);
 }
-.beginStory[open] summary::after { content: "–"; }
-.beginStory__body { padding: 0 16px 6px; }
-.beginStory__body p:last-child { margin-bottom: 10px; }
+.storyModal {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  padding: 22px 14px;
+  background: rgba(4, 14, 28, 0.62);
+}
+.storyModal[hidden] { display: none; }
+.storyModal__card {
+  width: min(440px, 100%);
+  max-height: min(78dvh, 640px);
+  overflow: auto;
+  padding: 16px 16px 8px;
+  border-radius: 16px;
+  border: 1px solid rgba(190, 218, 242, 0.55);
+  background: linear-gradient(180deg, #164e86, #123e6c);
+  color: #e8f4ff;
+  box-shadow: 0 18px 40px rgba(2, 10, 22, 0.45);
+}
+.storyModal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.storyModal__head h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #f5fbff;
+}
+.storyModal__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: rgba(232, 244, 255, 0.9);
+}
+.storyModal__close svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  fill: none;
+}
+.storyModal__body { margin-top: 14px; }
+.storyModal__body p,
+.storyModal__guardians li {
+  margin: 0 0 14px;
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.45;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(230, 242, 252, 0.94);
+}
+.storyModal__guardians {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 .beginSteps {
   list-style: none;
   margin: 4px 0 0;

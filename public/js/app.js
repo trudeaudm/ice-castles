@@ -612,6 +612,7 @@ const dom = {
   beginBrief: el('beginBrief'), beginBriefClose: el('beginBriefClose'),
   beginHow: el('beginHow'), beginContinue: el('beginContinue'),
   beginSteps: el('beginSteps'), beginStory: el('beginStory'),
+  beginStoryOpen: el('beginStoryOpen'), beginStoryClose: el('beginStoryClose'),
   landingTalk: el('landingTalk'), landingBubble: el('landingBubble'),
   landingBubbleWho: el('landingBubbleWho'), landingBubbleText: el('landingBubbleText'),
   landingRealms: el('landingRealms'),
@@ -2232,7 +2233,18 @@ function remindPartySize() {
   dom.landingPartySize?.focus();
 }
 
+function hideStoryModal() {
+  if (!dom.beginStory) return;
+  dom.beginStory.hidden = true;
+}
+
+function openStoryModal() {
+  if (!dom.beginStory) return;
+  dom.beginStory.hidden = false;
+}
+
 function hideBeginBrief() {
+  hideStoryModal();
   if (!dom.beginBrief) return;
   dom.beginBrief.hidden = true;
   dom.beginSteps?.classList.remove('is-flash');
@@ -2245,7 +2257,7 @@ function openBeginBrief() {
   }
   clearPartyReminder();
   hideLandTalk();
-  if (dom.beginStory) dom.beginStory.open = false;
+  hideStoryModal();
   if (dom.beginBrief) {
     dom.beginBrief.hidden = false;
     dom.beginBrief.querySelector('.beginBrief__scroll')?.scrollTo(0, 0);
@@ -2745,6 +2757,11 @@ function wire() {
   });
   dom.beginContinue?.addEventListener('click', () => enterFromLanding({ journeyMode: true }));
   dom.beginBriefClose?.addEventListener('click', hideBeginBrief);
+  dom.beginStoryOpen?.addEventListener('click', openStoryModal);
+  dom.beginStoryClose?.addEventListener('click', hideStoryModal);
+  dom.beginStory?.addEventListener('click', (event) => {
+    if (event.target === dom.beginStory) hideStoryModal();
+  });
   dom.beginHow?.addEventListener('click', () => {
     const steps = dom.beginSteps;
     if (!steps) return;
@@ -2901,6 +2918,7 @@ function wire() {
   window.addEventListener('pagehide', stopStoryAudio);
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
+    if (dom.beginStory && !dom.beginStory.hidden) { hideStoryModal(); return; }
     if (dom.beginBrief && !dom.beginBrief.hidden) { hideBeginBrief(); return; }
     if (Scanner.isOpen()) Scanner.close();
     else if (!dom.award.hidden) dismissAward();
