@@ -2005,16 +2005,18 @@ body.quest .topbar {
   z-index: 2;
   pointer-events: none;
 }
-.summon[data-realm="air"].is-summoning:not(.is-shown) {
-  overflow: hidden;
-}
 .summon[data-realm="air"].is-summoning:not(.is-shown)::before {
   content: "";
   position: absolute;
-  inset: 0;
+  left: 50%;
+  top: 50%;
+  width: 146%;
+  height: 146%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
   z-index: 1;
   pointer-events: none;
-  background: radial-gradient(circle at 50% 48%, rgba(214, 242, 252, 0.96) 0%, rgba(78, 170, 214, 0.62) 40%, rgba(28, 112, 158, 0.22) 66%, transparent 78%);
+  background: radial-gradient(circle, rgba(214, 242, 252, 0.95) 0%, rgba(78, 170, 214, 0.5) 36%, rgba(28, 112, 158, 0) 68%);
 }
 .summon .shrine__art,
 .summon .shrine__portrait {
