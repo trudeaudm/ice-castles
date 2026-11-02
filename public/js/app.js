@@ -2,11 +2,19 @@
 
 const ART = '/assets/art';
 const REALM_META = {
-  water: { label: 'Water', glyph: '💧', character: `${ART}/char-cascade.png`, pfp: `${ART}/pfp-cascade.png` },
-  earth: { label: 'Earth', glyph: '🪨', character: `${ART}/char-granite.png`, pfp: `${ART}/pfp-granite.png` },
-  fire: { label: 'Fire', glyph: '🔥', character: `${ART}/char-ember.png`, pfp: `${ART}/pfp-ember.png` },
-  air: { label: 'Air', glyph: '🌬️', character: `${ART}/char-summit.png`, pfp: `${ART}/pfp-summit.png` },
-  spirit: { label: 'Spirit', glyph: '✦', character: `${ART}/char-aurora.png`, pfp: `${ART}/pfp-aurora.png` },
+  water: { label: 'Water', glyph: '💧', character: `${ART}/char-cascade.png`, pfp: `${ART}/pfp-cascade.png`, wave: `${ART}/wave-cascade.mp4` },
+  earth: { label: 'Earth', glyph: '🪨', character: `${ART}/char-granite.png`, pfp: `${ART}/pfp-granite.png`, wave: `${ART}/wave-granite.mp4` },
+  fire: { label: 'Fire', glyph: '🔥', character: `${ART}/char-ember.png`, pfp: `${ART}/pfp-ember.png`, wave: `${ART}/wave-ember.mp4` },
+  air: { label: 'Air', glyph: '🌬️', character: `${ART}/char-summit.png`, pfp: `${ART}/pfp-summit.png`, wave: `${ART}/wave-summit.mp4` },
+  spirit: { label: 'Spirit', glyph: '✦', character: `${ART}/char-aurora.png`, pfp: `${ART}/pfp-aurora.png`, wave: `${ART}/wave-aurora.mp4` },
+};
+/* Head crop inside the landing circle: source square as a fraction of frame width, top as a fraction of frame height. */
+const WAVE_FACE = {
+  water: { zoom: 0.72, top: 0.02 },
+  earth: { zoom: 0.78, top: 0.0 },
+  fire: { zoom: 0.7, top: 0.02 },
+  air: { zoom: 0.7, top: 0.0 },
+  spirit: { zoom: 0.72, top: 0.01 },
 };
 const REALM_ORDER = ['water', 'earth', 'fire', 'air', 'spirit'];
 const TILE_ART = {
@@ -268,13 +276,73 @@ const LISTEN_ICON = `<svg class="listenButton__icon" viewBox="0 0 24 24" aria-hi
   <path d="M18.4 6.8a7.2 7.2 0 0 1 0 10.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
 </svg>`;
 
+function hearthSvg() {
+  const left = `M0,200 L0,146
+    C18,136 12,100 26,78
+    C34,62 20,36 26,16
+    C30,4 24,0 36,8
+    C50,18 42,40 50,64
+    C60,96 78,118 92,124
+    C108,118 112,86 116,58
+    C120,34 108,12 118,2
+    C126,-6 146,4 144,20
+    C142,40 132,66 144,96
+    C156,124 178,132 194,120
+    C208,108 210,74 214,48
+    C218,24 206,6 220,0
+    C232,-6 250,8 246,26
+    C242,48 232,78 246,108
+    C262,136 286,140 300,132
+    L300,200 Z`;
+  const right = `M180,200 L180,136
+    C196,124 188,90 206,64
+    C216,46 202,22 214,6
+    C222,-4 216,-2 228,8
+    C242,20 234,42 242,66
+    C252,98 270,120 286,124
+    C302,116 306,84 310,56
+    C314,32 302,10 314,0
+    C322,-8 342,2 340,18
+    C338,38 328,64 340,94
+    C352,122 374,130 390,116
+    C404,104 406,70 410,44
+    C414,20 402,4 416,0
+    C428,-4 446,10 442,28
+    C438,50 428,80 442,108
+    C458,134 472,128 480,118
+    L480,200 Z`;
+  const band = (d, delay) => `<g class="lick" style="animation-delay:${delay}">
+    <path fill="#ff2e00" d="${d}"/>
+    <g transform="translate(0 200) scale(1 0.78) translate(0 -200)"><path fill="#ff7410" d="${d}"/></g>
+    <g transform="translate(0 200) scale(1 0.56) translate(0 -200)"><path fill="#ffc20a" d="${d}"/></g>
+    <g transform="translate(0 200) scale(1 0.34) translate(0 -200)"><path fill="#fff4a8" d="${d}"/></g>
+  </g>`;
+  return `<svg class="hearth" viewBox="0 0 480 200" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    ${band(left, '0s')}
+    ${band(right, '-0.4s')}
+    <rect x="0" y="186" width="480" height="14" fill="#ffe14a"/>
+  </svg>`;
+}
+
 function realmSkyHtml(element) {
   if (element === 'fire') {
-    const flames = '<span class="flame"></span>'.repeat(7);
     const embers = '<span class="ember"></span>'.repeat(14);
-    return `<div class="realmSky" aria-hidden="true">${flames}${embers}</div>`;
+    return `<div class="realmSky" aria-hidden="true">${hearthSvg()}${embers}</div>`;
   }
+  if (element === 'air') return airSkyHtml();
   return `<div class="realmSky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>`;
+}
+
+function airSkyHtml() {
+  const arm = `M24,70 C8,56 10,34 28,26 C46,18 64,32 60,48 C56,62 42,66 40,54`;
+  const arms = [0, 120, 240].map((deg, i) => `<g transform="rotate(${deg} 50 50)">
+      <path class="wind__shape" pathLength="100" d="${arm}"/>
+      <path class="wind__mote" pathLength="100" style="animation-delay:${(-i * 0.75).toFixed(2)}s" d="${arm}"/>
+    </g>`).join('');
+  const coil = `M54.0,50.0 L54.4,49.4 L54.6,48.8 L54.8,48.0 L54.8,47.2 L54.7,46.4 L54.5,45.5 L54.1,44.6 L53.6,43.8 L52.9,43.0 L52.1,42.3 L51.1,41.7 L50.0,41.3 L48.8,40.9 L47.5,40.8 L46.2,40.8 L44.8,41.1 L43.5,41.5 L42.1,42.1 L40.9,43.0 L39.7,44.0 L38.6,45.3 L37.7,46.7 L37.0,48.3 L36.5,50.0 L36.2,51.8 L36.2,53.7 L36.4,55.6 L36.9,57.5 L37.7,59.4 L38.8,61.2 L40.1,62.9 L41.7,64.4 L43.5,65.8 L45.5,66.9 L47.7,67.7 L50.0,68.3 L52.4,68.5 L54.9,68.4 L57.4,68.0 L59.9,67.2 L62.3,66.0 L64.6,64.6 L66.7,62.8 L68.5,60.7 L70.2,58.3 L71.5,55.7 L72.4,53.0 L73.0,50.0 L73.2,46.9 L73.0,43.8 L72.3,40.7 L71.3,37.7 L69.8,34.8 L67.9,32.1 L65.7,29.6 L63.1,27.3 L60.2,25.5 L57.0,24.0 L53.6,22.9 L50.0,22.3 L46.3,22.1 L42.6,22.4 L38.9,23.3 L35.3,24.6 L31.9,26.4 L28.7,28.7 L25.8,31.4 L23.2,34.5 L21.1,38.0 L19.4,41.8 L18.2,45.8 L17.5,50.0 L17.4,54.3 L17.8,58.6 L18.9,62.9 L20.5,67.0 L22.6,71.0 L25.3,74.7 L28.5,78.0 L32.2,80.9 L36.2,83.3 L40.6,85.2 L45.2,86.5 L50.0,87.3 L54.9,87.3 L59.8,86.7 L64.7,85.5 L69.4,83.6 L73.9,81.1 L78.0,78.0 L81.8,74.4 L85.0,70.2 L87.7,65.6 L89.8,60.7 L91.2,55.4 L92.0,50.0 L108,50`;
+  const curl = `<svg class="wind wind--curl" viewBox="0 0 100 100"><g class="wind__spin">${arms}</g></svg>`;
+  const coilSvg = `<svg class="wind wind--coil" viewBox="0 0 100 100"><g class="wind__spin"><path class="wind__shape" pathLength="100" d="${coil}"/><path class="wind__mote" pathLength="100" d="${coil}"/></g></svg>`;
+  return `<div class="realmSky" aria-hidden="true">${curl}${coilSvg}${curl}${coilSvg}${curl}</div>`;
 }
 
 function listenButtonHtml(src) {
@@ -328,6 +396,7 @@ function playStory(button) {
 
 function renderStation(slug) {
   stopStoryAudio();
+  if (!document.body.classList.contains('landing-open')) haltWaves();
   const station = Store.touchBySlug(slug) || Store.touchByType('threshold')[0];
   if (!station) {
     delete document.body.dataset.realm;
@@ -350,13 +419,19 @@ function renderStation(slug) {
   const art = stationArt(station);
   const portrait = station.element ? realmCharacter(station.element) : '';
   const sky = station.type === 'guardian' ? realmSkyHtml(station.element) : '';
+  const waveRealm = station.type === 'guardian' && REALM_META[station.element]?.wave ? station.element : '';
+  const artHtml = art
+    ? (waveRealm
+      ? `<div class="shrine__hero"><img class="shrine__art" src="${escapeHtml(art)}" alt=""></div>`
+      : `<img class="shrine__art" src="${escapeHtml(art)}" alt="">`)
+    : '';
 
   if (!gated) {
     dom.stationView.innerHTML = `
       <article class="shrine" data-realm="${escapeHtml(station.element || '')}">
         <p class="shrine__kicker">${escapeHtml(station.subtitle || station.type)}</p>
         <h2 class="shrine__title">${escapeHtml(station.title)}</h2>
-        ${art ? `<img class="shrine__art" src="${escapeHtml(art)}" alt="">` : ''}
+        ${artHtml}
         <section class="shrine__block">
           <h3>${escapeHtml(shrineMeetTitle(station))}</h3>
           ${storyHtml(station.body)}
@@ -377,7 +452,7 @@ function renderStation(slug) {
       <p class="shrine__kicker">${escapeHtml(station.subtitle || station.type)}</p>
       <h2 class="shrine__title">${escapeHtml(station.title)}</h2>
       ${station.element ? `<p class="chip chip--target">${escapeHtml(REALM_META[station.element]?.label || station.element)}</p>` : ''}
-      ${art ? `<img class="shrine__art" src="${escapeHtml(art)}" alt="">` : ''}
+      ${artHtml}
       <div class="shrineGate" data-focus="">
         <button class="shrineIcon" data-shrine-focus="meet" type="button">
           <span class="shrineIcon__orbit" aria-hidden="true"></span>
@@ -416,6 +491,7 @@ function renderStation(slug) {
   selectedImages = new Set();
   sequenceBuffer = [];
   if (shrineFocus) setShrineFocus(shrineFocus, { spin: false });
+  if (waveRealm && !document.body.classList.contains('landing-open')) armShrineWaves(waveRealm);
 }
 
 async function openStation(slug, { recordVisit = true } = {}) {
@@ -661,6 +737,309 @@ let talkDelay = 0;
 let talkPulse = 0;
 let talkHide = 0;
 
+/* -------------------------------------------------------------------------- */
+/* guardian wave clips — muted, one at a time                                */
+/* -------------------------------------------------------------------------- */
+
+let waveGen = 0;
+let waveTimer = 0;
+let waveRaf = 0;
+let waveBag = [];
+let waveLast = '';
+
+function nextWaveRealm() {
+  if (!waveBag.length) {
+    waveBag = REALM_ORDER.filter((realm) => realm !== waveLast);
+    for (let i = waveBag.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [waveBag[i], waveBag[j]] = [waveBag[j], waveBag[i]];
+    }
+  }
+  waveLast = waveBag.pop();
+  return waveLast;
+}
+
+function waveVideoEl() {
+  if (waveVideoEl.el) return waveVideoEl.el;
+  const video = document.createElement('video');
+  video.className = 'waveSource';
+  video.muted = true;
+  video.defaultMuted = true;
+  video.volume = 0;
+  video.playsInline = true;
+  video.preload = 'auto';
+  video.controls = false;
+  video.setAttribute('muted', '');
+  video.setAttribute('playsinline', '');
+  video.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(video);
+  waveVideoEl.el = video;
+  return video;
+}
+
+function silenceWave(video) {
+  video.muted = true;
+  video.defaultMuted = true;
+  video.volume = 0;
+  try {
+    const tracks = video.audioTracks;
+    if (tracks) {
+      for (let i = 0; i < tracks.length; i += 1) tracks[i].enabled = false;
+    }
+  } catch { /* not supported */ }
+}
+
+function isBackdrop(r, g, b) {
+  const m = r > g ? (r > b ? r : b) : (g > b ? g : b);
+  // Near-black only. Granite's fur is dark brown and shares an edge with the
+  // vignette, so a wider match eats his legs.
+  return m < 18;
+}
+
+function keyBackdrop(image) {
+  const { data, width: w, height: h } = image;
+  const count = w * h;
+  if (keyBackdrop.n !== count) {
+    keyBackdrop.n = count;
+    keyBackdrop.bg = new Uint8Array(count);
+    keyBackdrop.qx = new Int16Array(count);
+    keyBackdrop.qy = new Int16Array(count);
+  }
+  const bg = keyBackdrop.bg;
+  bg.fill(0);
+  const qx = keyBackdrop.qx;
+  const qy = keyBackdrop.qy;
+  let qe = 0;
+  let qs = 0;
+  const push = (x, y) => {
+    const p = y * w + x;
+    if (bg[p]) return;
+    const i = p * 4;
+    if (!isBackdrop(data[i], data[i + 1], data[i + 2])) return;
+    bg[p] = 1;
+    qx[qe] = x;
+    qy[qe] = y;
+    qe += 1;
+  };
+  for (let x = 0; x < w; x += 1) {
+    push(x, 0);
+    if (h > 1) push(x, h - 1);
+  }
+  for (let y = 0; y < h; y += 1) {
+    push(0, y);
+    if (w > 1) push(w - 1, y);
+  }
+  while (qs < qe) {
+    const x = qx[qs];
+    const y = qy[qs];
+    qs += 1;
+    if (x > 0) push(x - 1, y);
+    if (x + 1 < w) push(x + 1, y);
+    if (y > 0) push(x, y - 1);
+    if (y + 1 < h) push(x, y + 1);
+  }
+  for (let p = 0; p < count; p += 1) {
+    if (bg[p]) data[p * 4 + 3] = 0;
+  }
+  for (let y = 1; y < h - 1; y += 1) {
+    for (let x = 1; x < w - 1; x += 1) {
+      const p = y * w + x;
+      if (bg[p]) continue;
+      if (!(bg[p - 1] || bg[p + 1] || bg[p - w] || bg[p + w])) continue;
+      const i = p * 4;
+      const m = Math.max(data[i], data[i + 1], data[i + 2]);
+      if (m < 42) data[i + 3] = Math.round((m / 42) * 255);
+    }
+  }
+  return image;
+}
+
+function paintWaveFrame(canvas, video, mode, realm) {
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return;
+  const w = canvas.width;
+  const h = canvas.height;
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if (!vw || !vh) return;
+  ctx.clearRect(0, 0, w, h);
+  if (mode === 'face') {
+    const crop = WAVE_FACE[realm] || { zoom: 0.74, top: 0.02 };
+    const side = vw * crop.zoom;
+    ctx.drawImage(video, (vw - side) / 2, vh * crop.top, side, side, 0, 0, w, h);
+  } else {
+    const scale = Math.min(w / vw, h / vh);
+    const dw = vw * scale;
+    const dh = vh * scale;
+    ctx.drawImage(video, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  }
+  ctx.putImageData(keyBackdrop(ctx.getImageData(0, 0, w, h)), 0, 0);
+}
+
+function sizeWaveCanvas(canvas, cssW, cssH) {
+  const maxEdge = cssH > 140 ? 420 : 240;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let w = Math.max(2, Math.round(cssW * dpr));
+  let h = Math.max(2, Math.round(cssH * dpr));
+  const edge = Math.max(w, h);
+  if (edge > maxEdge) {
+    const fit = maxEdge / edge;
+    w = Math.max(2, Math.round(w * fit));
+    h = Math.max(2, Math.round(h * fit));
+  }
+  canvas.width = w;
+  canvas.height = h;
+}
+
+function loadWave(video, realm) {
+  const src = REALM_META[realm]?.wave;
+  if (!src) return Promise.reject(new Error('wave'));
+  silenceWave(video);
+  if (video.getAttribute('data-src') === src && video.readyState >= 2) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const ok = () => { cleanup(); resolve(); };
+    const bad = () => { cleanup(); reject(new Error('wave')); };
+    const cleanup = () => {
+      video.removeEventListener('loadeddata', ok);
+      video.removeEventListener('error', bad);
+    };
+    video.addEventListener('loadeddata', ok);
+    video.addEventListener('error', bad);
+    video.setAttribute('data-src', src);
+    video.src = src;
+    video.load();
+  });
+}
+
+function haltWaves() {
+  waveGen += 1;
+  window.clearTimeout(waveTimer);
+  window.cancelAnimationFrame(waveRaf);
+  waveRaf = 0;
+  const video = waveVideoEl.el;
+  if (video) {
+    video.onended = null;
+    video.pause();
+    silenceWave(video);
+  }
+  document.querySelectorAll('.is-waving').forEach((node) => node.classList.remove('is-waving'));
+  document.querySelectorAll('.landing__wave, .shrine__wave').forEach((node) => node.remove());
+}
+
+async function runWave(realm, mode, paintHost, wavingHost, gen) {
+  const video = waveVideoEl();
+  silenceWave(video);
+  await loadWave(video, realm);
+  if (gen !== waveGen || !paintHost.isConnected) return;
+  silenceWave(video);
+  if (video.currentTime > 0.04) {
+    await new Promise((resolve) => {
+      video.addEventListener('seeked', resolve, { once: true });
+      try { video.currentTime = 0; } catch { resolve(); }
+    });
+  }
+  if (gen !== waveGen || !paintHost.isConnected) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = mode === 'face' ? 'landing__wave' : 'shrine__wave';
+  canvas.setAttribute('aria-hidden', 'true');
+  paintHost.appendChild(canvas);
+  if (mode === 'face') sizeWaveCanvas(canvas, paintHost.offsetWidth, paintHost.offsetHeight);
+  else {
+    const img = paintHost.querySelector('.shrine__art');
+    sizeWaveCanvas(canvas, img?.offsetWidth || paintHost.offsetWidth, img?.offsetHeight || paintHost.offsetHeight);
+  }
+  if (canvas.width < 2 || canvas.height < 2) {
+    canvas.remove();
+    return;
+  }
+  paintWaveFrame(canvas, video, mode, realm);
+  wavingHost.classList.add('is-waving');
+  try {
+    await video.play();
+  } catch {
+    wavingHost.classList.remove('is-waving');
+    canvas.remove();
+    return;
+  }
+  silenceWave(video);
+  const natural = await new Promise((resolve) => {
+    let safety = 0;
+    const finish = (ok) => {
+      window.clearTimeout(safety);
+      video.removeEventListener('ended', onEnd);
+      video.removeEventListener('pause', onPause);
+      resolve(ok);
+    };
+    const onEnd = () => finish(gen === waveGen);
+    const onPause = () => {
+      if (gen !== waveGen || video.ended) finish(gen === waveGen && video.ended);
+    };
+    video.addEventListener('ended', onEnd);
+    video.addEventListener('pause', onPause);
+    safety = window.setTimeout(() => finish(false), 8000);
+    const draw = () => {
+      if (gen !== waveGen || video.ended || !canvas.isConnected) return;
+      if (!video.muted || video.volume !== 0) silenceWave(video);
+      paintWaveFrame(canvas, video, mode, realm);
+      waveRaf = window.requestAnimationFrame(draw);
+    };
+    waveRaf = window.requestAnimationFrame(draw);
+  });
+  wavingHost.classList.remove('is-waving');
+  if (natural) await new Promise((resolve) => window.setTimeout(resolve, 220));
+  if (canvas.isConnected) canvas.remove();
+}
+
+function landingCanWave() {
+  return document.body.classList.contains('landing-open')
+    && Boolean(dom.threshold?.classList.contains('is-open'))
+    && !(dom.landingHowto && !dom.landingHowto.hidden);
+}
+
+function armLandWaves() {
+  const gen = waveGen;
+  const tick = (delay) => {
+    window.clearTimeout(waveTimer);
+    waveTimer = window.setTimeout(async () => {
+      if (gen !== waveGen) return;
+      if (!landingCanWave()) {
+        tick(900);
+        return;
+      }
+      const realm = nextWaveRealm();
+      const btn = document.querySelector(`.landing__realm[data-realm="${realm}"]`);
+      const face = btn?.querySelector('.landing__face');
+      if (face) {
+        try { await runWave(realm, 'face', face, btn, gen); } catch { /* skip */ }
+      }
+      if (gen !== waveGen) return;
+      tick(2400 + Math.random() * 2600);
+    }, delay);
+  };
+  tick(1400);
+}
+
+function startLandWaves() {
+  haltWaves();
+  armLandWaves();
+}
+
+function armShrineWaves(realm) {
+  const gen = waveGen;
+  const tick = (delay) => {
+    window.clearTimeout(waveTimer);
+    waveTimer = window.setTimeout(async () => {
+      if (gen !== waveGen) return;
+      const hero = document.querySelector('.shrine__hero');
+      if (!hero || document.body.dataset.realm !== realm) return;
+      try { await runWave(realm, 'hero', hero, hero, gen); } catch { /* try later */ }
+      if (gen !== waveGen) return;
+      tick(11000 + Math.random() * 9000);
+    }, delay);
+  };
+  tick(3800 + Math.random() * 2200);
+}
+
 function hideLandTalk() {
   document.querySelectorAll('.landing__realm.is-talking').forEach((n) => n.classList.remove('is-talking'));
   if (!dom.landingTalk) return;
@@ -729,6 +1108,7 @@ function showThreshold() {
   dom.threshold.inert = false;
   dom.threshold.classList.add('is-open');
   startLandTalk();
+  startLandWaves();
 }
 
 function hideLandingHowto() {
@@ -738,6 +1118,7 @@ function hideLandingHowto() {
 
 function hideThreshold() {
   stopLandTalk();
+  haltWaves();
   hideLandingHowto();
   document.body.classList.remove('landing-open');
   dom.threshold.classList.remove('is-open');
