@@ -176,6 +176,12 @@ const PREVIOUS_COPY = {
     discover_body: 'Four colored lanterns hang in a fixed order this season. Watch them, then tap that sequence on your phone.',
     prompt: 'Tap the four lantern colors in the order you see them.',
   },
+  summit: {
+    subtitle: 'Guardian of Air',
+    body: 'Summit lifts the gaze. Wings overhead, wind in the silk, paths that ask you to look up more than once.',
+    discover_body: 'Five physical flags in this area reveal the letters of a single word. Enter what they spell.',
+    prompt: 'Five flags reveal a word. Enter it.',
+  },
 };
 
 const QUEST_STATIONS = [
@@ -236,12 +242,12 @@ const QUEST_STATIONS = [
     type: 'guardian',
     slug: 'summit',
     title: 'Summit',
-    subtitle: 'Guardian of Air',
+    subtitle: 'Air Realm · Yeti',
     element: 'air',
     body:
-      'Summit lifts the gaze. Wings overhead, wind in the silk, paths that ask you to look up more than once.',
+      'Summit is a friendly Yeti who lives where the wind has room to play. He listens for flags snapping, snow skimming across open ground, and the hush that follows a gust. His clues may be overhead or around the next bend.\n\nSummit knows that curiosity moves like the wind: it carries you toward something you had not noticed yet. In the Air Realm, lift your eyes and follow what the air sets in motion.',
     discover_body:
-      'Five physical flags in this area reveal the letters of a single word. Enter what they spell.',
+      'Air is invisible, but winter shows where it travels. Watch a flag flutter, snow drift, or warm breath appear in the cold. Air temperature helps determine whether water can freeze and new ice can grow. Carving adds the final touches you see in the Ice Castle today. Wind also changes what builders and guests feel on site.\n\nSummit invites you to read the signs of something you cannot see by noticing what it moves.',
     sort_order: 4,
     poi: 'Mystic Forest — Air',
     challenge: CHALLENGES.summit,
