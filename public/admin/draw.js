@@ -584,13 +584,15 @@ const ParkDraw = (() => {
     const d = `${pathD(feature.points)} Z`;
     const opacity = clamp(num(feature.opacity, 1), 0, 1);
     return `<g opacity="${opacity}">
-      <path d="${d}" fill="#0a1c31" transform="translate(8 12)" filter="url(#soft)" opacity="0.85"/>
+      <path d="${d}" fill="#1a4a6e" transform="translate(6 8)" filter="url(#soft)" opacity="0.22"/>
       <path d="${d}" fill="#ffffff" stroke="#3d8ec4" stroke-width="5" stroke-linejoin="round"/>
     </g>`;
   }
 
-  function skyMarkup(drawing) {
-    return `<rect width="${drawing.width}" height="${drawing.height}" fill="url(#sky)"/>`;
+  function skyMarkup() {
+    // The page is already the ice sky. A painted backdrop becomes a hard
+    // dark rectangle around the park once the picture is on that page.
+    return '';
   }
 
   function referenceMarkup() {

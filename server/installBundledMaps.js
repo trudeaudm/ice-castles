@@ -10,12 +10,14 @@
 const fs = require('fs');
 const path = require('path');
 const db = require('./db');
-const { MAPS_DIR, normalizeDocument, saveParkMap } = require('./parkMap');
+const { MAPS_DIR, normalizeDocument, saveParkMap, publishMap } = require('./parkMap');
 
 const BUNDLES = [
   {
     venue: 'nh',
     revision: 'nh-draw-1',
+    // Guest picture with the dark sky removed, so the park sits on the page.
+    pictureRevision: 'nh-sky-1',
     dir: path.join(__dirname, 'bundled-maps', 'nh'),
   },
 ];
@@ -47,6 +49,7 @@ async function installBundledMaps() {
     // that shipped with the site, so an empty park still receives that copy.
     const installed = existing?.bundleRevision === bundle.revision || count >= 3;
 
+    let document = existing;
     if (!installed) {
       const raw = JSON.parse(fs.readFileSync(documentPath, 'utf8'));
       raw.bundleRevision = bundle.revision;
@@ -61,16 +64,31 @@ async function installBundledMaps() {
       if (!saved?.document?.reference || saved.document.features.length < 200) {
         throw new Error(`bundled ${bundle.venue} map did not save`);
       }
+      document = saved.document;
       console.log(`[map] installed ${bundle.venue} drawing (${saved.document.features.length} features)`);
-      continue;
-    }
-
-    if (!fs.existsSync(dest) && fs.existsSync(referencePath)) {
+    } else if (!fs.existsSync(dest) && fs.existsSync(referencePath)) {
       fs.mkdirSync(path.dirname(dest), { recursive: true });
       fs.copyFileSync(referencePath, dest);
       console.log(`[map] restored ${bundle.venue} tracing photo`);
     }
+
+    await installPicture(bundle, location.id, document);
   }
+}
+
+// The guest map is a picture saved on the server disk, not in git. Ship the
+// corrected picture once. A later publish from the map editor is left alone.
+async function installPicture(bundle, locationId, existing) {
+  const src = path.join(bundle.dir, 'published.webp');
+  if (!bundle.pictureRevision || !fs.existsSync(src)) return;
+  if (existing?.pictureRevision === bundle.pictureRevision) return;
+  const published = await publishMap(locationId, fs.readFileSync(src), 'image/webp');
+  if (!published) throw new Error(`bundled ${bundle.venue} picture did not publish`);
+  const saved = await saveParkMap(locationId, { ...(existing || {}), pictureRevision: bundle.pictureRevision });
+  if (saved?.document?.pictureRevision !== bundle.pictureRevision) {
+    throw new Error(`bundled ${bundle.venue} picture revision did not save`);
+  }
+  console.log(`[map] installed ${bundle.venue} picture (${bundle.pictureRevision})`);
 }
 
 module.exports = { installBundledMaps };

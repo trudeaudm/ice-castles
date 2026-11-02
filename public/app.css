@@ -230,10 +230,10 @@ body.map-moving .aurora__band { animation-play-state: paused; }
   position: fixed;
   inset: 0;
   z-index: 2;
-  background: var(--ink-900);
+  background: transparent;
 }
 
-.leaflet-container { background: var(--ink-900); font-family: var(--body); outline: none; }
+.leaflet-container { background: transparent; font-family: var(--body); outline: none; }
 .leaflet-control-attribution { display: none; }
 .leaflet-marker-icon { background: none; border: 0; }
 
@@ -2151,7 +2151,11 @@ body.award-open .guideFab { display: none; }
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: var(--ink-900);
+  background:
+    radial-gradient(120% 70% at 50% -8%, rgba(255, 255, 255, 0.62), transparent 50%),
+    radial-gradient(80% 50% at 100% 0%, rgba(196, 160, 255, 0.2), transparent 48%),
+    linear-gradient(180deg, #62b4e0 0%, #8ecce8 42%, #c8e8f6 100%);
+  background-attachment: fixed;
 }
 .guide[hidden] { display: none; }
 .guide #map {
@@ -2403,11 +2407,14 @@ body.quest.guide-open .toast {
     margin-inline: auto;
   }
   .guide {
-    left: 50%;
+    left: calc(50% - 230px);
     right: auto;
     width: 460px;
-    transform: translateX(-50%);
-    border-inline: 1px solid var(--hairline);
+    transform: none;
+    background:
+      radial-gradient(70% 55% at 50% -8%, rgba(255, 255, 255, 0.45), transparent 48%),
+      linear-gradient(180deg, #62b4e0 0%, #8ecce8 50%, #c8e8f6 100%);
+    background-attachment: fixed;
   }
   .threshold,
   .mapModal,

@@ -93,8 +93,10 @@ function normalizeDocument(input, locationId) {
     };
   }
   const bundleRevision = String(src.bundleRevision || '').replace(/[^A-Za-z0-9._-]/g, '').slice(0, 64);
+  const pictureRevision = String(src.pictureRevision || '').replace(/[^A-Za-z0-9._-]/g, '').slice(0, 64);
   const document = { width, height, reference, features, baseSeeded: Boolean(src.baseSeeded) };
   if (bundleRevision) document.bundleRevision = bundleRevision;
+  if (pictureRevision) document.pictureRevision = pictureRevision;
   return document;
 }
 
