@@ -51,8 +51,8 @@ function createWindWisps(canvas, settings) {
 
   function poolSize() {
     const mobile = (width || window.innerWidth) < 700;
-    const base = mobile ? 5 : 8;
-    const cap = mobile ? 6 : 11;
+    const base = mobile ? 10 : 16;
+    const cap = mobile ? 12 : 22;
     return Math.max(3, Math.min(cap, Math.round(base * opts.density)));
   }
 
@@ -69,12 +69,13 @@ function createWindWisps(canvas, settings) {
   }
 
   function seed(w, offscreenSpan, placed) {
-    w.speed = (70 + Math.random() * 55) * opts.speed;
+    w.speed = (70 + Math.random() * 55) * opts.speed * 1.3;
     w.drift = 5 + Math.random() * 14;
     w.freq = 0.006 + Math.random() * 0.008;
     w.phase = Math.random() * Math.PI * 2;
     w.trail = (110 + Math.random() * 70) * opts.trail;
     w.thick = 2.1 + Math.random() * 1.4;
+    w.slim = 0.5 + Math.random() * 0.5;
     w.alpha = (0.72 + Math.random() * 0.24) * opts.opacity;
     w.y = 28 + Math.random() * Math.max(40, height - 56);
     w.curl = Math.random() < opts.spiral ? makeCurl() : null;
@@ -126,7 +127,7 @@ function createWindWisps(canvas, settings) {
     const waiting = wisps.filter((w) => w.s < -w.trail * 0.25);
     if (waiting.length < 2) return;
     const y = height * (0.18 + Math.random() * 0.64);
-    const pace = (70 + Math.random() * 24) * opts.speed;
+    const pace = (70 + Math.random() * 24) * opts.speed * 1.3;
     waiting.slice(0, 3).forEach((w, i) => {
       w.y = y + (i - 1) * (14 + Math.random() * 12);
       w.s = -w.trail - i * (22 + Math.random() * 18);
@@ -157,7 +158,7 @@ function createWindWisps(canvas, settings) {
   function drawWisp(w) {
     const fade = lifeFade(w);
     if (fade < 0.03) return;
-    const steps = 18;
+    const steps = w.curl ? 56 : 18;
     const pts = [];
     for (let i = 0; i <= steps; i += 1) {
       pts.push(sample(w, w.s - w.trail * (1 - i / steps)));
@@ -173,7 +174,7 @@ function createWindWisps(canvas, settings) {
       dy /= len;
       const t = i / steps;
       const taper = Math.min(1, t / 0.2);
-      const half = (0.35 + w.thick * taper) * 0.5;
+      const half = (0.35 + w.thick * taper) * 0.5 * w.slim;
       edge.push({
         lx: pts[i].x - dy * half,
         ly: pts[i].y + dx * half,
