@@ -84,10 +84,10 @@ function createWindWisps(canvas, settings) {
     if (opts.orbit) {
       const reach = Math.min(width, height);
       w.rad = (0.28 + Math.random() * 0.5) * reach * 0.46;
-      w.spin = (1.15 + Math.random() * 1.35) * opts.speed * (Math.random() < 0.18 ? -1 : 1);
+      w.spin = (1.15 + Math.random() * 1.35) * opts.speed;
       w.trail = (0.5 + Math.random() * 0.7) * opts.trail;
       w.thick = 3.6 + Math.random() * 2.6;
-      w.slim = 0.9;
+      w.slim = 0.54;
       w.alpha = (0.88 + Math.random() * 0.12) * opts.opacity;
       w.s = Math.random() * Math.PI * 2;
       return;
@@ -210,7 +210,7 @@ function createWindWisps(canvas, settings) {
     }
     for (let i = 1; i <= steps; i += 1) {
       const t = i / steps;
-      const a = fade * w.alpha * (0.22 + 0.78 * t);
+      const a = fade * w.alpha * (opts.orbit ? (0.72 + 0.28 * t) : (0.22 + 0.78 * t));
       if (a < 0.02) continue;
       const p = edge[i - 1];
       const q = edge[i];
@@ -220,10 +220,12 @@ function createWindWisps(canvas, settings) {
       ctx.lineTo(q.rx, q.ry);
       ctx.lineTo(p.rx, p.ry);
       ctx.closePath();
-      const lead = t > 0.8;
+      const lead = opts.orbit ? t > 0.18 : t > 0.8;
       const y = (pts[i].y + pts[i - 1].y) * 0.5;
-      const body = opts.ink || (y > height * 0.4 ? '#5b9ab8' : (y > height * 0.18 ? '#d7eef8' : opts.color));
-      ctx.fillStyle = rgba(lead ? '#ffffff' : body, lead ? Math.min(0.95, a * 1.12) : a);
+      const body = opts.orbit
+        ? '#f7fbff'
+        : (opts.ink || (y > height * 0.4 ? '#5b9ab8' : (y > height * 0.18 ? '#d7eef8' : opts.color)));
+      ctx.fillStyle = rgba(lead ? '#ffffff' : body, lead ? Math.min(0.98, a) : a);
       ctx.fill();
     }
   }

@@ -474,7 +474,7 @@ function startSwirl(job, now) {
       speed: 1.2,
       density: 1.35,
       color: '#f4fbff',
-      ink: '#14628f',
+      ink: '#ffffff',
       opacity: 1,
       trail: 1,
       spiral: 0.8,
