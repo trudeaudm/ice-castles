@@ -182,6 +182,12 @@ const PREVIOUS_COPY = {
     discover_body: 'Five physical flags in this area reveal the letters of a single word. Enter what they spell.',
     prompt: 'Five flags reveal a word. Enter it.',
   },
+  aurora: {
+    subtitle: 'Guardian of Spirit',
+    body: 'Aurora holds the quiet between lights — the moment your eyes adjust and the field comes up out of the dark.',
+    discover_body: 'A physical installation plays several five-symbol Realm sequences on a loop. Repeat any one of them. The website answers on its own — no show-control hookup is required.',
+    prompt: 'Watch the installation, then tap the five Realm symbols in the order you saw.',
+  },
 };
 
 const QUEST_STATIONS = [
@@ -256,12 +262,12 @@ const QUEST_STATIONS = [
     type: 'guardian',
     slug: 'aurora',
     title: 'Aurora',
-    subtitle: 'Guardian of Spirit',
+    subtitle: 'Spirit Realm · Polar Bear',
     element: 'spirit',
     body:
-      'Aurora holds the quiet between lights — the moment your eyes adjust and the field comes up out of the dark.',
+      'Aurora is the Guardian of Spirit and the thread that connects the other Realms. She notices a first brave slide, a family photo that will be retold, and the quiet moment when someone stops to take in the ice.\n\nAurora knows the castle will change with the season. What lasts is the fond memories people carry with them.',
     discover_body:
-      'A physical installation plays several five-symbol Realm sequences on a loop. Repeat any one of them. The website answers on its own — no show-control hookup is required.',
+      'An Ice Castle is temporary by nature. Cold nights, warm days, snowfall, and the movement of guests all shape it, so no two Ice Castles are ever alike. Water, Earth, Fire, and Air help make the castle; Spirit is the curiosity, courage, laughter, and connection guests bring to it.\n\nAurora reminds us that wonder can continue as a memory, shared long after the ice has changed.',
     sort_order: 5,
     poi: 'Mystic Forest — Spirit',
     challenge: CHALLENGES.aurora,
