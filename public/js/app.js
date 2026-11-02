@@ -144,6 +144,19 @@ function goVenueHome() {
   Store.state.path = Store.pathContext();
 }
 
+/* Testing only: /nh?welcome (or /mtl?welcome) opens the hero again after a session exists. */
+function wantsWelcomePreview() {
+  return new URLSearchParams(location.search).has('welcome');
+}
+
+function stripWelcomePreview() {
+  const params = new URLSearchParams(location.search);
+  if (!params.has('welcome')) return;
+  params.delete('welcome');
+  const q = params.toString();
+  history.replaceState(history.state, '', `${location.pathname}${q ? `?${q}` : ''}${location.hash}`);
+}
+
 /* -------------------------------------------------------------------------- */
 /* progress                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -400,13 +413,33 @@ function stopHearth() {
   if (video) video.pause();
 }
 
-function punchGreen(data) {
-  for (let i = 0; i < data.length; i += 4) {
+function punchGreen(data, width, height) {
+  const count = width * height;
+  const alpha = new Uint8ClampedArray(count);
+  for (let p = 0, i = 0; p < count; p += 1, i += 4) {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
-    if (g > 140 && r < 90 && b < 90 && g > r + 50 && g > b + 50) data[i + 3] = 0;
-    else if (g > r + 18 && g > b + 18) data[i + 1] = Math.max(r, b);
+    const spill = g - Math.max(r, b);
+    if (spill > 16) {
+      data[i + 3] = 0;
+    } else if (spill > 0) {
+      data[i + 1] = Math.max(r, b);
+    }
+    alpha[p] = data[i + 3];
+  }
+  for (let y = 1; y < height - 1; y += 1) {
+    for (let x = 1; x < width - 1; x += 1) {
+      const p = y * width + x;
+      if (alpha[p] < 24) continue;
+      const near = alpha[p - 1] < 24 || alpha[p + 1] < 24 || alpha[p - width] < 24 || alpha[p + width] < 24;
+      if (!near) continue;
+      const i = p * 4;
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      if (g > 70 && g + 12 > r && g > b) data[i + 3] = 0;
+    }
   }
 }
 
@@ -445,7 +478,7 @@ function startHearth() {
       }
       ctx.drawImage(video, 0, cropTop, vw, cropH, 0, 0, w, h);
       const frame = ctx.getImageData(0, 0, w, h);
-      punchGreen(frame.data);
+      punchGreen(frame.data, w, h);
       ctx.putImageData(frame, 0, 0);
     }
     requestAnimationFrame(paint);
@@ -1195,6 +1228,7 @@ function hideThreshold() {
 }
 
 async function enterFromLanding({ journeyMode }) {
+  stripWelcomePreview();
   await Store.startSession(Store.intendedStation());
   Store.setIntendedStation(null);
   goVenueHome();
@@ -1535,8 +1569,8 @@ async function route() {
   const slug = Store.state.path.station;
   const live = Store.hasLiveSession();
 
-  if (!live) {
-    if (slug && slug !== 'threshold') Store.setIntendedStation(slug);
+  if (!live || wantsWelcomePreview()) {
+    if (!live && slug && slug !== 'threshold') Store.setIntendedStation(slug);
     hideMapModal();
     showThreshold();
     const welcome = Store.touchByType('threshold')[0];
@@ -1835,7 +1869,7 @@ async function boot() {
   dom.parkLocation.textContent = park.locationName || park.name || '';
   document.title = `Castle Quest — ${park.name || 'Ice Castles'}`;
   if (adventure.venueCode && !Store.state.path.venueCode) {
-    history.replaceState(null, '', Store.stationPath(Store.state.path.station));
+    history.replaceState(null, '', `${Store.stationPath(Store.state.path.station)}${location.search}`);
     Store.state.path = Store.pathContext();
   }
 

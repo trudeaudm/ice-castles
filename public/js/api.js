@@ -114,7 +114,7 @@ const Store = (() => {
     const venue = state.adventure?.venueCode;
     if (venue && state.path.venueCode && state.path.venueCode !== venue) {
       const station = state.path.station ? `/${state.path.station}` : '';
-      history.replaceState(null, '', `/${venue}${station}${location.hash || ''}`);
+      history.replaceState(null, '', `/${venue}${station}${location.search}${location.hash || ''}`);
       state.path = pathContext();
     }
   }
