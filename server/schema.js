@@ -210,6 +210,8 @@ CREATE INDEX IF NOT EXISTS ix_adv_loc      ON adventures (location_id, year);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_adv_loc_year ON adventures (location_id, year);
 CREATE INDEX IF NOT EXISTS ix_touch_adv ON touchpoints (adventure_id, sort_order);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_touch_adv_slug ON touchpoints (adventure_id, slug);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_pois_adv_slug ON pois (adventure_id, slug);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_hunts_adv_slug ON hunts (adventure_id, slug);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_session_day ON quest_sessions (guest_id, adventure_id, operating_date);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_session_realm ON session_realms (session_id, realm);
 CREATE INDEX IF NOT EXISTS ix_events_session ON quest_events (session_id, created_at);
@@ -247,6 +249,17 @@ async function columnExists(table, column) {
 async function ensureColumn(table, column, ddlFragment) {
   if (await columnExists(table, column)) return;
   await db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddlFragment}`);
+}
+
+/**
+ * The first Postgres schema marked poi and hunt slugs unique for the whole
+ * database. CREATE TABLE IF NOT EXISTS never drops that, so a second
+ * adventure cannot reuse mystic-forest-air. Slugs are unique per adventure.
+ */
+async function dropLegacyGlobalSlugConstraints() {
+  if (!db.usingPostgres) return;
+  await db.exec('ALTER TABLE pois DROP CONSTRAINT IF EXISTS pois_slug_key');
+  await db.exec('ALTER TABLE hunts DROP CONSTRAINT IF EXISTS hunts_slug_key');
 }
 
 /**
@@ -340,6 +353,7 @@ async function migrate() {
   await ensureColumn('pois', 'marker', 'marker TEXT');
 
   await db.exec(INDEX_DDL);
+  await dropLegacyGlobalSlugConstraints();
 
   const nh = await db.get('SELECT id FROM locations WHERE slug = ?', ['NHAdventure']);
   const nhTaken = await db.get(`SELECT id FROM locations WHERE venue_code = 'nh'`);

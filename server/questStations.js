@@ -338,7 +338,7 @@ async function uniqueScanCode() {
  */
 async function ensureMapMarkers(adventureId) {
   const pois = await db.all(
-    'SELECT id, name, marker, sort_order, x, y FROM pois WHERE adventure_id = ?',
+    'SELECT id, name, slug, marker, sort_order, x, y FROM pois WHERE adventure_id = ?',
     [adventureId]
   );
   const byName = new Map(pois.map((p) => [p.name, p]));
@@ -356,7 +356,13 @@ async function ensureMapMarkers(adventureId) {
   if (!already) {
     let sort = pois.reduce((max, p) => Math.max(max, Number(p.sort_order) || 0), 0);
     for (const pin of FOREST_PINS) {
-      if (byName.has(pin.name)) continue;
+      const slug = slugify(pin.name);
+      const existing = byName.get(pin.name)
+        || pois.find((p) => p.slug === slug || slugify(p.name) === slug);
+      if (existing) {
+        byName.set(pin.name, existing);
+        continue;
+      }
       sort += 1;
       const id = uuid();
       const at = placeForestPin(pin, slots);
@@ -366,12 +372,14 @@ async function ensureMapMarkers(adventureId) {
             x, y, scan_code, published, sort_order, marker, created_at, updated_at)
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
-          id, adventureId, pin.name, slugify(pin.name), 'sculpture', 'Mystic Forest',
+          id, adventureId, pin.name, slug, 'sculpture', 'Mystic Forest',
           pin.blurb, pin.description, null, null,
           at.x, at.y, await uniqueScanCode(), 1, sort, pin.marker, ts, ts,
         ]
       );
-      byName.set(pin.name, { id, name: pin.name, marker: pin.marker, sort_order: sort, x: at.x, y: at.y });
+      const row = { id, name: pin.name, slug, marker: pin.marker, sort_order: sort, x: at.x, y: at.y };
+      pois.push(row);
+      byName.set(pin.name, row);
     }
 
     for (const move of RETARGET) {
