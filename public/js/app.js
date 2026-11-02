@@ -764,7 +764,7 @@ const LISTEN_ICON = `<svg class="listenButton__icon" viewBox="0 0 24 24" aria-hi
 </svg>`;
 
 function hearthHtml() {
-  return `<video class="hearth__src" src="${ART}/ember-flames.mp4" muted loop playsinline preload="auto" aria-hidden="true"></video>
+  return `<video class="hearth__src" src="${ART}/ember-flames.mp4?v=2" muted loop playsinline preload="auto" aria-hidden="true"></video>
     <canvas class="hearth" aria-hidden="true"></canvas>`;
 }
 
