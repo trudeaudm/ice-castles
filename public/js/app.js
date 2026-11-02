@@ -413,7 +413,14 @@ function drawSummonPoof(job, now) {
   }
 }
 
+function stopSummonWind(job) {
+  if (!job.wind) return;
+  job.wind.stop();
+  job.wind = null;
+}
+
 function showSummon(job, instant) {
+  stopSummonWind(job);
   job.frame.dataset.summonAt = String(performance.now());
   job.frame.classList.add('is-shown');
   if (instant) job.frame.classList.add('is-instant');
@@ -428,6 +435,21 @@ function startSwirl(job, now) {
   job.t0 = now;
   job.elapsed = 0;
   job.played = true;
+  if (job.frame.dataset.realm === 'air' && typeof createWindWisps === 'function') {
+    job.parts = [];
+    job.wind = createWindWisps(job.canvas, {
+      direction: 0,
+      speed: 1,
+      density: 1,
+      color: '#f4fbff',
+      opacity: 0.8,
+      trail: 1,
+      spiral: 0.25,
+      paused() { return !summonVisible(job.frame); },
+    });
+    job.wind.start();
+    return;
+  }
   const rect = job.frame.getBoundingClientRect();
   const n = Math.round(Math.min(rect.width, rect.height) / 3.3);
   job.parts = makeSummonParts(Math.max(44, Math.min(92, n)), job.spec);
@@ -435,6 +457,7 @@ function startSwirl(job, now) {
 
 function stepSummon(job, now) {
   if (!job.frame.isConnected) {
+    stopSummonWind(job);
     job.done = true;
     return;
   }
@@ -448,20 +471,23 @@ function stepSummon(job, now) {
     startSwirl(job, now);
   }
   if (job.phase === 'swirl') {
-    if (!summonVisible(job.frame) || !layoutSummon(job)) {
+    if (!summonVisible(job.frame) || (!job.wind && !layoutSummon(job))) {
       job.seen = now;
       return;
     }
     if (job.seen) job.elapsed += Math.min(SUMMON_FRAME_MS, Math.max(0, now - job.seen));
     job.seen = now;
-    const t = job.elapsed / 1000;
-    positionSwirl(job, t);
     const ripe = (job.ready || job.failed || job.elapsed > 12000) && job.elapsed >= SUMMON_SWIRL_MS;
     if (ripe) {
+      stopSummonWind(job);
+      if (!layoutSummon(job)) return;
       beginSummonPoof(job, now);
       drawSummonPoof(job, now);
       return;
     }
+    if (job.wind) return;
+    const t = job.elapsed / 1000;
+    positionSwirl(job, t);
     drawSummonField(job, t, 1);
     return;
   }
