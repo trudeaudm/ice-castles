@@ -1968,7 +1968,7 @@ body.quest .topbar {
 }
 .shrine__hero {
   position: relative;
-  margin: 8px 0 0;
+  margin: 8px auto 0;
 }
 .shrine__hero .shrine__art { margin-top: 0; }
 .shrine__wave {
@@ -1976,6 +1976,7 @@ body.quest .topbar {
   inset: 0;
   width: 100%;
   height: 100%;
+  z-index: 3;
   opacity: 0;
   pointer-events: none;
   transition: opacity 220ms ease;
@@ -1983,6 +1984,63 @@ body.quest .topbar {
 .shrine__hero .shrine__art { transition: opacity 220ms ease; }
 .shrine__hero.is-waving .shrine__wave { opacity: 1; }
 .shrine__hero.is-waving .shrine__art { opacity: 0; }
+.summon.shrine__hero.is-waving.is-shown .shrine__art { opacity: 0; animation: none; }
+
+.summon {
+  position: relative;
+  width: min(100%, calc(280px * var(--summon-w) / var(--summon-h)));
+  aspect-ratio: calc(var(--summon-w) / var(--summon-h));
+  margin: 8px auto 0;
+}
+.summon--portrait {
+  width: min(240px, 72%);
+  margin: 0 auto 14px;
+}
+.summon__veil {
+  position: absolute;
+  left: -14%;
+  top: -14%;
+  width: 128%;
+  height: 128%;
+  z-index: 2;
+  pointer-events: none;
+}
+.summon .shrine__art,
+.summon .shrine__portrait {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  object-fit: contain;
+  transform-origin: center center;
+}
+.summon.is-summoning .shrine__art,
+.summon.is-summoning .shrine__portrait {
+  opacity: 0;
+  transform: scale(0.56);
+}
+.summon.is-summoning.is-shown .shrine__art,
+.summon.is-summoning.is-shown .shrine__portrait {
+  opacity: 1;
+  transform: none;
+  animation: summonFade 460ms linear, summonZoom 680ms var(--ease-spring);
+}
+.summon.is-instant.is-shown .shrine__art,
+.summon.is-instant.is-shown .shrine__portrait {
+  animation: none;
+}
+@keyframes summonFade {
+  0% { opacity: 0; }
+  36% { opacity: 1; }
+  100% { opacity: 1; }
+}
+@keyframes summonZoom {
+  0% { transform: scale(0.56); }
+  100% { transform: scale(1); }
+}
 .shrine__art {
   width: 100%;
   max-height: 280px;

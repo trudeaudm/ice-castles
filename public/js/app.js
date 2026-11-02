@@ -51,6 +51,480 @@ function stationArt(station) {
   return '';
 }
 
+/* Swirl that holds a character's frame until the painting has decoded.
+   The veil canvas is 128% of the frame so the poof can leave the picture. */
+const SUMMON_PAD = 1.28;
+const SUMMON_REALMS = {
+  water: {
+    spin: 1.25, shape: 'bubble',
+    glow: 'rgba(255, 255, 255, 0.72)', arc: 'rgba(255, 255, 255, 0.95)', flash: '#ffffff',
+    colors: ['#0e6eae', '#1478c4', '#1c86c9', '#0b5f98', '#3aa0d8'],
+  },
+  earth: {
+    spin: 0.58, shape: 'leaf',
+    glow: 'rgba(198, 214, 120, 0.42)', arc: 'rgba(226, 206, 130, 0.85)', flash: '#f6efc4',
+    colors: ['#8fd06a', '#d2c06a', '#c4a15a', '#e7f0c4', '#6ea84a', '#f0e2b0'],
+  },
+  fire: {
+    spin: 1.55, shape: 'ember',
+    glow: 'rgba(255, 150, 40, 0.5)', arc: 'rgba(255, 206, 110, 0.9)', flash: '#fff1c4',
+    colors: ['#fff6d2', '#ffd27a', '#ff9a3c', '#ff5a1a', '#ffe7a8'],
+  },
+  air: {
+    spin: 1.95, shape: 'streak',
+    glow: 'rgba(255, 255, 255, 0.38)', arc: 'rgba(255, 255, 255, 0.9)', flash: '#ffffff',
+    colors: ['#ffffff', '#f4fbff', '#d5e6f0', '#ffffff', '#e7f2f8'],
+  },
+  spirit: {
+    spin: 0.74, shape: 'star',
+    glow: 'rgba(220, 180, 255, 0.5)', arc: 'rgba(240, 220, 255, 0.92)', flash: '#f7ecff',
+    colors: ['#ffffff', '#f3e4ff', '#d7b4ff', '#e7d0ff', '#fff6ff'],
+  },
+  ice: {
+    spin: 1.02, shape: 'crystal',
+    glow: 'rgba(130, 196, 232, 0.4)', arc: 'rgba(70, 150, 204, 0.75)', flash: '#ffffff',
+    colors: ['#ffffff', '#7ec4e6', '#2f86b8', '#d4eefb', '#e8f6ff'],
+  },
+};
+const SUMMON_RATIO = {
+  water: [1145, 1374],
+  earth: [1024, 1536],
+  fire: [1152, 1366],
+  air: [1143, 1376],
+  spirit: [1199, 1312],
+  ice: [819, 1024],
+};
+const summonJobs = new Set();
+let summonRaf = 0;
+
+function summonHtml(src, className, realm, { hero = false } = {}) {
+  const key = SUMMON_REALMS[realm] ? realm : 'ice';
+  const [w, h] = SUMMON_RATIO[key];
+  const portrait = className === 'shrine__portrait';
+  const cls = `summon${portrait ? ' summon--portrait' : ''}${hero ? ' shrine__hero' : ''}`;
+  const priority = hero ? ' fetchpriority="high"' : '';
+  return `<div class="${cls}" data-realm="${escapeHtml(key)}" style="--summon-w:${w};--summon-h:${h}" aria-busy="true">
+    <canvas class="summon__veil" width="2" height="2" aria-hidden="true"></canvas>
+    <img class="${className}" src="${escapeHtml(src)}" alt=""${priority}>
+  </div>`;
+}
+
+function summonVisible(frame) {
+  if (!frame.isConnected || document.hidden) return false;
+  if (document.body.classList.contains('landing-open')) return false;
+  if (document.body.classList.contains('guide-open')) return false;
+  const panel = frame.closest('.shrinePanel');
+  if (panel && !panel.classList.contains('is-open')) return false;
+  const rect = frame.getBoundingClientRect();
+  return rect.width > 2 && rect.bottom > 0 && rect.top < window.innerHeight + 48;
+}
+
+function makeSummonParts(count, spec) {
+  const parts = [];
+  for (let i = 0; i < count; i += 1) {
+    const r = 0.14 + Math.random() ** 0.7 * 0.86;
+    parts.push({
+      a: Math.random() * Math.PI * 2,
+      r,
+      w: (Math.random() < 0.14 ? -1 : 1) * (0.55 + (1 - r) * 1.75) * (0.72 + Math.random() * 0.7),
+      size: (spec.shape === 'bubble' ? 5.5 : spec.shape === 'streak' ? 2.2 : 3.2)
+        + Math.random() * (spec.shape === 'bubble' ? 8 : spec.shape === 'star' ? 5.5 : 4.6),
+      color: spec.colors[(Math.random() * spec.colors.length) | 0],
+      seed: Math.random() * Math.PI * 2,
+      tw: 0.6 + Math.random() * 1.7,
+      spin: (Math.random() - 0.5) * 3.2,
+      pebble: spec.shape === 'leaf' && Math.random() < 0.28,
+    });
+  }
+  return parts;
+}
+
+function placeSummon(p, t, spec, R) {
+  const a = p.a + t * p.w * spec.spin;
+  let x = Math.cos(a) * p.r * R;
+  let y = Math.sin(a) * p.r * R;
+  let alpha = 0.62;
+  let scale = 1;
+  let rot = a;
+  if (spec.shape === 'bubble') {
+    y -= Math.sin(t * 1.5 + p.seed) * 8;
+    scale = 0.9 + 0.22 * Math.sin(t * p.tw * 2 + p.seed);
+    alpha = 0.88;
+  } else if (spec.shape === 'leaf') {
+    rot = t * p.spin + p.seed;
+    y += Math.sin(t * 0.7 + p.seed) * 6;
+    alpha = 0.82;
+  } else if (spec.shape === 'ember') {
+    const flicker = 0.4 + 0.6 * Math.abs(Math.sin(t * 8 * p.tw + p.seed));
+    y -= R * 0.18 * (1.2 - p.r);
+    alpha = flicker;
+    scale = 0.72 + flicker * 0.5;
+  } else if (spec.shape === 'streak') {
+    x *= 1.08;
+    y *= 0.68;
+    rot = a + Math.PI / 2;
+    alpha = 0.32 + 0.5 * (0.5 + 0.5 * Math.sin(t * 3 + p.seed));
+  } else if (spec.shape === 'star') {
+    const tw = Math.abs(Math.sin(t * p.tw * 2.4 + p.seed));
+    alpha = 0.22 + 0.78 * tw;
+    scale = 0.62 + tw * 0.75;
+    rot = t * 0.45 + p.seed;
+  } else {
+    rot = t * p.spin + p.seed;
+    alpha = 0.4 + 0.55 * Math.abs(Math.sin(t * p.tw + p.seed));
+  }
+  return { x, y, alpha: Math.max(0, alpha), scale, rot };
+}
+
+function traceStar(ctx, x, y, r, rot) {
+  ctx.beginPath();
+  for (let i = 0; i < 8; i += 1) {
+    const a = rot + (i * Math.PI) / 4;
+    const rad = i % 2 === 0 ? r : r * 0.38;
+    ctx.lineTo(x + Math.cos(a) * rad, y + Math.sin(a) * rad);
+  }
+  ctx.closePath();
+}
+
+function drawSummonMote(ctx, spec, p, x, y, alpha, scale) {
+  if (alpha < 0.03) return;
+  const size = Math.max(0.6, p.size * scale);
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = p.color;
+  ctx.strokeStyle = p.color;
+  if (p.spark || spec.shape === 'crystal') {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(p.rot || 0);
+    ctx.beginPath();
+    ctx.moveTo(0, -size);
+    ctx.lineTo(size * 0.52, 0);
+    ctx.lineTo(0, size * 1.2);
+    ctx.lineTo(-size * 0.52, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+  if (spec.shape === 'bubble') {
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.94)';
+    ctx.fill();
+    ctx.lineWidth = Math.max(1.4, size * 0.16);
+    ctx.strokeStyle = p.color;
+    ctx.stroke();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.beginPath();
+    ctx.arc(x - size * 0.3, y - size * 0.32, Math.max(0.8, size * 0.26), 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
+  if (spec.shape === 'leaf') {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(p.rot || 0);
+    ctx.beginPath();
+    if (p.pebble) ctx.ellipse(0, 0, size * 0.72, size * 0.52, 0, 0, Math.PI * 2);
+    else ctx.ellipse(0, 0, size * 0.4, size * 1.05, 0, 0, Math.PI * 2);
+    ctx.fill();
+    if (!p.pebble) {
+      ctx.globalAlpha = alpha * 0.4;
+      ctx.strokeStyle = 'rgba(255, 248, 220, 0.8)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, -size);
+      ctx.lineTo(0, size);
+      ctx.stroke();
+    }
+    ctx.restore();
+    return;
+  }
+  if (spec.shape === 'ember') {
+    ctx.globalAlpha = alpha * 0.32;
+    ctx.beginPath();
+    ctx.arc(x, y, size * 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(x, y, size * 0.72, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = Math.min(1, alpha);
+    ctx.fillStyle = '#fff6d4';
+    ctx.beginPath();
+    ctx.arc(x, y, Math.max(0.5, size * 0.26), 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
+  if (spec.shape === 'streak') {
+    const rot = p.rot || 0;
+    const len = size * 4.4;
+    const x2 = x + Math.cos(rot) * len;
+    const y2 = y + Math.sin(rot) * len;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(36, 64, 88, 0.28)';
+    ctx.lineWidth = Math.max(1.4, size * 0.55);
+    ctx.beginPath();
+    ctx.moveTo(x - Math.cos(rot) * len * 0.15, y - Math.sin(rot) * len * 0.15);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = Math.max(1, size * 0.34);
+    ctx.stroke();
+    return;
+  }
+  traceStar(ctx, x, y, size * 1.15, p.rot || 0);
+  ctx.fill();
+}
+
+function drawSummonField(job, t, fade) {
+  const { ctx, cx, cy, R, spec } = job;
+  ctx.clearRect(0, 0, job.cssW, job.cssH);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(t * spec.spin * 0.42);
+  ctx.strokeStyle = spec.arc;
+  ctx.globalAlpha = 0.62 * fade;
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 3; i += 1) {
+    ctx.rotate(2.12);
+    ctx.beginPath();
+    ctx.arc(0, 0, R * (0.3 + i * 0.22), 0.2, 2.2);
+    ctx.stroke();
+  }
+  ctx.restore();
+  const glow = ctx.createRadialGradient(cx, cy, R * 0.02, cx, cy, R * 0.7);
+  glow.addColorStop(0, 'rgba(255,255,255,0.92)');
+  glow.addColorStop(0.28, spec.glow);
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.globalAlpha = (0.9 + Math.sin(t * 2.2) * 0.1) * fade;
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R * 0.66, 0, Math.PI * 2);
+  ctx.fill();
+  for (const p of job.parts) {
+    drawSummonMote(ctx, spec, p, p.x, p.y, p.alpha * fade, p.scale);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function layoutSummon(job) {
+  const canvas = job.canvas;
+  const cssW = canvas.clientWidth;
+  const cssH = canvas.clientHeight;
+  if (cssW < 2 || cssH < 2) return false;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = Math.round(cssW * dpr);
+  const h = Math.round(cssH * dpr);
+  if (canvas.width !== w || canvas.height !== h) {
+    canvas.width = w;
+    canvas.height = h;
+  }
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return false;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  job.ctx = ctx;
+  job.cssW = cssW;
+  job.cssH = cssH;
+  job.cx = cssW / 2;
+  job.cy = cssH / 2;
+  job.R = (Math.min(cssW, cssH) / SUMMON_PAD) * 0.46;
+  return job.R > 4;
+}
+
+function positionSwirl(job, t) {
+  for (const p of job.parts) {
+    const at = placeSummon(p, t, job.spec, job.R);
+    p.x = job.cx + at.x;
+    p.y = job.cy + at.y;
+    p.alpha = at.alpha;
+    p.scale = at.scale;
+    p.rot = at.rot;
+  }
+}
+
+function beginSummonPoof(job, now) {
+  job.phase = 'poof';
+  job.poofAt = now;
+  job.frame.dataset.summonAt = String(now);
+  job.frame.classList.add('is-shown');
+  job.frame.setAttribute('aria-busy', 'false');
+  const { cx, cy, spec } = job;
+  for (const p of job.parts) {
+    const dx = p.x - cx;
+    const dy = p.y - cy;
+    const mag = Math.hypot(dx, dy) || 1;
+    const kick = 78 + Math.random() * 90;
+    p.vx = (dx / mag) * kick + (Math.random() - 0.5) * 28;
+    p.vy = (dy / mag) * kick + (Math.random() - 0.5) * 28;
+    p.px = p.x;
+    p.py = p.y;
+  }
+  for (let i = 0; i < 16; i += 1) {
+    const ang = (i / 16) * Math.PI * 2 + Math.random() * 0.35;
+    const kick = 40 + Math.random() * 100;
+    job.parts.push({
+      spark: true,
+      px: cx,
+      py: cy,
+      vx: Math.cos(ang) * kick,
+      vy: Math.sin(ang) * kick,
+      size: 1.6 + Math.random() * 2.4,
+      color: spec.colors[i % spec.colors.length],
+      rot: ang,
+      alpha: 1,
+      scale: 1,
+    });
+  }
+}
+
+function drawSummonPoof(job, now) {
+  const sec = (now - job.poofAt) / 1000;
+  const life = Math.max(0, 1 - sec / 0.44);
+  const { ctx, cx, cy, spec } = job;
+  ctx.clearRect(0, 0, job.cssW, job.cssH);
+  const flash = Math.max(0, 1 - sec / 0.24);
+  ctx.globalAlpha = flash * 0.9;
+  ctx.strokeStyle = spec.flash;
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 6 + sec * 168, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.globalAlpha = flash * 0.35;
+  ctx.fillStyle = spec.flash;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 10 + sec * 70, 0, Math.PI * 2);
+  ctx.fill();
+  for (const p of job.parts) {
+    const x = p.px + p.vx * sec;
+    const y = p.py + p.vy * sec;
+    const pop = (p.spark ? 1 : Math.max(0.7, p.alpha || 1)) * life;
+    drawSummonMote(ctx, spec, p, x, y, pop, (p.scale || 1) * (1 + sec * 0.45));
+  }
+  ctx.globalAlpha = 1;
+  if (sec >= 0.44) {
+    job.canvas.remove();
+    job.done = true;
+  }
+}
+
+function showSummon(job, instant) {
+  job.frame.dataset.summonAt = String(performance.now());
+  job.frame.classList.add('is-shown');
+  if (instant) job.frame.classList.add('is-instant');
+  job.frame.setAttribute('aria-busy', 'false');
+  if (job.canvas.isConnected) job.canvas.remove();
+  job.done = true;
+  job.phase = 'done';
+}
+
+function startSwirl(job, now) {
+  job.phase = 'swirl';
+  job.t0 = now;
+  job.elapsed = 0;
+  job.played = true;
+  const rect = job.frame.getBoundingClientRect();
+  const n = Math.round(Math.min(rect.width, rect.height) / 3.3);
+  job.parts = makeSummonParts(Math.max(44, Math.min(92, n)), job.spec);
+}
+
+function stepSummon(job, now) {
+  if (!job.frame.isConnected) {
+    job.done = true;
+    return;
+  }
+  if (job.phase === 'wait') {
+    if (!job.ready && job.img.complete && job.img.naturalWidth > 0) job.ready = true;
+    if (job.reduce || job.failed || job.ready) {
+      showSummon(job, true);
+      return;
+    }
+    if (!summonVisible(job.frame)) return;
+    startSwirl(job, now);
+    return;
+  }
+  if (job.phase === 'swirl') {
+    if (!summonVisible(job.frame)) {
+      job.t0 = now - job.elapsed;
+      return;
+    }
+    if (!layoutSummon(job)) return;
+    job.elapsed = now - job.t0;
+    const t = job.elapsed / 1000;
+    positionSwirl(job, t);
+    const ripe = (job.ready || job.failed || job.elapsed > 12000) && job.elapsed >= 340;
+    if (ripe) {
+      beginSummonPoof(job, now);
+      drawSummonPoof(job, now);
+      return;
+    }
+    drawSummonField(job, t, 1);
+    return;
+  }
+  if (job.phase === 'poof') {
+    if (!job.canvas.isConnected) {
+      job.done = true;
+      return;
+    }
+    if (!layoutSummon(job)) return;
+    drawSummonPoof(job, now);
+  }
+}
+
+function tickSummons(now) {
+  summonRaf = 0;
+  for (const job of summonJobs) stepSummon(job, now);
+  for (const job of [...summonJobs]) if (job.done) summonJobs.delete(job);
+  if (summonJobs.size) summonRaf = window.requestAnimationFrame(tickSummons);
+}
+
+function kickSummons() {
+  if (!summonRaf && summonJobs.size) summonRaf = window.requestAnimationFrame(tickSummons);
+}
+
+function armSummon(frame) {
+  if (frame.dataset.summonOn) return;
+  frame.dataset.summonOn = '1';
+  frame.classList.add('is-summoning');
+  const img = frame.querySelector('img');
+  const canvas = frame.querySelector('canvas');
+  if (!img || !canvas) return;
+  const realm = SUMMON_REALMS[frame.dataset.realm] ? frame.dataset.realm : 'ice';
+  const job = {
+    frame,
+    img,
+    canvas,
+    spec: SUMMON_REALMS[realm],
+    reduce: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    ready: img.complete && img.naturalWidth > 0,
+    failed: img.complete && img.naturalWidth === 0,
+    phase: 'wait',
+    played: false,
+    elapsed: 0,
+    done: false,
+  };
+  if (!job.ready && !job.failed) {
+    img.addEventListener('load', () => {
+      const decoded = typeof img.decode === 'function' ? img.decode() : Promise.resolve();
+      decoded.then(() => { job.ready = true; }).catch(() => { job.ready = true; });
+    }, { once: true });
+    img.addEventListener('error', () => { job.failed = true; }, { once: true });
+  }
+  if (job.reduce || job.failed || (job.ready && summonVisible(frame))) {
+    showSummon(job, true);
+    return;
+  }
+  summonJobs.add(job);
+  kickSummons();
+}
+
+function armSummons(root) {
+  root.querySelectorAll('.summon').forEach(armSummon);
+}
+
 const el = (id) => document.getElementById(id);
 const escapeHtml = (value) =>
   String(value == null ? '' : value).replace(/[&<>"']/g, (c) =>
@@ -290,7 +764,7 @@ const LISTEN_ICON = `<svg class="listenButton__icon" viewBox="0 0 24 24" aria-hi
 </svg>`;
 
 function hearthHtml() {
-  return `<video class="hearth__src" src="${ART}/ember-hearth.mp4" muted loop playsinline preload="auto" aria-hidden="true"></video>
+  return `<video class="hearth__src" src="${ART}/ember-flames.mp4" muted loop playsinline preload="auto" aria-hidden="true"></video>
     <canvas class="hearth" aria-hidden="true"></canvas>`;
 }
 
@@ -415,32 +889,46 @@ function stopHearth() {
 
 function punchGreen(data, width, height) {
   const count = width * height;
-  const alpha = new Uint8ClampedArray(count);
+  const solid = new Uint8Array(count);
   for (let p = 0, i = 0; p < count; p += 1, i += 4) {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
     const spill = g - Math.max(r, b);
-    if (spill > 16) {
+    if (spill > 8 || data[i + 3] < 16) {
       data[i + 3] = 0;
-    } else if (spill > 0) {
-      data[i + 1] = Math.max(r, b);
+    } else {
+      if (spill > 0) data[i + 1] = Math.max(r, b);
+      solid[p] = 1;
     }
-    alpha[p] = data[i + 3];
   }
+  const erode = (src) => {
+    const dst = new Uint8Array(count);
+    for (let y = 1; y < height - 1; y += 1) {
+      const row = y * width;
+      for (let x = 1; x < width - 1; x += 1) {
+        const p = row + x;
+        if (src[p] && src[p - 1] && src[p + 1] && src[p - width] && src[p + width]) dst[p] = 1;
+      }
+    }
+    return dst;
+  };
+  const inner = erode(erode(solid));
   for (let y = 1; y < height - 1; y += 1) {
+    const row = y * width;
     for (let x = 1; x < width - 1; x += 1) {
-      const p = y * width + x;
-      if (alpha[p] < 24) continue;
-      const near = alpha[p - 1] < 24 || alpha[p + 1] < 24 || alpha[p - width] < 24 || alpha[p + width] < 24;
-      if (!near) continue;
-      const i = p * 4;
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      if (g > 70 && g + 12 > r && g > b) data[i + 3] = 0;
+      const p = row + x;
+      const i = p * 4 + 3;
+      if (!inner[p]) {
+        data[i] = 0;
+        continue;
+      }
+      const edge = !inner[p - 1] || !inner[p + 1] || !inner[p - width] || !inner[p + width];
+      data[i] = edge ? 160 : 255;
     }
   }
+  for (let x = 0; x < width; x += 1) data[x * 4 + 3] = data[((height - 1) * width + x) * 4 + 3] = 0;
+  for (let y = 0; y < height; y += 1) data[(y * width) * 4 + 3] = data[(y * width + width - 1) * 4 + 3] = 0;
 }
 
 function startHearth() {
@@ -467,8 +955,9 @@ function startHearth() {
     if (!held && video.readyState >= 2 && video.videoWidth) {
       const vw = video.videoWidth;
       const vh = video.videoHeight;
-      const cropTop = Math.round(vh * 0.47);
-      const cropH = vh - cropTop;
+      const cropTop = Math.round(vh * 0.30);
+      const cropBottom = Math.round(vh * 0.955);
+      const cropH = cropBottom - cropTop;
       const scale = Math.min(1, 640 / vw);
       const w = Math.round(vw * scale);
       const h = Math.round(cropH * scale);
@@ -519,11 +1008,7 @@ function renderStation(slug) {
   const portrait = station.element ? realmCharacter(station.element) : '';
   const sky = station.type === 'guardian' ? realmSkyHtml(station.element) : '';
   const waveRealm = station.type === 'guardian' && REALM_META[station.element]?.wave ? station.element : '';
-  const artHtml = art
-    ? (waveRealm
-      ? `<div class="shrine__hero"><img class="shrine__art" src="${escapeHtml(art)}" alt=""></div>`
-      : `<img class="shrine__art" src="${escapeHtml(art)}" alt="">`)
-    : '';
+  const artHtml = art ? summonHtml(art, 'shrine__art', station.element, { hero: Boolean(waveRealm) }) : '';
 
   if (!gated) {
     dom.stationView.innerHTML = `
@@ -542,6 +1027,7 @@ function renderStation(slug) {
         <div id="heartSlot"></div>
       </article>`;
     if (station.type === 'heart') renderHeartSlot();
+    armSummons(dom.stationView);
     return;
   }
 
@@ -572,7 +1058,7 @@ function renderStation(slug) {
       <section class="shrinePanel" data-panel="meet">
         <h3>${escapeHtml(shrineMeetTitle(station))}</h3>
         ${station.type === 'guardian' ? listenButtonHtml(station.audioUrl) : ''}
-        ${portrait ? `<img class="shrine__portrait" src="${escapeHtml(portrait)}" alt="">` : ''}
+        ${portrait ? summonHtml(portrait, 'shrine__portrait', station.element) : ''}
         ${storyHtml(station.body)}
       </section>
       <section class="shrinePanel" data-panel="discover">
@@ -590,6 +1076,7 @@ function renderStation(slug) {
   selectedImages = new Set();
   sequenceBuffer = [];
   if (shrineFocus) setShrineFocus(shrineFocus, { spin: false });
+  armSummons(dom.stationView);
   if (waveRealm && !document.body.classList.contains('landing-open')) armShrineWaves(waveRealm);
   if (station.element === 'fire') startHearth();
   if (station.element === 'air') watchWispPause();
@@ -1133,6 +1620,13 @@ function armShrineWaves(realm) {
       if (gen !== waveGen) return;
       const hero = document.querySelector('.shrine__hero');
       if (!hero || document.body.dataset.realm !== realm) return;
+      const shownAt = Number(hero.dataset.summonAt || 0);
+      const summoning = hero.classList.contains('summon')
+        && (!hero.classList.contains('is-shown') || performance.now() - shownAt < 760);
+      if (summoning) {
+        tick(280);
+        return;
+      }
       try { await runWave(realm, 'hero', hero, hero, gen); } catch { /* try later */ }
       if (gen !== waveGen) return;
       tick(11000 + Math.random() * 9000);
