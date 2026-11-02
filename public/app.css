@@ -968,7 +968,8 @@ body.landing-open .station { visibility: hidden; }
   flex: 1;
   min-height: 0;
   margin-top: 12px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 .beginBrief__scroll > p,
@@ -2791,10 +2792,11 @@ button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm) {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):hover {
+  button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.beginStory):hover {
     transform: translateY(-3px) scale(1.045);
     filter: brightness(1.08);
   }
+  .beginStory:hover { filter: brightness(1.06); }
   .landing__realm:hover .landing__face { animation: pfpTalk 480ms var(--ease-spring); }
   .landing__begin:hover {
     filter: brightness(1.1) drop-shadow(0 10px 18px rgba(126, 243, 255, 0.35));
