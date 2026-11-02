@@ -1708,20 +1708,6 @@ let talkHide = 0;
 let waveGen = 0;
 let waveTimer = 0;
 let waveRaf = 0;
-let waveBag = [];
-let waveLast = '';
-
-function nextWaveRealm() {
-  if (!waveBag.length) {
-    waveBag = REALM_ORDER.filter((realm) => realm !== waveLast);
-    for (let i = waveBag.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [waveBag[i], waveBag[j]] = [waveBag[j], waveBag[i]];
-    }
-  }
-  waveLast = waveBag.pop();
-  return waveLast;
-}
 
 function waveVideoEl() {
   if (waveVideoEl.el) return waveVideoEl.el;
@@ -2018,7 +2004,7 @@ async function runWave(realm, mode, paintHost, wavingHost, gen) {
   const video = waveVideoEl();
   silenceWave(video);
   await loadWave(video, realm);
-  if (gen !== waveGen || !paintHost.isConnected) return;
+  if (gen !== waveGen || !paintHost.isConnected) return false;
   silenceWave(video);
   if (video.currentTime > 0.04) {
     await new Promise((resolve) => {
@@ -2026,7 +2012,7 @@ async function runWave(realm, mode, paintHost, wavingHost, gen) {
       try { video.currentTime = 0; } catch { resolve(); }
     });
   }
-  if (gen !== waveGen || !paintHost.isConnected) return;
+  if (gen !== waveGen || !paintHost.isConnected) return false;
   const canvas = document.createElement('canvas');
   canvas.className = mode === 'face' ? 'landing__wave' : 'shrine__wave';
   canvas.setAttribute('aria-hidden', 'true');
@@ -2038,7 +2024,7 @@ async function runWave(realm, mode, paintHost, wavingHost, gen) {
   }
   if (canvas.width < 2 || canvas.height < 2) {
     canvas.remove();
-    return;
+    return false;
   }
   paintWaveFrame(canvas, video, mode, realm);
   wavingHost.classList.add('is-waving');
@@ -2047,7 +2033,7 @@ async function runWave(realm, mode, paintHost, wavingHost, gen) {
   } catch {
     wavingHost.classList.remove('is-waving');
     canvas.remove();
-    return;
+    return false;
   }
   silenceWave(video);
   const natural = await new Promise((resolve) => {
@@ -2076,6 +2062,7 @@ async function runWave(realm, mode, paintHost, wavingHost, gen) {
   wavingHost.classList.remove('is-waving');
   if (natural) await new Promise((resolve) => window.setTimeout(resolve, 220));
   if (canvas.isConnected) canvas.remove();
+  return natural;
 }
 
 function landingCanWave() {
@@ -2084,32 +2071,20 @@ function landingCanWave() {
     && !(dom.landingHowto && !dom.landingHowto.hidden);
 }
 
-function armLandWaves() {
+function armLandWaves(realm) {
   const gen = waveGen;
-  const tick = (delay) => {
-    window.clearTimeout(waveTimer);
-    waveTimer = window.setTimeout(async () => {
-      if (gen !== waveGen) return;
-      if (!landingCanWave()) {
-        tick(900);
-        return;
-      }
-      const realm = nextWaveRealm();
-      const btn = document.querySelector(`.landing__realm[data-realm="${realm}"]`);
-      const face = btn?.querySelector('.landing__face');
-      if (face) {
-        try { await runWave(realm, 'face', face, btn, gen); } catch { /* skip */ }
-      }
-      if (gen !== waveGen) return;
-      tick(2400 + Math.random() * 2600);
-    }, delay);
+  const again = async () => {
+    if (gen !== waveGen || !landingCanWave()) return;
+    const btn = document.querySelector(`.landing__realm.is-talking[data-realm="${realm}"]`);
+    const face = btn?.querySelector('.landing__face');
+    if (!btn || !face) return;
+    let played = false;
+    try { played = await runWave(realm, 'face', face, btn, gen); } catch { /* skip */ }
+    if (!played || gen !== waveGen) return;
+    if (!document.querySelector(`.landing__realm.is-talking[data-realm="${realm}"]`)) return;
+    again();
   };
-  tick(1400);
-}
-
-function startLandWaves() {
-  haltWaves();
-  armLandWaves();
+  again();
 }
 
 function armShrineWaves(realm) {
@@ -2137,8 +2112,8 @@ function armShrineWaves(realm) {
 
 function hideLandTalk() {
   document.querySelectorAll('.landing__realm.is-talking').forEach((n) => n.classList.remove('is-talking'));
-  if (!dom.landingTalk) return;
-  dom.landingTalk.hidden = true;
+  if (dom.landingTalk) dom.landingTalk.hidden = true;
+  haltWaves();
 }
 
 function landTalk(realm, hold = 4800) {
@@ -2159,6 +2134,8 @@ function landTalk(realm, hold = 4800) {
   dom.landingBubble.classList.add('is-fresh');
   window.clearTimeout(talkHide);
   talkHide = window.setTimeout(hideLandTalk, hold);
+  haltWaves();
+  armLandWaves(realm);
 }
 
 function startLandTalk() {
@@ -2203,7 +2180,6 @@ function showThreshold() {
   dom.threshold.inert = false;
   dom.threshold.classList.add('is-open');
   startLandTalk();
-  startLandWaves();
 }
 
 function hideLandingHowto() {
