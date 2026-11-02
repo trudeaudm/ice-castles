@@ -89,7 +89,7 @@ function createWindWisps(canvas, settings) {
     if (wisps.length > n) wisps.length = n;
     while (wisps.length < n) {
       const w = {};
-      seed(w, w.speed ? w.speed * 1.4 : 140);
+      seed(w, 80);
       wisps.push(w);
     }
   }
@@ -232,8 +232,6 @@ function createWindWisps(canvas, settings) {
     last = now;
     step(dt);
     draw();
-    canvas.dataset.tick = String((Number(canvas.dataset.tick) || 0) + 1);
-    canvas.dataset.alive = String(wisps.filter((w) => lifeFade(w) > 0.03).length);
   }
 
   function resume() {
