@@ -2775,23 +2775,22 @@ body.quest[data-realm="fire"] .topbar {
 body[data-realm="fire"] .aurora__band--1 { background: radial-gradient(ellipse at 50% 50%, #ffb15a, transparent 70%); opacity: 0.46; }
 body[data-realm="fire"] .aurora__band--2 { background: radial-gradient(ellipse at 40% 50%, #e23b12, transparent 70%); opacity: 0.4; }
 body[data-realm="fire"] .aurora__band--3 { background: radial-gradient(ellipse at 60% 50%, #7a140c, transparent 72%); opacity: 0.3; }
-body[data-realm="fire"] .hearth path { stroke: none; }
+body[data-realm="fire"] .hearth__src {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  opacity: 0;
+  pointer-events: none;
+}
 body[data-realm="fire"] .hearth {
   position: absolute;
   left: 50%;
   bottom: 0;
   width: 130%;
-  height: 280px;
+  height: auto;
   transform: translateX(-50%);
-  overflow: visible;
+  pointer-events: none;
 }
-body[data-realm="fire"] .lick {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-  animation: lick 0.8s ease-in-out infinite;
-}
-body[data-realm="fire"] .lick:nth-child(odd) { animation-duration: 0.66s; }
-body[data-realm="fire"] .lick:nth-child(3n) { animation-duration: 1.05s; }
 body[data-realm="fire"] .ember {
   position: absolute;
   bottom: 26%;
@@ -2845,31 +2844,25 @@ body[data-realm="air"] .wisp {
   left: -8%;
   width: 116%;
   overflow: visible;
-  --t: 8s;
+  --t: 6s;
   --delay: 0s;
   animation: wispCross var(--t) linear infinite;
   animation-delay: var(--delay);
 }
 body[data-realm="air"] .wisp--fade { animation-name: wispVanish; }
-body[data-realm="air"] .wisp path {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 11 89;
+body[data-realm="air"] .wisp path { fill: none; stroke: none; }
+body[data-realm="air"] .wisp .wisp__mote {
+  fill: #fff;
+  stroke: none;
   filter: drop-shadow(0 0 0.5px rgba(24, 58, 84, 0.95)) drop-shadow(0 0 1.4px rgba(24, 58, 84, 0.45));
-  animation: wispRun var(--t) linear infinite;
-  animation-delay: var(--delay);
 }
-body[data-realm="air"] .wisp--straight path { stroke-width: 1.6; stroke-dasharray: 8 92; }
-body[data-realm="air"] .wisp:nth-child(1) { top: 8%; --t: 8.6s; --delay: -1.4s; }
-body[data-realm="air"] .wisp:nth-child(2) { top: 20%; --t: 6.4s; --delay: -3.2s; }
-body[data-realm="air"] .wisp:nth-child(3) { top: 34%; --t: 9.2s; --delay: -5s; }
-body[data-realm="air"] .wisp:nth-child(4) { top: 46%; --t: 5.8s; --delay: -0.8s; }
-body[data-realm="air"] .wisp:nth-child(5) { top: 56%; --t: 8.8s; --delay: -6.4s; transform: scaleY(-1); }
-body[data-realm="air"] .wisp:nth-child(6) { top: 68%; --t: 7.6s; --delay: -2.6s; }
-body[data-realm="air"] .wisp:nth-child(7) { top: 80%; --t: 6.8s; --delay: -4.4s; }
+body[data-realm="air"] .wisp:nth-child(1) { top: 8%; }
+body[data-realm="air"] .wisp:nth-child(2) { top: 20%; }
+body[data-realm="air"] .wisp:nth-child(3) { top: 34%; }
+body[data-realm="air"] .wisp:nth-child(4) { top: 46%; }
+body[data-realm="air"] .wisp:nth-child(5) { top: 56%; transform: scaleY(-1); }
+body[data-realm="air"] .wisp:nth-child(6) { top: 68%; }
+body[data-realm="air"] .wisp:nth-child(7) { top: 80%; }
 
 body[data-realm="spirit"] {
   --realm-ink: #5b2d86;
@@ -2941,13 +2934,10 @@ body[data-realm="spirit"] .realmSky i:nth-child(6) { left: 84%; top: 48%; width:
 }
 @keyframes wispVanish {
   0% { opacity: 0; }
-  7% { opacity: 0.95; }
-  55% { opacity: 0.9; }
-  78% { opacity: 0; }
+  8% { opacity: 0.95; }
+  70% { opacity: 0.9; }
+  92% { opacity: 0; }
   100% { opacity: 0; }
-}
-@keyframes wispRun {
-  to { stroke-dashoffset: -100; }
 }
 @keyframes twinkle {
   0%, 100% { opacity: 0.15; transform: scale(0.55); }

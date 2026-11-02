@@ -276,69 +276,71 @@ const LISTEN_ICON = `<svg class="listenButton__icon" viewBox="0 0 24 24" aria-hi
   <path d="M18.4 6.8a7.2 7.2 0 0 1 0 10.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
 </svg>`;
 
-function hearthSvg() {
-  const left = `M0,200 L0,146
-    C18,136 12,100 26,78
-    C34,62 20,36 26,16
-    C30,4 24,0 36,8
-    C50,18 42,40 50,64
-    C60,96 78,118 92,124
-    C108,118 112,86 116,58
-    C120,34 108,12 118,2
-    C126,-6 146,4 144,20
-    C142,40 132,66 144,96
-    C156,124 178,132 194,120
-    C208,108 210,74 214,48
-    C218,24 206,6 220,0
-    C232,-6 250,8 246,26
-    C242,48 232,78 246,108
-    C262,136 286,140 300,132
-    L300,200 Z`;
-  const right = `M180,200 L180,136
-    C196,124 188,90 206,64
-    C216,46 202,22 214,6
-    C222,-4 216,-2 228,8
-    C242,20 234,42 242,66
-    C252,98 270,120 286,124
-    C302,116 306,84 310,56
-    C314,32 302,10 314,0
-    C322,-8 342,2 340,18
-    C338,38 328,64 340,94
-    C352,122 374,130 390,116
-    C404,104 406,70 410,44
-    C414,20 402,4 416,0
-    C428,-4 446,10 442,28
-    C438,50 428,80 442,108
-    C458,134 472,128 480,118
-    L480,200 Z`;
-  const band = (d, delay) => `<g class="lick" style="animation-delay:${delay}">
-    <path fill="#ff2e00" d="${d}"/>
-    <g transform="translate(0 200) scale(1 0.78) translate(0 -200)"><path fill="#ff7410" d="${d}"/></g>
-    <g transform="translate(0 200) scale(1 0.56) translate(0 -200)"><path fill="#ffc20a" d="${d}"/></g>
-    <g transform="translate(0 200) scale(1 0.34) translate(0 -200)"><path fill="#fff4a8" d="${d}"/></g>
-  </g>`;
-  return `<svg class="hearth" viewBox="0 0 480 200" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-    ${band(left, '0s')}
-    ${band(right, '-0.4s')}
-    <rect x="0" y="186" width="480" height="14" fill="#ffe14a"/>
-  </svg>`;
+function hearthHtml() {
+  return `<video class="hearth__src" src="${ART}/ember-hearth.mp4" muted loop playsinline preload="auto" aria-hidden="true"></video>
+    <canvas class="hearth" aria-hidden="true"></canvas>`;
 }
 
 function realmSkyHtml(element) {
   if (element === 'fire') {
     const embers = '<span class="ember"></span>'.repeat(14);
-    return `<div class="realmSky" aria-hidden="true">${hearthSvg()}${embers}</div>`;
+    return `<div class="realmSky" aria-hidden="true">${hearthHtml()}${embers}</div>`;
   }
   if (element === 'air') return airSkyHtml();
   return `<div class="realmSky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>`;
 }
 
+const WISP_CURL = `M -40.0,70.0 L -20.7,70.0 L -1.4,70.0 L 17.9,70.0 L 37.1,70.0 L 56.4,70.0 L 75.7,70.0 L 95.0,70.0 L 114.3,70.0 L 133.6,70.0 L 152.9,70.0 L 172.1,70.0 L 191.4,70.0 L 210.7,70.0 L 230.0,70.0 L 230.6,70.8 L 231.5,71.4 L 232.6,72.0 L 233.9,72.5 L 235.3,73.0 L 236.9,73.5 L 238.5,74.0 L 240.3,74.5 L 242.1,75.1 L 244.0,75.8 L 246.0,76.5 L 248.0,77.3 L 250.0,78.2 L 252.1,79.2 L 254.2,80.3 L 256.2,81.5 L 258.2,82.8 L 260.2,84.2 L 262.1,85.8 L 264.0,87.4 L 265.7,89.2 L 267.4,91.1 L 268.9,93.1 L 270.2,95.2 L 271.4,97.4 L 272.4,99.7 L 273.2,102.1 L 273.8,104.5 L 274.2,106.9 L 274.4,109.4 L 274.3,111.8 L 274.0,114.2 L 273.5,116.6 L 272.8,118.9 L 271.8,121.2 L 270.6,123.3 L 269.2,125.3 L 267.6,127.2 L 265.9,128.9 L 263.9,130.5 L 261.9,131.9 L 259.7,133.1 L 257.4,134.1 L 255.0,135.0 L 252.5,135.6 L 250.0,136.1 L 247.5,136.4 L 245.0,136.5 L 242.5,136.5 L 240.0,136.3 L 237.5,135.9 L 235.1,135.4 L 232.7,134.8 L 230.5,134.1 L 228.2,133.3 L 226.1,132.4 L 224.0,131.4 L 222.0,130.4 L 220.1,129.3 L 218.2,128.1 L 216.4,126.9 L 214.7,125.6 L 213.1,124.3 L 211.5,122.9 L 210.1,121.4 L 208.7,119.9 L 207.4,118.4 L 206.2,116.7 L 205.2,115.0 L 204.3,113.3 L 203.5,111.5 L 202.9,109.6 L 202.4,107.7 L 202.2,105.7 L 202.2,103.7 L 202.4,101.7 L 202.8,99.8 L 203.5,97.9 L 204.5,96.0 L 205.7,94.3 L 207.1,92.7 L 208.8,91.2 L 210.8,90.0 L 212.9,89.0 L 215.2,88.2 L 217.7,87.7 L 220.3,87.5 L 223.0,87.6 L 225.7,88.0 L 228.5,88.8 L 231.1,89.9 L 233.7,91.3 L 236.2,93.0 L 238.5,95.0 L 240.5,97.3 L 242.3,99.7 L 243.8,102.4 L 245.0,105.1 L 245.9,108.0 L 246.5,110.8 L 246.7,113.7 L 246.6,116.5 L 246.2,119.2 L 245.5,121.7 L 244.5,124.0 L 243.3,126.1 L 241.9,127.9 L 240.4,129.5 L 238.7,130.8 L 236.9,131.7 L 235.2,132.4 L 233.4,132.8 L 231.6,132.8 L 230.0,132.7 L 228.4,132.3 L 227.0,131.6 L 225.8,130.8 L 224.7,129.9 L 223.8,128.8 L 223.0,127.6 L 222.4,126.4 L 222.0,125.1 L 221.8,123.9 L 221.7,122.6 L 221.7,121.4 L 221.9,120.2 L 222.1,119.0 L 222.5,117.9 L 222.9,116.9 L 223.4,116.0 L 223.9,115.1 L 224.5,114.3 L 225.1,113.6 L 225.8,113.0 L 226.4,112.4 L 227.1,112.0 L 227.9,111.6 L 228.6,111.3 L 229.3,111.1 L 230.0,111.0 L 255.8,111.0 L 281.7,111.0 L 307.5,111.0 L 333.3,111.0 L 359.2,111.0 L 385.0,111.0 L 410.8,111.0 L 436.7,111.0 L 462.5,111.0 L 488.3,111.0 L 514.2,111.0 L 540.0,111.0`;
+const WISP_FADE = `M -40.0,78.0 L -18.6,78.0 L 2.9,78.0 L 24.3,78.0 L 45.7,78.0 L 67.1,78.0 L 88.6,78.0 L 110.0,78.0 L 131.4,78.0 L 152.9,78.0 L 174.3,78.0 L 195.7,78.0 L 217.1,78.0 L 238.6,78.0 L 260.0,78.0 L 260.7,78.4 L 261.7,78.7 L 262.9,78.9 L 264.2,79.1 L 265.7,79.4 L 267.2,79.7 L 268.8,80.0 L 270.4,80.5 L 272.1,81.0 L 273.8,81.6 L 275.5,82.4 L 277.1,83.2 L 278.8,84.2 L 280.3,85.3 L 281.8,86.5 L 283.3,87.8 L 284.6,89.2 L 285.8,90.7 L 286.9,92.4 L 287.9,94.1 L 288.7,95.9 L 289.4,97.8 L 289.9,99.8 L 290.2,101.8 L 290.3,103.9 L 290.3,105.9 L 290.1,108.0 L 289.7,110.1 L 289.2,112.2 L 288.5,114.2 L 287.6,116.2 L 286.6,118.1 L 285.4,120.0 L 284.1,121.8 L 282.7,123.5 L 281.2,125.2 L 279.6,126.8 L 277.9,128.2 L 276.1,129.6 L 274.3,130.9 L 272.4,132.1 L 270.5,133.3 L 268.5,134.3 L 266.5,135.2 L 264.4,136.1 L 262.3,136.9 L 260.2,137.6 L 258.1,138.2 L 255.9,138.7 L 253.8,139.1 L 251.6,139.5 L 249.4,139.7 L 247.1,139.8 L 244.9,139.7 L 242.7,139.5 L 240.5,139.2 L 238.4,138.7 L 236.2,138.0 L 234.2,137.1 L 232.2,136.0 L 230.4,134.8 L 228.7,133.3 L 227.2,131.7 L 225.8,129.8 L 224.7,127.8 L 223.9,125.7 L 223.3,123.4 L 223.1,120.9 L 223.1,118.4 L 223.5,115.9 L 224.3,113.3 L 225.4,110.8 L 226.9,108.4 L 228.7,106.1 L 230.9,104.0 L 233.4,102.1 L 236.1,100.4 L 239.2,99.0 L 242.4,98.0 L 245.8,97.3 L 249.3,96.9 L 252.8,97.0 L 256.4,97.4 L 259.9,98.2 L 263.2,99.4 L 266.4,100.9 L 269.4,102.7 L 272.2,104.8 L 274.6,107.2 L 276.7,109.7 L 278.4,112.3 L 279.8,115.1 L 280.8,117.9 L 281.5,120.6 L 281.7,123.3 L 281.7,125.8 L 281.3,128.2 L 280.6,130.4 L 279.7,132.3 L 278.5,134.0 L 277.2,135.4 L 275.8,136.6 L 274.3,137.4 L 272.7,138.0 L 271.1,138.3 L 269.6,138.4 L 268.1,138.2 L 266.7,137.8 L 265.3,137.3 L 264.1,136.6 L 263.0,135.8 L 262.0,134.9 L 261.2,133.9 L 260.4,132.8 L 259.8,131.8 L 259.2,130.7 L 258.8,129.6 L 258.4,128.5 L 258.1,127.4 L 257.9,126.3 L 257.8,125.3 L 257.8,124.2 L 257.8,123.2 L 257.8,122.3 L 258.0,121.4 L 258.2,120.5 L 258.5,119.7 L 258.8,118.9 L 259.2,118.3 L 259.7,117.7 L 260.2,117.2 L 260.8,116.8 L 261.4,116.6 L 262.0,116.5 L 262.6,116.5 L 263.2,116.7 L 263.7,116.9 L 264.2,117.4 L 264.6,117.9 L 264.9,118.5`;
+const WISP_CURL_KEYS = `keyTimes="0;0.481;0.627;0.735;0.779;1" keyPoints="0;0.309;0.427;0.544;0.645;1" calcMode="linear"`;
+const WISP_FADE_KEYS = `keyTimes="0;0.652;0.822;0.948;1" keyPoints="0;0.517;0.686;0.855;1" calcMode="linear"`;
+
+let wispPauseObserver;
+
+function syncWispPause() {
+  const held = document.body.classList.contains('map-moving')
+    || document.body.classList.contains('guide-open')
+    || document.body.classList.contains('landing-open');
+  document.querySelectorAll('.realmSky .wisp').forEach((svg) => {
+    if (typeof svg.pauseAnimations !== 'function') return;
+    if (held) svg.pauseAnimations();
+    else svg.unpauseAnimations();
+  });
+}
+
+function watchWispPause() {
+  syncWispPause();
+  if (wispPauseObserver) return;
+  wispPauseObserver = new MutationObserver(syncWispPause);
+  wispPauseObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+}
+
 function airSkyHtml() {
-  const curl = `M -40.0,96.0 L -14.0,96.0 L 12.0,96.0 L 38.0,96.0 L 64.0,96.0 L 90.0,96.0 L 116.0,96.0 L 142.0,96.0 L 168.0,96.0 L 194.0,96.0 L 220.0,96.0 L 222.0,95.8 L 224.1,95.9 L 226.2,96.3 L 228.3,96.9 L 230.3,97.8 L 232.2,99.0 L 233.9,100.5 L 235.5,102.1 L 236.9,104.0 L 238.1,106.1 L 239.0,108.4 L 239.6,110.8 L 239.9,113.2 L 239.8,115.8 L 239.5,118.3 L 238.8,120.9 L 237.8,123.3 L 236.5,125.6 L 234.9,127.8 L 232.9,129.8 L 230.7,131.5 L 228.3,133.0 L 225.7,134.2 L 222.9,135.0 L 220.0,135.5 L 217.0,135.6 L 214.0,135.3 L 211.0,134.7 L 208.1,133.6 L 205.3,132.2 L 202.7,130.4 L 200.3,128.3 L 198.1,125.9 L 196.3,123.2 L 194.8,120.2 L 193.7,117.0 L 193.0,113.7 L 192.7,110.3 L 192.8,106.8 L 193.4,103.3 L 194.4,100.0 L 195.9,96.7 L 197.7,93.6 L 200.0,90.7 L 202.7,88.1 L 205.6,85.9 L 208.9,84.0 L 212.4,82.6 L 216.2,81.5 L 220.0,81.0 L 223.9,80.9 L 227.9,81.4 L 231.7,82.3 L 235.5,83.8 L 239.1,85.7 L 242.5,88.1 L 245.5,90.9 L 248.2,94.1 L 250.5,97.7 L 252.3,101.5 L 253.7,105.6 L 254.5,109.8 L 254.8,114.2 L 254.6,118.6 L 253.8,123.0 L 252.4,127.2 L 250.5,131.3 L 248.0,135.2 L 245.1,138.8 L 241.7,141.9 L 238.0,144.7 L 233.8,147.0 L 229.4,148.7 L 224.8,149.9 L 220.0,150.5 L 215.1,150.5 L 210.3,149.9 L 205.5,148.6 L 200.9,146.8 L 196.5,144.4 L 192.4,141.4 L 188.7,137.9 L 185.5,133.9 L 182.7,129.5 L 180.5,124.8 L 178.9,119.8 L 178.0,114.6 L 177.7,109.3 L 178.1,104.0 L 179.1,98.7 L 180.8,93.6 L 183.2,88.6 L 186.2,84.0 L 189.7,79.8 L 193.8,76.0 L 198.4,72.7 L 203.4,70.1 L 208.7,68.0 L 214.3,66.7 L 220.0,66.0 L 250.0,66.0 L 280.0,66.0 L 310.0,66.0 L 340.0,66.0 L 370.0,66.0 L 400.0,66.0 L 430.0,66.0 L 460.0,66.0 L 490.0,66.0 L 520.0,66.0`;
-  const fade = `M -40.0,100.0 L -11.0,100.2 L 18.0,100.4 L 47.0,100.6 L 76.0,100.8 L 105.0,101.0 L 134.0,101.2 L 163.0,101.4 L 192.0,101.6 L 221.0,101.8 L 250.0,102.0 L 251.8,101.8 L 253.7,101.8 L 255.5,102.0 L 257.4,102.5 L 259.2,103.3 L 261.0,104.3 L 262.6,105.6 L 264.1,107.0 L 265.4,108.7 L 266.5,110.6 L 267.4,112.7 L 268.0,114.9 L 268.4,117.2 L 268.4,119.5 L 268.2,121.9 L 267.6,124.3 L 266.7,126.6 L 265.5,128.8 L 264.0,130.9 L 262.2,132.8 L 260.2,134.5 L 257.9,136.0 L 255.4,137.1 L 252.8,138.0 L 250.0,138.5 L 247.1,138.7 L 244.2,138.5 L 241.3,137.9 L 238.5,136.9 L 235.8,135.6 L 233.2,133.9 L 230.8,131.9 L 228.7,129.5 L 226.9,126.9 L 225.4,124.0 L 224.2,120.9 L 223.5,117.7 L 223.1,114.3 L 223.2,110.9 L 223.8,107.5 L 224.7,104.1 L 226.1,100.8 L 227.9,97.8 L 230.2,94.9 L 232.8,92.3 L 235.7,90.0 L 239.0,88.1 L 242.5,86.6 L 246.2,85.6 L 250.0,85.0 L 253.9,84.9 L 257.9,85.3 L 261.8,86.2 L 265.6,87.6 L 269.2,89.5 L 272.6,91.9 L 275.7,94.7 L 278.5,97.9 L 280.8,101.5 L 282.7,105.4 L 284.1,109.5 L 285.0,113.8 L 285.4,118.2 L 285.1,122.7 L 284.3,127.2 L 283.0,131.5 L 281.1,135.7 L 278.6,139.7 L 275.6,143.3 L 272.2,146.6 L 268.4,149.4 L 264.2,151.8 L 259.7,153.6 L 254.9,154.9 L 250.0,155.5 L 245.0,155.5 L 240.0,154.9 L 235.1,153.7 L 230.3,151.8 L 225.8,149.3 L 221.6,146.3 L 217.7,142.7 L 214.4,138.6 L 211.5,134.1 L 209.2,129.3 L 207.5,124.1 L 206.5,118.7 L 206.2,113.2 L 206.5,107.7 L 207.6,102.2 L 209.3,96.9 L 211.8,91.7 L 214.8,86.9 L 218.5,82.5 L 222.8,78.5 L 227.5,75.1 L 232.7,72.3 L 238.2,70.2 L 244.0,68.7 L 250.0,68.0`;
-  const straight = `M -40,102 C 90,90 200,114 320,96 C 420,84 500,108 560,94`;
-  const mark = (kind, d) => `<svg class="wisp wisp--${kind}" viewBox="-50 50 600 125"><path pathLength="100" d="${d}"/></svg>`;
-  return `<div class="realmSky" aria-hidden="true">${mark('curl', curl)}${mark('straight', straight)}${mark('fade', fade)}${mark('straight', straight)}${mark('curl', curl)}${mark('fade', fade)}${mark('straight', straight)}</div>`;
+  const straight = `M -40,96 C 120,84 260,112 400,90 C 480,82 540,100 580,94`;
+  const specs = [
+    ['curl', WISP_CURL, '6.62s', '-1.08s'],
+    ['straight', straight, '4.92s', '-2.46s'],
+    ['fade', WISP_FADE, '7.08s', '-3.85s'],
+    ['straight', straight, '4.46s', '-0.62s'],
+    ['curl', WISP_CURL, '6.77s', '-4.92s'],
+    ['fade', WISP_FADE, '5.85s', '-2s'],
+    ['straight', straight, '5.23s', '-3.38s'],
+  ];
+  const marks = specs.map(([kind, d, dur, begin], i) => {
+    const id = `wispRoute${i}`;
+    const thick = ((kind === 'straight' ? 1.6 : 2.2) * (0.5 + Math.random() * 0.5)).toFixed(2);
+    const lens = `M -42,0 Q 0,-${thick} 42,0 Q 0,${thick} -42,0 Z`;
+    const keys = kind === 'curl' ? WISP_CURL_KEYS : kind === 'fade' ? WISP_FADE_KEYS : '';
+    return `<svg class="wisp wisp--${kind}" viewBox="-50 48 610 120" style="--t:${dur};--delay:${begin}">
+      <path id="${id}" d="${d}" fill="none" stroke="none"/>
+      <path class="wisp__mote" d="${lens}">
+        <animateMotion dur="${dur}" begin="${begin}" repeatCount="indefinite" rotate="auto" ${keys}>
+          <mpath href="#${id}"/>
+        </animateMotion>
+      </path>
+    </svg>`;
+  }).join('');
+  return `<div class="realmSky" aria-hidden="true">${marks}</div>`;
 }
 
 function listenButtonHtml(src) {
@@ -390,8 +392,76 @@ function playStory(button) {
   });
 }
 
+let hearthGen = 0;
+
+function stopHearth() {
+  hearthGen += 1;
+  const video = document.querySelector('.hearth__src');
+  if (video) video.pause();
+}
+
+function punchGreen(data) {
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    if (g > 140 && r < 90 && b < 90 && g > r + 50 && g > b + 50) data[i + 3] = 0;
+    else if (g > r + 18 && g > b + 18) data[i + 1] = Math.max(r, b);
+  }
+}
+
+function startHearth() {
+  const canvas = document.querySelector('.realmSky .hearth');
+  const video = document.querySelector('.realmSky .hearth__src');
+  if (!canvas || !video) return;
+  const gen = ++hearthGen;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  video.muted = true;
+  video.defaultMuted = true;
+  video.volume = 0;
+  video.loop = true;
+  video.playsInline = true;
+  const paint = () => {
+    if (gen !== hearthGen || !canvas.isConnected) return;
+    const held = document.body.classList.contains('map-moving')
+      || document.body.classList.contains('guide-open')
+      || document.body.classList.contains('landing-open');
+    if (held) {
+      if (!video.paused) video.pause();
+    } else if (video.paused && video.readyState >= 2) {
+      video.play().catch(() => {});
+    }
+    if (!held && video.readyState >= 2 && video.videoWidth) {
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      const cropTop = Math.round(vh * 0.47);
+      const cropH = vh - cropTop;
+      const scale = Math.min(1, 640 / vw);
+      const w = Math.round(vw * scale);
+      const h = Math.round(cropH * scale);
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      ctx.drawImage(video, 0, cropTop, vw, cropH, 0, 0, w, h);
+      const frame = ctx.getImageData(0, 0, w, h);
+      punchGreen(frame.data);
+      ctx.putImageData(frame, 0, 0);
+    }
+    requestAnimationFrame(paint);
+  };
+  const boot = () => {
+    if (gen !== hearthGen) return;
+    video.play().catch(() => {});
+    paint();
+  };
+  if (video.readyState >= 2) boot();
+  else video.addEventListener('loadeddata', boot, { once: true });
+}
+
 function renderStation(slug) {
   stopStoryAudio();
+  stopHearth();
   if (!document.body.classList.contains('landing-open')) haltWaves();
   const station = Store.touchBySlug(slug) || Store.touchByType('threshold')[0];
   if (!station) {
@@ -488,6 +558,8 @@ function renderStation(slug) {
   sequenceBuffer = [];
   if (shrineFocus) setShrineFocus(shrineFocus, { spin: false });
   if (waveRealm && !document.body.classList.contains('landing-open')) armShrineWaves(waveRealm);
+  if (station.element === 'fire') startHearth();
+  if (station.element === 'air') watchWispPause();
 }
 
 async function openStation(slug, { recordVisit = true } = {}) {
