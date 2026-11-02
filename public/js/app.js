@@ -1875,14 +1875,23 @@ function keyBackdrop(image) {
         }
       }
     }
-    // Only a chunk of flat backdrop black is a hole in the pose. Pupils and
-    // open mouths are black too, but they are smaller or carry a little color,
-    // and Granite's scarf is dark green rather than empty black.
-    const minSide = (w < h ? w : h) * 0.07;
-    const solid = pure * 25 >= cp * 23;
-    const chunky = (maxX - minX + 1) >= minSide && (maxY - minY + 1) >= minSide;
-    const pinched = touchLinks > 0 && touchLinks <= 12 && solid;
-    if (cp >= minPocket && solid && chunky && (touchLinks === 0 || pinched)) {
+    // A pose hole is flat black: the opening between Ember's head and wing,
+    // or a wing and a tail. Pupils and open mouths are black too, but they
+    // stay under about 86% pure and the long side stays short. Granite's
+    // scarf is dark green rather than empty black.
+    const frame = w < h ? w : h;
+    const bw = maxX - minX + 1;
+    const bh = maxY - minY + 1;
+    const shortSide = bw < bh ? bw : bh;
+    const longSide = bw > bh ? bw : bh;
+    const pureRatio = pure / cp;
+    const chunky = bw >= frame * 0.07 && bh >= frame * 0.07;
+    const open = shortSide >= frame * 0.03 && longSide >= frame * 0.04;
+    const neck = Math.max(8, Math.round(frame * 0.03));
+    const hole = cp >= minPocket && pureRatio >= 0.86
+      && (touchLinks === 0 || touchLinks <= neck)
+      && (chunky || open);
+    if (hole) {
       for (let k = 0; k < cp; k += 1) bg[comp[k]] = 1;
     }
   }
