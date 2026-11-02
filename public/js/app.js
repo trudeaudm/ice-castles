@@ -2,11 +2,11 @@
 
 const ART = '/assets/art';
 const REALM_META = {
-  water: { label: 'Water', glyph: '💧', character: `${ART}/char-cascade.png`, pfp: `${ART}/pfp-cascade.png`, wave: `${ART}/wave-cascade.mp4` },
-  earth: { label: 'Earth', glyph: '🪨', character: `${ART}/char-granite.png`, pfp: `${ART}/pfp-granite.png`, wave: `${ART}/wave-granite.mp4` },
-  fire: { label: 'Fire', glyph: '🔥', character: `${ART}/char-ember.png`, pfp: `${ART}/pfp-ember.png`, wave: `${ART}/wave-ember.mp4` },
-  air: { label: 'Air', glyph: '🌬️', character: `${ART}/char-summit.png`, pfp: `${ART}/pfp-summit.png`, wave: `${ART}/wave-summit.mp4` },
-  spirit: { label: 'Spirit', glyph: '✦', character: `${ART}/char-aurora.png`, pfp: `${ART}/pfp-aurora.png`, wave: `${ART}/wave-aurora.mp4` },
+  water: { label: 'Water', glyph: '💧', character: `${ART}/char-cascade.png?v=1600`, pfp: `${ART}/pfp-cascade.png`, wave: `${ART}/wave-cascade.mp4` },
+  earth: { label: 'Earth', glyph: '🪨', character: `${ART}/char-granite.png?v=1600`, pfp: `${ART}/pfp-granite.png`, wave: `${ART}/wave-granite.mp4` },
+  fire: { label: 'Fire', glyph: '🔥', character: `${ART}/char-ember.png?v=1600`, pfp: `${ART}/pfp-ember.png`, wave: `${ART}/wave-ember.mp4` },
+  air: { label: 'Air', glyph: '🌬️', character: `${ART}/char-summit.png?v=1600`, pfp: `${ART}/pfp-summit.png`, wave: `${ART}/wave-summit.mp4` },
+  spirit: { label: 'Spirit', glyph: '✦', character: `${ART}/char-aurora.png?v=1600`, pfp: `${ART}/pfp-aurora.png`, wave: `${ART}/wave-aurora.mp4` },
 };
 /* Head crop inside the landing circle: source square as a fraction of frame width, top as a fraction of frame height. */
 const WAVE_FACE = {
@@ -87,11 +87,11 @@ const SUMMON_REALMS = {
   },
 };
 const SUMMON_RATIO = {
-  water: [1145, 1374],
-  earth: [1024, 1536],
-  fire: [1152, 1366],
-  air: [1143, 1376],
-  spirit: [1199, 1312],
+  water: [1600, 1600],
+  earth: [1600, 1600],
+  fire: [1600, 1600],
+  air: [1600, 1600],
+  spirit: [1600, 1600],
   ice: [819, 1024],
 };
 const SUMMON_SWIRL_MS = 1500;
