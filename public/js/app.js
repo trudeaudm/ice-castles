@@ -354,6 +354,7 @@ function beginSummonPoof(job, now) {
   job.frame.dataset.summonAt = String(now);
   job.frame.classList.add('is-shown');
   job.frame.setAttribute('aria-busy', 'false');
+  settleSummon(job.frame, false);
   const { cx, cy, spec } = job;
   for (const p of job.parts) {
     const dx = p.x - cx;
@@ -413,6 +414,27 @@ function drawSummonPoof(job, now) {
   }
 }
 
+function settleSummon(frame, instant) {
+  if (instant) {
+    frame.classList.add('is-settled');
+    return;
+  }
+  const img = frame.querySelector('img');
+  if (!img) {
+    frame.classList.add('is-settled');
+    return;
+  }
+  const onEnd = (event) => {
+    if (event.animationName !== 'summonZoom') return;
+    img.removeEventListener('animationend', onEnd);
+    frame.classList.add('is-settled');
+  };
+  img.addEventListener('animationend', onEnd);
+  window.setTimeout(() => {
+    if (frame.isConnected) frame.classList.add('is-settled');
+  }, 800);
+}
+
 function stopSummonWind(job) {
   if (!job.wind) return;
   job.wind.stop();
@@ -424,6 +446,7 @@ function showSummon(job, instant) {
   job.frame.dataset.summonAt = String(performance.now());
   job.frame.classList.add('is-shown');
   if (instant) job.frame.classList.add('is-instant');
+  settleSummon(job.frame, instant);
   job.frame.setAttribute('aria-busy', 'false');
   if (job.canvas.isConnected) job.canvas.remove();
   job.done = true;

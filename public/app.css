@@ -2028,6 +2028,12 @@ body.quest .topbar {
   transform: none;
   animation: summonFade 460ms linear, summonZoom 680ms var(--ease-spring);
 }
+.summon.is-settled.is-shown .shrine__art,
+.summon.is-settled.is-shown .shrine__portrait {
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
 .summon.is-instant.is-shown .shrine__art,
 .summon.is-instant.is-shown .shrine__portrait {
   animation: none;
