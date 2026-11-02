@@ -470,13 +470,14 @@ function startSwirl(job, now) {
   if (job.frame.dataset.realm === 'air' && typeof createWindWisps === 'function') {
     job.parts = [];
     job.wind = createWindWisps(job.canvas, {
-      direction: 0,
-      speed: 1.05,
-      density: 1.45,
+      orbit: 1,
+      speed: 1.2,
+      density: 1.35,
       color: '#f4fbff',
+      ink: '#14628f',
       opacity: 1,
       trail: 1,
-      spiral: 0.55,
+      spiral: 0.8,
       paused() { return !summonVisible(job.frame); },
     });
     job.wind.start();

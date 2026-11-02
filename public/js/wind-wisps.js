@@ -10,6 +10,8 @@ const WIND_WISP_DEFAULTS = {
   trail: 1,
   spiral: 0.25,
   paused: null,
+  orbit: 0,
+  ink: '',
 };
 
 function createWindWisps(canvas, settings) {
@@ -79,6 +81,17 @@ function createWindWisps(canvas, settings) {
     w.alpha = (0.72 + Math.random() * 0.24) * opts.opacity;
     w.y = 28 + Math.random() * Math.max(40, height - 56);
     w.curl = Math.random() < opts.spiral ? makeCurl() : null;
+    if (opts.orbit) {
+      const reach = Math.min(width, height);
+      w.rad = (0.28 + Math.random() * 0.5) * reach * 0.46;
+      w.spin = (1.15 + Math.random() * 1.35) * opts.speed * (Math.random() < 0.18 ? -1 : 1);
+      w.trail = (0.5 + Math.random() * 0.7) * opts.trail;
+      w.thick = 3.6 + Math.random() * 2.6;
+      w.slim = 0.9;
+      w.alpha = (0.88 + Math.random() * 0.12) * opts.opacity;
+      w.s = Math.random() * Math.PI * 2;
+      return;
+    }
     w.s = placed
       ? -w.trail * 0.15 + Math.random() * Math.max(120, width * 0.9)
       : -w.trail - Math.random() * offscreenSpan;
@@ -96,6 +109,14 @@ function createWindWisps(canvas, settings) {
   }
 
   function sample(w, s) {
+    if (opts.orbit) {
+      const theta = s;
+      const rad = w.rad + Math.sin(theta * 2 + w.phase) * Math.min(width, height) * 0.04;
+      return {
+        x: width / 2 + Math.cos(theta) * rad,
+        y: height / 2 + Math.sin(theta) * rad,
+      };
+    }
     const fx = Math.cos(opts.direction);
     const fy = Math.sin(opts.direction);
     let along = s;
@@ -117,6 +138,7 @@ function createWindWisps(canvas, settings) {
   }
 
   function lifeFade(w) {
+    if (opts.orbit) return 1;
     const enter = Math.min(1, Math.max(0, (w.s + w.trail * 0.15) / 80));
     const exitStart = width * 0.72;
     const exit = w.s < exitStart ? 1 : Math.max(0, 1 - (w.s - exitStart) / (width * 0.34 + 36));
@@ -137,6 +159,10 @@ function createWindWisps(canvas, settings) {
   }
 
   function step(dt) {
+    if (opts.orbit) {
+      for (const w of wisps) w.s += w.spin * dt;
+      return;
+    }
     const limit = width + 70;
     for (const w of wisps) {
       w.s += w.speed * dt;
@@ -196,7 +222,7 @@ function createWindWisps(canvas, settings) {
       ctx.closePath();
       const lead = t > 0.8;
       const y = (pts[i].y + pts[i - 1].y) * 0.5;
-      const body = y > height * 0.4 ? '#5b9ab8' : (y > height * 0.18 ? '#d7eef8' : opts.color);
+      const body = opts.ink || (y > height * 0.4 ? '#5b9ab8' : (y > height * 0.18 ? '#d7eef8' : opts.color));
       ctx.fillStyle = rgba(lead ? '#ffffff' : body, lead ? Math.min(0.95, a * 1.12) : a);
       ctx.fill();
     }
@@ -204,6 +230,19 @@ function createWindWisps(canvas, settings) {
 
   function draw() {
     ctx.clearRect(0, 0, width, height);
+    if (opts.orbit && width && height) {
+      const cx = width / 2;
+      const cy = height / 2;
+      const R = Math.min(width, height) * 0.36;
+      const glow = ctx.createRadialGradient(cx, cy, R * 0.04, cx, cy, R);
+      glow.addColorStop(0, 'rgba(255,255,255,0.92)');
+      glow.addColorStop(0.42, 'rgba(92, 186, 224, 0.55)');
+      glow.addColorStop(1, 'rgba(40, 130, 176, 0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx.fill();
+    }
     for (const w of wisps) drawWisp(w);
   }
 
