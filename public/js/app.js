@@ -94,6 +94,7 @@ const SUMMON_RATIO = {
   spirit: [1199, 1312],
   ice: [819, 1024],
 };
+const SUMMON_SWIRL_MS = 1500;
 const summonJobs = new Set();
 let summonRaf = 0;
 
@@ -438,7 +439,7 @@ function stepSummon(job, now) {
   }
   if (job.phase === 'wait') {
     if (!job.ready && job.img.complete && job.img.naturalWidth > 0) job.ready = true;
-    if (job.reduce || job.failed || job.ready) {
+    if (job.reduce || job.failed) {
       showSummon(job, true);
       return;
     }
@@ -455,7 +456,7 @@ function stepSummon(job, now) {
     job.elapsed = now - job.t0;
     const t = job.elapsed / 1000;
     positionSwirl(job, t);
-    const ripe = (job.ready || job.failed || job.elapsed > 12000) && job.elapsed >= 340;
+    const ripe = (job.ready || job.failed || job.elapsed > 12000) && job.elapsed >= SUMMON_SWIRL_MS;
     if (ripe) {
       beginSummonPoof(job, now);
       drawSummonPoof(job, now);
@@ -513,7 +514,7 @@ function armSummon(frame) {
     }, { once: true });
     img.addEventListener('error', () => { job.failed = true; }, { once: true });
   }
-  if (job.reduce || job.failed || (job.ready && summonVisible(frame))) {
+  if (job.reduce || job.failed) {
     showSummon(job, true);
     return;
   }
@@ -764,7 +765,9 @@ const LISTEN_ICON = `<svg class="listenButton__icon" viewBox="0 0 24 24" aria-hi
 </svg>`;
 
 function hearthHtml() {
-  return `<video class="hearth__src" src="${ART}/ember-flames.mp4?v=2" muted loop playsinline preload="auto" aria-hidden="true"></video>
+  const src = `${ART}/ember-flames.mp4?v=2`;
+  return `<video class="hearth__src" src="${src}" muted playsinline preload="auto" aria-hidden="true"></video>
+    <video class="hearth__src" src="${src}" muted playsinline preload="auto" aria-hidden="true"></video>
     <canvas class="hearth" aria-hidden="true"></canvas>`;
 }
 
@@ -863,8 +866,7 @@ let hearthGen = 0;
 
 function stopHearth() {
   hearthGen += 1;
-  const video = document.querySelector('.hearth__src');
-  if (video) video.pause();
+  document.querySelectorAll('.hearth__src').forEach((video) => video.pause());
 }
 
 function punchGreen(data, width, height) {
@@ -911,30 +913,77 @@ function punchGreen(data, width, height) {
   for (let y = 0; y < height; y += 1) data[(y * width) * 4 + 3] = data[(y * width + width - 1) * 4 + 3] = 0;
 }
 
+const HEARTH_BLEND = 0.85;
+
+function blendHearth(dst, src, mix) {
+  const keep = 1 - mix;
+  for (let i = 0; i < dst.length; i += 4) {
+    const lead = dst[i + 3] * keep;
+    const follow = src[i + 3] * mix;
+    const out = lead + follow;
+    if (out < 1) {
+      dst[i + 3] = 0;
+      continue;
+    }
+    dst[i] = (dst[i] * lead + src[i] * follow) / out;
+    dst[i + 1] = (dst[i + 1] * lead + src[i + 1] * follow) / out;
+    dst[i + 2] = (dst[i + 2] * lead + src[i + 2] * follow) / out;
+    dst[i + 3] = out;
+  }
+}
+
 function startHearth() {
   const canvas = document.querySelector('.realmSky .hearth');
-  const video = document.querySelector('.realmSky .hearth__src');
-  if (!canvas || !video) return;
+  const videos = [...document.querySelectorAll('.realmSky .hearth__src')];
+  let primary = videos[0];
+  let secondary = videos[1] || null;
+  if (!canvas || !primary) return;
   const gen = ++hearthGen;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  video.muted = true;
-  video.defaultMuted = true;
-  video.volume = 0;
-  video.loop = true;
-  video.playsInline = true;
+  const scratch = document.createElement('canvas');
+  const scratchCtx = scratch.getContext('2d', { willReadFrequently: true });
+  let lit = false;
+  let bridging = false;
+  videos.forEach((video) => {
+    video.muted = true;
+    video.defaultMuted = true;
+    video.volume = 0;
+    video.loop = false;
+    video.playsInline = true;
+  });
+  const play = (video) => {
+    if (video && video.paused && !video.ended && video.readyState >= 2) video.play().catch(() => {});
+  };
   const paint = () => {
     if (gen !== hearthGen || !canvas.isConnected) return;
+    try {
     const held = document.body.classList.contains('map-moving')
       || document.body.classList.contains('guide-open')
       || document.body.classList.contains('landing-open');
     if (held) {
-      if (!video.paused) video.pause();
-    } else if (video.paused && video.readyState >= 2) {
-      video.play().catch(() => {});
+      videos.forEach((video) => { if (!video.paused) video.pause(); });
+    } else {
+      play(primary);
+      if (bridging) play(secondary);
     }
-    if (!held && video.readyState >= 2 && video.videoWidth) {
-      const vw = video.videoWidth;
-      const vh = video.videoHeight;
+    if (!held && primary.readyState >= 2 && primary.videoWidth) {
+      const dur = primary.duration;
+      const blend = Number.isFinite(dur) ? Math.min(HEARTH_BLEND, dur * 0.2) : 0;
+      const remaining = Number.isFinite(dur) ? dur - primary.currentTime : Infinity;
+      if (secondary && blend > 0.2 && remaining <= blend && !bridging && !primary.ended) {
+        bridging = true;
+        const into = Math.max(0, blend - remaining);
+        const begin = () => {
+          if (gen !== hearthGen || !bridging) return;
+          play(secondary);
+        };
+        if (Math.abs(secondary.currentTime - into) > 0.05) {
+          secondary.addEventListener('seeked', begin, { once: true });
+          try { secondary.currentTime = into; } catch { begin(); }
+        } else begin();
+      }
+      const vw = primary.videoWidth;
+      const vh = primary.videoHeight;
       const cropTop = Math.round(vh * 0.30);
       const cropBottom = Math.round(vh * 0.955);
       const cropH = cropBottom - cropTop;
@@ -945,20 +994,68 @@ function startHearth() {
         canvas.width = w;
         canvas.height = h;
       }
-      ctx.drawImage(video, 0, cropTop, vw, cropH, 0, 0, w, h);
+      ctx.drawImage(primary, 0, cropTop, vw, cropH, 0, 0, w, h);
       const frame = ctx.getImageData(0, 0, w, h);
       punchGreen(frame.data, w, h);
+      const still = Number.isFinite(dur) ? dur - primary.currentTime : Infinity;
+      if (bridging && secondary && secondary.readyState >= 2 && secondary.videoWidth && still <= blend) {
+        if (scratch.width !== w || scratch.height !== h) {
+          scratch.width = w;
+          scratch.height = h;
+        }
+        const sw = secondary.videoWidth;
+        const sh = secondary.videoHeight;
+        scratchCtx.drawImage(secondary, 0, Math.round(sh * 0.30), sw, Math.round(sh * 0.955) - Math.round(sh * 0.30), 0, 0, w, h);
+        const incoming = scratchCtx.getImageData(0, 0, w, h);
+        punchGreen(incoming.data, w, h);
+        blendHearth(frame.data, incoming.data, Math.min(1, Math.max(0, (blend - still) / blend)));
+      }
       ctx.putImageData(frame, 0, 0);
+      if (primary.ended || (bridging && remaining <= 0.03)) {
+        if (secondary && bridging && secondary.readyState >= 2 && secondary.currentTime > 0.01) {
+          const outgoing = primary;
+          primary = secondary;
+          secondary = outgoing;
+          bridging = false;
+          secondary.pause();
+          try { secondary.currentTime = 0; } catch { /* next blend seeks again */ }
+        } else if (primary.ended) {
+          bridging = false;
+          try { primary.currentTime = 0; } catch { /* replay from the start */ }
+          primary.play().catch(() => {});
+        }
+      }
+      if (!lit) {
+        lit = true;
+        const rise = canvas.animate(
+          [{ opacity: 0 }, { opacity: 1 }],
+          { duration: 900, easing: 'ease', fill: 'forwards' },
+        );
+        rise.onfinish = () => {
+          canvas.style.opacity = '1';
+          rise.cancel();
+        };
+      }
+      }
+    } catch {
+      /* keep the next frame coming if one paint fails */
     }
     requestAnimationFrame(paint);
   };
   const boot = () => {
     if (gen !== hearthGen) return;
-    video.play().catch(() => {});
+    primary.play().catch(() => {});
+    if (secondary) {
+      secondary.play().then(() => {
+        if (gen !== hearthGen || bridging) return;
+        secondary.pause();
+        try { secondary.currentTime = 0; } catch { /* kept warm */ }
+      }).catch(() => {});
+    }
     paint();
   };
-  if (video.readyState >= 2) boot();
-  else video.addEventListener('loadeddata', boot, { once: true });
+  if (primary.readyState >= 2) boot();
+  else primary.addEventListener('loadeddata', boot, { once: true });
 }
 
 function renderStation(slug) {

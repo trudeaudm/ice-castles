@@ -2842,6 +2842,7 @@ body[data-realm="fire"] .hearth {
   height: auto;
   transform: translateX(-50%);
   pointer-events: none;
+  opacity: 0;
 }
 body[data-realm="fire"] .ember {
   position: absolute;
