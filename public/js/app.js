@@ -610,7 +610,7 @@ const dom = {
   landingParty: el('landingParty'), landingPartySize: el('landingPartySize'),
   landingPartyHint: el('landingPartyHint'),
   beginBrief: el('beginBrief'), beginBriefClose: el('beginBriefClose'),
-  beginHow: el('beginHow'), beginContinue: el('beginContinue'),
+  beginContinue: el('beginContinue'),
   beginSteps: el('beginSteps'), beginStory: el('beginStory'),
   beginStoryOpen: el('beginStoryOpen'), beginStoryClose: el('beginStoryClose'),
   landingTalk: el('landingTalk'), landingBubble: el('landingBubble'),
@@ -2247,7 +2247,6 @@ function hideBeginBrief() {
   hideStoryModal();
   if (!dom.beginBrief) return;
   dom.beginBrief.hidden = true;
-  dom.beginSteps?.classList.remove('is-flash');
 }
 
 function openBeginBrief() {
@@ -2761,14 +2760,6 @@ function wire() {
   dom.beginStoryClose?.addEventListener('click', hideStoryModal);
   dom.beginStory?.addEventListener('click', (event) => {
     if (event.target === dom.beginStory) hideStoryModal();
-  });
-  dom.beginHow?.addEventListener('click', () => {
-    const steps = dom.beginSteps;
-    if (!steps) return;
-    steps.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    steps.classList.remove('is-flash');
-    void steps.offsetWidth;
-    steps.classList.add('is-flash');
   });
   dom.landingRealms?.addEventListener('click', (event) => {
     const btn = event.target.closest('[data-realm]');
