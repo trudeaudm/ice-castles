@@ -321,9 +321,12 @@ function renderStation(slug) {
   stopStoryAudio();
   const station = Store.touchBySlug(slug) || Store.touchByType('threshold')[0];
   if (!station) {
+    delete document.body.dataset.realm;
     dom.stationView.innerHTML = `<div class="empty"><p class="empty__title">This station isn’t on tonight’s quest.</p></div>`;
     return;
   }
+  if (station.type === 'guardian' && station.element) document.body.dataset.realm = station.element;
+  else delete document.body.dataset.realm;
 
   if (shrineSlug !== station.slug) {
     shrineSlug = station.slug;
@@ -337,6 +340,9 @@ function renderStation(slug) {
     : '';
   const art = stationArt(station);
   const portrait = station.element ? realmCharacter(station.element) : '';
+  const sky = station.type === 'guardian'
+    ? `<div class="realmSky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>`
+    : '';
 
   if (!gated) {
     dom.stationView.innerHTML = `
@@ -360,6 +366,7 @@ function renderStation(slug) {
 
   dom.stationView.innerHTML = `
     <article class="shrine" data-realm="${escapeHtml(station.element || '')}">
+      ${sky}
       <p class="shrine__kicker">${escapeHtml(station.subtitle || station.type)}</p>
       <h2 class="shrine__title">${escapeHtml(station.title)}</h2>
       ${station.element ? `<p class="chip chip--target">${escapeHtml(REALM_META[station.element]?.label || station.element)}</p>` : ''}
