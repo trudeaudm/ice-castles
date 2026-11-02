@@ -1822,6 +1822,12 @@ function keyBackdrop(image) {
     let cp = 0;
     let touchLinks = 0;
     let pure = 0;
+    const x0 = start % w;
+    const y0 = (start / w) | 0;
+    let minX = x0;
+    let maxX = x0;
+    let minY = y0;
+    let maxY = y0;
     stack[sp] = start;
     sp += 1;
     seen[start] = 1;
@@ -1834,9 +1840,13 @@ function keyBackdrop(image) {
       const qm = data[qi] > data[qi + 1]
         ? (data[qi] > data[qi + 2] ? data[qi] : data[qi + 2])
         : (data[qi + 1] > data[qi + 2] ? data[qi + 1] : data[qi + 2]);
-      if (qm < 14) pure += 1;
+      if (qm < 8) pure += 1;
       const x = q % w;
       const y = (q / w) | 0;
+      if (x < minX) minX = x;
+      else if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      else if (y > maxY) maxY = y;
       let ni = x > 0 ? q - 1 : -1;
       if (ni >= 0 && bg[ni]) touchLinks += 1;
       else if (ni >= 0 && !seen[ni]) {
@@ -1878,11 +1888,14 @@ function keyBackdrop(image) {
         }
       }
     }
-    // A gap between a wing and a tail can touch the backdrop through one or two
-    // brighter pixels. That neck is tiny beside a pocket of real black. Pupils
-    // and Cascade's blue-black feathers never match both tests.
-    const pinched = touchLinks > 0 && touchLinks <= 12 && pure * 20 >= cp * 17;
-    if (cp >= minPocket && (touchLinks === 0 || pinched)) {
+    // Only a chunk of flat backdrop black is a hole in the pose. Pupils and
+    // open mouths are black too, but they are smaller or carry a little color,
+    // and Granite's scarf is dark green rather than empty black.
+    const minSide = (w < h ? w : h) * 0.07;
+    const solid = pure * 25 >= cp * 23;
+    const chunky = (maxX - minX + 1) >= minSide && (maxY - minY + 1) >= minSide;
+    const pinched = touchLinks > 0 && touchLinks <= 12 && solid;
+    if (cp >= minPocket && solid && chunky && (touchLinks === 0 || pinched)) {
       for (let k = 0; k < cp; k += 1) bg[comp[k]] = 1;
     }
   }
