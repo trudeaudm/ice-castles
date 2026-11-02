@@ -188,6 +188,7 @@ function challengeHtml(station) {
     }).join('');
     return `<div class="challenge" data-station="${escapeHtml(station.slug)}">
       <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
+      ${challenge.hint ? `<p class="challenge__hint">${escapeHtml(challenge.hint)}</p>` : ''}
       <div class="pickGrid">${tiles}</div>
       <button class="textButton textButton--play" data-image-submit type="button">Check my three</button>
     </div>`;
@@ -239,6 +240,16 @@ function shrineMeetTitle(station) {
   return `Meet ${station.title}`;
 }
 
+function shrineDiscoverTitle(station) {
+  if (station.type === 'guardian') return 'Discover the Element';
+  return 'Discover';
+}
+
+function storyHtml(text) {
+  const parts = String(text || '').split(/\n\s*\n/).map((part) => part.trim()).filter(Boolean);
+  return parts.map((part) => `<p>${escapeHtml(part)}</p>`).join('');
+}
+
 function renderStation(slug) {
   const station = Store.touchBySlug(slug) || Store.touchByType('threshold')[0];
   if (!station) {
@@ -267,11 +278,11 @@ function renderStation(slug) {
         ${art ? `<img class="shrine__art" src="${escapeHtml(art)}" alt="">` : ''}
         <section class="shrine__block">
           <h3>${escapeHtml(shrineMeetTitle(station))}</h3>
-          <p>${escapeHtml(station.body || '')}</p>
+          ${storyHtml(station.body)}
         </section>
         ${station.discoverBody ? `<section class="shrine__block">
-          <h3>Discover</h3>
-          <p>${escapeHtml(station.discoverBody)}</p>
+          <h3>${escapeHtml(shrineDiscoverTitle(station))}</h3>
+          ${storyHtml(station.discoverBody)}
         </section>` : ''}
         <div id="heartSlot"></div>
       </article>`;
@@ -305,12 +316,12 @@ function renderStation(slug) {
       <section class="shrinePanel" data-panel="meet">
         <h3>${escapeHtml(shrineMeetTitle(station))}</h3>
         ${portrait ? `<img class="shrine__portrait" src="${escapeHtml(portrait)}" alt="">` : ''}
-        <p>${escapeHtml(station.body || '')}</p>
+        ${storyHtml(station.body)}
         ${station.audioUrl ? `<audio class="journeyAudio" controls preload="none" src="${escapeHtml(station.audioUrl)}"></audio>` : ''}
       </section>
       <section class="shrinePanel" data-panel="discover">
-        <h3>Discover</h3>
-        <p>${escapeHtml(station.discoverBody || 'Look around this shrine. The castle keeps its own clues.')}</p>
+        <h3>${escapeHtml(shrineDiscoverTitle(station))}</h3>
+        ${storyHtml(station.discoverBody || 'Look around this shrine. The castle keeps its own clues.')}
       </section>
       <section class="shrinePanel" data-panel="play" id="challenge">
         <h3>Play the challenge</h3>

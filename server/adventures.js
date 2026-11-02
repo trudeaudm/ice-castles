@@ -506,6 +506,7 @@ function publicChallengeConfig(type, config) {
     case 'image_select':
       return {
         prompt: cfg.prompt || 'Choose the matching details.',
+        hint: cfg.hint || '',
         selectCount: Number(cfg.selectCount) || (cfg.correctIds || []).length || 3,
         images: (cfg.images || []).map((img) => ({
           id: img.id,

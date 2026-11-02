@@ -407,6 +407,16 @@ body.map-moving .aurora__band { animation-play-state: paused; }
   line-height: 1.45;
   color: var(--ink-text);
 }
+.challenge__hint {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #d7f1fb;
+  color: #1a4f73;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.4;
+}
 .challenge__row {
   display: flex;
   flex-direction: column;
@@ -1937,7 +1947,9 @@ body.quest .topbar {
   text-shadow: 0 1px 8px rgba(20, 70, 110, 0.3);
 }
 .shrine__block p { margin: 0; color: #f4fbff; line-height: 1.5; font-size: 16px; text-shadow: 0 1px 8px rgba(20, 70, 110, 0.35); }
+.shrine__block p + p { margin-top: 12px; }
 .shrinePanel p { margin: 0; color: var(--ink-text); line-height: 1.5; font-size: 16px; }
+.shrinePanel p + p { margin-top: 12px; }
 .shrinePanel h3 { color: var(--ice-mid); }
 
 .shrineGate {

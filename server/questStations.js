@@ -2,7 +2,9 @@
  * Castle Quest station catalog.
  * Inserts missing published stations on every boot so a park that already
  * has map markers (and therefore skips `npm run seed`) still has a quest.
- * Existing station copy is left alone; poi links are filled only when empty.
+ * Existing station copy is left alone, except when it still matches a previous
+ * catalog version — that copy is replaced. Admin edits are not overwritten.
+ * Poi links are filled only when empty.
  */
 const db = require('./db');
 const { uuid, now } = require('./helpers');
@@ -19,7 +21,8 @@ const CHALLENGES = {
   cascade: {
     type: 'image_select',
     config: {
-      prompt: 'Three of these details are frozen in the ice beside you. Tap the three that match what you see.',
+      prompt: 'Cascade spotted tiny frozen wonders nearby. Look closely at the ice, then choose the three images that match what you see.',
+      hint: 'Look for the clues on the monument around you.',
       selectCount: 3,
       correctIds: ['ice-vein', 'ice-arch', 'ice-ripple'],
       images: [
@@ -99,6 +102,16 @@ const CHALLENGES = {
   },
 };
 
+/** Previous catalog copy. Boot replaces a station only while it still matches. */
+const PREVIOUS_COPY = {
+  cascade: {
+    subtitle: 'Guardian of Water',
+    body: 'Cascade watches the moving ice — currents frozen mid-pour, light shifting like a river under the surface.',
+    discover_body: 'Water is the trickiest element to grow, because it has to look like it is still moving. Look for veins, ripples, and arches pressed into the ice around this shrine.',
+    prompt: 'Three of these details are frozen in the ice beside you. Tap the three that match what you see.',
+  },
+};
+
 const QUEST_STATIONS = [
   {
     type: 'threshold',
@@ -115,12 +128,12 @@ const QUEST_STATIONS = [
     type: 'guardian',
     slug: 'cascade',
     title: 'Cascade',
-    subtitle: 'Guardian of Water',
+    subtitle: 'Water Realm · Penguin',
     element: 'water',
     body:
-      'Cascade watches the moving ice — currents frozen mid-pour, light shifting like a river under the surface.',
+      'Cascade is a bright-eyed penguin who sees what hurried explorers miss: a bubble caught in clear ice, a ripple held still, a reflection that shimmers like a secret window.\n\nCascade remembers the first Winter Keeper asking how a single drop could become a castle. The answer came slowly: one icicle joined to another, shaped by cold and careful hands.\n\nIn the Water Realm, pause and look into the ice. The smallest detail may hold the biggest wonder.',
     discover_body:
-      'Water is the trickiest element to grow, because it has to look like it is still moving. Look for veins, ripples, and arches pressed into the ice around this shrine.',
+      'Every Ice Castle begins and ends with Water. In the beginning, water changes its shape with temperature: it flows, freezes, and catches light. Ice Castles artisans grow and place icicles, fusing them into walls, arches, tunnels, and towers.\n\nLook closely and you may spot bubbles, layered textures, or blue light inside the ice. Each detail records a meeting of water, cold, time, and light. In the spring water changes its shape again, returning to the landscape around it.\n\nCascade invites you to notice how a single frozen detail belongs to a much larger, fleeting creation.',
     sort_order: 1,
     poi: 'Mystic Forest — Water',
     challenge: CHALLENGES.cascade,
@@ -220,7 +233,7 @@ async function ensureQuestStations(adventureId) {
 
   for (const tp of QUEST_STATIONS) {
     const row = await db.get(
-      'SELECT id, poi_id FROM touchpoints WHERE adventure_id = ? AND slug = ?',
+      'SELECT id, poi_id, subtitle, body, discover_body, config FROM touchpoints WHERE adventure_id = ? AND slug = ?',
       [adventureId, tp.slug]
     );
     const poiId = idByName[tp.poi] || null;
@@ -245,6 +258,30 @@ async function ensureQuestStations(adventureId) {
         'UPDATE touchpoints SET poi_id = ?, updated_at = ? WHERE id = ?',
         [poiId, ts, row.id]
       );
+    }
+    const previous = PREVIOUS_COPY[tp.slug];
+    if (previous) {
+      const copySame = row.subtitle === previous.subtitle
+        && row.body === previous.body
+        && row.discover_body === previous.discover_body;
+      if (copySame) {
+        await db.run(
+          'UPDATE touchpoints SET subtitle = ?, body = ?, discover_body = ?, updated_at = ? WHERE id = ?',
+          [tp.subtitle, tp.body, tp.discover_body || null, ts, row.id]
+        );
+      }
+      if (previous.prompt && tp.challenge && row.config) {
+        let cfg = null;
+        try { cfg = JSON.parse(row.config); } catch { cfg = null; }
+        if (cfg && cfg.prompt === previous.prompt) {
+          cfg.prompt = tp.challenge.config.prompt;
+          if (tp.challenge.config.hint) cfg.hint = tp.challenge.config.hint;
+          await db.run(
+            'UPDATE touchpoints SET config = ?, updated_at = ? WHERE id = ?',
+            [JSON.stringify(cfg), ts, row.id]
+          );
+        }
+      }
     }
   }
 
