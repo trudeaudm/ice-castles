@@ -2005,6 +2005,17 @@ body.quest .topbar {
   z-index: 2;
   pointer-events: none;
 }
+.summon[data-realm="air"].is-summoning:not(.is-shown) {
+  overflow: hidden;
+}
+.summon[data-realm="air"].is-summoning:not(.is-shown)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 46%, rgba(255, 255, 255, 0.78) 0%, rgba(176, 220, 240, 0.34) 46%, transparent 72%);
+}
 .summon .shrine__art,
 .summon .shrine__portrait {
   position: absolute;

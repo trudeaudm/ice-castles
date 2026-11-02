@@ -435,10 +435,18 @@ function settleSummon(frame, instant) {
   }, 800);
 }
 
+function syncSkyWind() {
+  const sky = document.querySelector('.realmSky .wind');
+  if (!sky) return;
+  const holding = [...summonJobs].some((job) => job.wind);
+  sky.style.visibility = holding ? 'hidden' : '';
+}
+
 function stopSummonWind(job) {
   if (!job.wind) return;
   job.wind.stop();
   job.wind = null;
+  syncSkyWind();
 }
 
 function showSummon(job, instant) {
@@ -462,15 +470,16 @@ function startSwirl(job, now) {
     job.parts = [];
     job.wind = createWindWisps(job.canvas, {
       direction: 0,
-      speed: 1,
-      density: 1,
+      speed: 1.05,
+      density: 1.45,
       color: '#f4fbff',
-      opacity: 0.8,
+      opacity: 1,
       trail: 1,
-      spiral: 0.25,
+      spiral: 0.55,
       paused() { return !summonVisible(job.frame); },
     });
     job.wind.start();
+    syncSkyWind();
     return;
   }
   const rect = job.frame.getBoundingClientRect();
