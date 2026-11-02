@@ -15,7 +15,6 @@ const WIND_WISP_DEFAULTS = {
 function createWindWisps(canvas, settings) {
   const opts = { ...WIND_WISP_DEFAULTS, ...settings };
   const ctx = canvas.getContext('2d');
-  const reduceQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   let wisps = [];
   let width = 0;
   let height = 0;
@@ -24,7 +23,6 @@ function createWindWisps(canvas, settings) {
   let last = 0;
   let running = false;
   let gustIn = 2 + Math.random() * 3;
-  let observer = null;
 
   function cssSize() {
     const rect = canvas.getBoundingClientRect();
@@ -70,17 +68,19 @@ function createWindWisps(canvas, settings) {
     };
   }
 
-  function seed(w, offscreenSpan) {
-    w.speed = (58 + Math.random() * 48) * opts.speed;
+  function seed(w, offscreenSpan, placed) {
+    w.speed = (70 + Math.random() * 55) * opts.speed;
     w.drift = 5 + Math.random() * 14;
     w.freq = 0.006 + Math.random() * 0.008;
     w.phase = Math.random() * Math.PI * 2;
-    w.trail = (96 + Math.random() * 64) * opts.trail;
-    w.thick = 1.7 + Math.random() * 1.3;
-    w.alpha = (0.62 + Math.random() * 0.28) * opts.opacity;
+    w.trail = (110 + Math.random() * 70) * opts.trail;
+    w.thick = 2.1 + Math.random() * 1.4;
+    w.alpha = (0.72 + Math.random() * 0.24) * opts.opacity;
     w.y = 28 + Math.random() * Math.max(40, height - 56);
     w.curl = Math.random() < opts.spiral ? makeCurl() : null;
-    w.s = -w.trail - Math.random() * offscreenSpan;
+    w.s = placed
+      ? -w.trail * 0.15 + Math.random() * Math.max(120, width * 0.9)
+      : -w.trail - Math.random() * offscreenSpan;
   }
 
   function ensurePool() {
@@ -89,7 +89,7 @@ function createWindWisps(canvas, settings) {
     if (wisps.length > n) wisps.length = n;
     while (wisps.length < n) {
       const w = {};
-      seed(w, 80);
+      seed(w, 80, true);
       wisps.push(w);
     }
   }
@@ -207,7 +207,7 @@ function createWindWisps(canvas, settings) {
   }
 
   function isPaused() {
-    if (document.hidden || reduceQuery.matches) return true;
+    if (document.hidden) return true;
     return typeof opts.paused === 'function' && opts.paused();
   }
 
@@ -216,7 +216,7 @@ function createWindWisps(canvas, settings) {
       raf = 0;
       return;
     }
-    if (document.hidden || reduceQuery.matches) {
+    if (document.hidden) {
       raf = 0;
       return;
     }
@@ -250,33 +250,12 @@ function createWindWisps(canvas, settings) {
     resume();
   }
 
-  function onReduce() {
-    if (reduceQuery.matches) {
-      if (raf) window.cancelAnimationFrame(raf);
-      raf = 0;
-      if (layout()) ctx.clearRect(0, 0, width, height);
-      return;
-    }
-    resume();
-  }
-
   function start() {
     if (running) return api;
     running = true;
-    layout();
-    ensurePool();
+    if (layout()) ensurePool();
     document.addEventListener('visibilitychange', onVisibility);
-    if (reduceQuery.addEventListener) reduceQuery.addEventListener('change', onReduce);
-    else if (reduceQuery.addListener) reduceQuery.addListener(onReduce);
-    if (typeof ResizeObserver === 'function') {
-      observer = new ResizeObserver(() => {
-        layout();
-        ensurePool();
-      });
-      observer.observe(canvas);
-    }
-    window.addEventListener('resize', layout);
-    if (!reduceQuery.matches) raf = window.requestAnimationFrame(frame);
+    raf = window.requestAnimationFrame(frame);
     return api;
   }
 
@@ -285,11 +264,6 @@ function createWindWisps(canvas, settings) {
     if (raf) window.cancelAnimationFrame(raf);
     raf = 0;
     document.removeEventListener('visibilitychange', onVisibility);
-    if (reduceQuery.removeEventListener) reduceQuery.removeEventListener('change', onReduce);
-    else if (reduceQuery.removeListener) reduceQuery.removeListener(onReduce);
-    window.removeEventListener('resize', layout);
-    if (observer) observer.disconnect();
-    observer = null;
     wisps = [];
   }
 
