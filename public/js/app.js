@@ -1899,6 +1899,32 @@ function keyBackdrop(image) {
       for (let k = 0; k < cp; k += 1) bg[comp[k]] = 1;
     }
   }
+  // Dark fringe clinging to the silhouette. Only pixels that touch the
+  // backdrop qualify, and only for a couple of pixels, so the body and face stay.
+  if (!keyBackdrop.rim || keyBackdrop.rim.length !== count) {
+    keyBackdrop.rim = new Int32Array(count);
+  }
+  const rim = keyBackdrop.rim;
+  const rimLimit = 52;
+  for (let depth = 0; depth < 2; depth += 1) {
+    let n = 0;
+    for (let y = 1; y < h - 1; y += 1) {
+      for (let x = 1; x < w - 1; x += 1) {
+        const p = y * w + x;
+        if (bg[p]) continue;
+        if (!(bg[p - 1] || bg[p + 1] || bg[p - w] || bg[p + w])) continue;
+        const i = p * 4;
+        const m = data[i] > data[i + 1]
+          ? (data[i] > data[i + 2] ? data[i] : data[i + 2])
+          : (data[i + 1] > data[i + 2] ? data[i + 1] : data[i + 2]);
+        if (m < rimLimit) {
+          rim[n] = p;
+          n += 1;
+        }
+      }
+    }
+    for (let k = 0; k < n; k += 1) bg[rim[k]] = 1;
+  }
   for (let p = 0; p < count; p += 1) {
     if (bg[p]) data[p * 4 + 3] = 0;
   }
