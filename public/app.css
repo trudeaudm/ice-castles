@@ -2845,39 +2845,34 @@ body[data-realm="air"] .aurora__band--2 { background: radial-gradient(ellipse at
 body[data-realm="air"] .aurora__band--3 { background: radial-gradient(ellipse at 60% 50%, #8fb4cc, transparent 72%); opacity: 0.28; }
 body[data-realm="air"] .wind {
   position: absolute;
-  width: 120px;
-  height: 120px;
+  width: 168px;
+  height: 168px;
   overflow: visible;
   color: #fff;
   animation: windDrift linear infinite;
 }
 body[data-realm="air"] .wind path {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.42);
-  stroke-width: 5;
+  stroke: #fff;
+  stroke-width: 7.5;
   stroke-linecap: round;
   stroke-linejoin: round;
+  filter: drop-shadow(0 0 1px rgba(36, 74, 104, 0.85)) drop-shadow(0 0 3px rgba(36, 74, 104, 0.4));
 }
 body[data-realm="air"] .wind__mote {
   stroke: #fff;
-  stroke-width: 6;
-  stroke-dasharray: 18 82;
+  stroke-width: 8;
+  stroke-dasharray: 26 74;
+  filter: none;
   animation: windRun linear infinite;
 }
-body[data-realm="air"] .wind__spin {
-  transform-origin: 50px 50px;
-  transform-box: view-box;
-  animation: windSpin linear infinite;
-}
-body[data-realm="air"] .wind--curl .wind__spin { animation-duration: 16s; }
-body[data-realm="air"] .wind--curl .wind__mote { animation-duration: 2.4s; }
-body[data-realm="air"] .wind--coil .wind__spin { animation-duration: 9s; animation-direction: reverse; }
-body[data-realm="air"] .wind--coil .wind__mote { animation-duration: 3.1s; }
-body[data-realm="air"] .wind:nth-child(1) { top: 12%; left: 4%; animation-duration: 12s; }
-body[data-realm="air"] .wind:nth-child(2) { top: 6%; left: 52%; width: 104px; height: 104px; animation-duration: 14s; animation-delay: -5s; }
-body[data-realm="air"] .wind:nth-child(3) { top: 40%; left: 22%; width: 92px; height: 92px; animation-duration: 11s; animation-delay: -7s; }
-body[data-realm="air"] .wind:nth-child(4) { top: 56%; left: 58%; width: 136px; height: 136px; animation-duration: 15s; animation-delay: -3s; }
-body[data-realm="air"] .wind:nth-child(5) { top: 74%; left: 8%; width: 84px; height: 84px; animation-duration: 10s; animation-delay: -8s; }
+body[data-realm="air"] .wind--curl .wind__mote { animation-duration: 2.2s; }
+body[data-realm="air"] .wind--coil .wind__mote { animation-duration: 2.8s; }
+body[data-realm="air"] .wind:nth-child(1) { top: 20%; left: -6%; width: 150px; height: 150px; animation-duration: 13s; }
+body[data-realm="air"] .wind:nth-child(2) { top: 16%; left: 62%; width: 132px; height: 132px; animation-duration: 15s; animation-delay: -6s; }
+body[data-realm="air"] .wind:nth-child(3) { top: 42%; left: 8%; width: 118px; height: 118px; animation-duration: 11s; animation-delay: -3s; }
+body[data-realm="air"] .wind:nth-child(4) { top: 52%; left: 48%; width: 160px; height: 160px; animation-duration: 16s; animation-delay: -9s; }
+body[data-realm="air"] .wind:nth-child(5) { top: 70%; left: 6%; width: 104px; height: 104px; animation-duration: 12s; animation-delay: -4s; }
 
 body[data-realm="spirit"] {
   --realm-ink: #5b2d86;
@@ -2949,9 +2944,6 @@ body[data-realm="spirit"] .realmSky i:nth-child(6) { left: 84%; top: 48%; width:
 }
 @keyframes windRun {
   to { stroke-dashoffset: -100; }
-}
-@keyframes windSpin {
-  to { transform: rotate(360deg); }
 }
 @keyframes twinkle {
   0%, 100% { opacity: 0.15; transform: scale(0.55); }
