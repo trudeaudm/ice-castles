@@ -497,7 +497,13 @@ function publicChallengeConfig(type, config) {
     case 'reflection':
       return { prompt: cfg.prompt || 'What will you remember from this stop?' };
     case 'code_entry':
-      return { prompt: cfg.prompt || 'Enter the code at this stop.' };
+      return {
+        prompt: cfg.prompt || 'Enter the code at this stop.',
+        hint: cfg.hint || '',
+        fieldLabel: cfg.fieldLabel || '',
+        placeholder: cfg.placeholder || '',
+        submitLabel: cfg.submitLabel || '',
+      };
     case 'multiple_choice':
       return {
         question: cfg.question || 'Choose the right answer.',

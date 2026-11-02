@@ -170,10 +170,12 @@ function challengeHtml(station) {
   if (type === 'code_entry') {
     return `<div class="challenge" data-station="${escapeHtml(station.slug)}">
       <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
+      ${challenge.hint ? `<p class="challenge__hint">${escapeHtml(challenge.hint)}</p>` : ''}
       <div class="challenge__row">
+        ${challenge.fieldLabel ? `<p class="challenge__field">${escapeHtml(challenge.fieldLabel)}</p>` : ''}
         <input class="challenge__input" data-challenge-code inputmode="latin" autocapitalize="characters"
-               autocomplete="off" spellcheck="false" maxlength="24" placeholder="WORD">
-        <button class="textButton textButton--play" data-challenge-submit type="button">Go</button>
+               autocomplete="off" spellcheck="false" maxlength="24" placeholder="${escapeHtml(challenge.placeholder || 'WORD')}">
+        <button class="textButton textButton--play" data-challenge-submit type="button">${escapeHtml(challenge.submitLabel || 'Go')}</button>
       </div>
     </div>`;
   }

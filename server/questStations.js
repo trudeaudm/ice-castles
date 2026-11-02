@@ -37,7 +37,14 @@ const CHALLENGES = {
   },
   granite: {
     type: 'code_entry',
-    config: { prompt: 'Four moose hide the letters. Enter the word they spell.', code: 'ARCH' },
+    config: {
+      prompt: 'Four of Granite’s moose are hiding nearby, each with a letter. Find them all and arrange the letters to reveal a shape you can find in a castle.',
+      hint: 'Look for the clues on the monument around you.',
+      fieldLabel: 'The word you found',
+      placeholder: 'Enter the word',
+      submitLabel: 'Awaken Earth',
+      code: 'ARCH',
+    },
   },
   ember: {
     type: 'sequence',
@@ -110,6 +117,12 @@ const PREVIOUS_COPY = {
     discover_body: 'Water is the trickiest element to grow, because it has to look like it is still moving. Look for veins, ripples, and arches pressed into the ice around this shrine.',
     prompt: 'Three of these details are frozen in the ice beside you. Tap the three that match what you see.',
   },
+  granite: {
+    subtitle: 'Guardian of Earth',
+    body: 'Granite keeps the roots and the weight of the forest. Stone-shouldered figures and carved runes mark this realm.',
+    discover_body: 'Four physical moose are hidden nearby. Each one reveals a letter. Together they spell a builder’s word.',
+    prompt: 'Four moose hide the letters. Enter the word they spell.',
+  },
 };
 
 const QUEST_STATIONS = [
@@ -142,12 +155,12 @@ const QUEST_STATIONS = [
     type: 'guardian',
     slug: 'granite',
     title: 'Granite',
-    subtitle: 'Guardian of Earth',
+    subtitle: 'Earth Realm · Moose',
     element: 'earth',
     body:
-      'Granite keeps the roots and the weight of the forest. Stone-shouldered figures and carved runes mark this realm.',
+      'Granite is a big-hearted moose with the memory of an old trail and the patience of a builder. He knows the castle begins before the first icicle is placed: with a place to build, a plan for people to move through it, and close attention to the ground beneath everyone’s boots.\n\nGranite leaves clues for explorers who look steadily. In the Earth Realm, notice what supports the magic, not only what sparkles above it.',
     discover_body:
-      'Four physical moose are hidden nearby. Each one reveals a letter. Together they spell a builder’s word.',
+      'Every build begins with a site and a plan. Builders consider the ground, drainage, water and guest flow, access, safety, snow, and the way weather may change the work. Conditions keep shifting: ice can grow, surfaces can wear, and a warm spell can alter the schedule. The craft is to work with the site and the season. Granite stands for the planning and practical care that help a beautiful place welcome guests.',
     sort_order: 2,
     poi: 'Mystic Forest — Earth',
     challenge: CHALLENGES.granite,
@@ -275,7 +288,9 @@ async function ensureQuestStations(adventureId) {
         try { cfg = JSON.parse(row.config); } catch { cfg = null; }
         if (cfg && cfg.prompt === previous.prompt) {
           cfg.prompt = tp.challenge.config.prompt;
-          if (tp.challenge.config.hint) cfg.hint = tp.challenge.config.hint;
+          for (const key of ['hint', 'fieldLabel', 'placeholder', 'submitLabel']) {
+            if (tp.challenge.config[key]) cfg[key] = tp.challenge.config[key];
+          }
           await db.run(
             'UPDATE touchpoints SET config = ?, updated_at = ? WHERE id = ?',
             [JSON.stringify(cfg), ts, row.id]
