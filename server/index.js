@@ -3,6 +3,7 @@ const express = require('express');
 const { migrate } = require('./schema');
 const { MAPS_DIR } = require('./parkMap');
 const { installBundledMaps } = require('./installBundledMaps');
+const { recordingFile } = require('./recordings');
 const publicRoutes = require('./routes/public');
 const { router: adminRoutes } = require('./routes/admin');
 const db = require('./db');
@@ -10,7 +11,7 @@ const db = require('./db');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
-const RESERVED = new Set(['api', 'admin', 'assets', 'vendor', 'js', 's', 'healthz', 'maps']);
+const RESERVED = new Set(['api', 'admin', 'assets', 'vendor', 'js', 's', 'healthz', 'maps', 'recordings']);
 
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '256kb' }));
@@ -24,6 +25,12 @@ app.use((req, res, next) => {
 
 app.use('/api', publicRoutes);
 app.use('/api/admin', adminRoutes);
+
+app.get('/recordings/:id/:kind', (req, res) => {
+  const file = recordingFile(req.params.id, req.params.kind);
+  if (!file) return res.status(404).end();
+  res.sendFile(file);
+});
 
 app.get('/healthz', async (_req, res) => {
   try {

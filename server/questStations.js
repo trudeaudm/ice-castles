@@ -7,7 +7,51 @@
  * Poi links are filled only when empty.
  */
 const db = require('./db');
-const { uuid, now } = require('./helpers');
+const { uuid, now, slugify, shortCode } = require('./helpers');
+
+/** Pin art a location can wear. `park` is the ordinary location pin. */
+const POI_MARKERS = ['park', 'water', 'earth', 'fire', 'air', 'spirit'];
+
+/**
+ * Realm seals that belong on the Mystic Forest. Air and Spirit used to be
+ * drawn on Bird Aviary and Polar Tundra because those were the linked stops.
+ */
+const FOREST_PINS = [
+  {
+    name: 'Mystic Forest — Air',
+    marker: 'air',
+    x: 470,
+    y: 150,
+    blurb: 'Wind through the silk, and paths that lift your gaze.',
+    description:
+      'The Air stretch of the forest is wings, flags, and open height. Summit keeps the Wind realm here.',
+  },
+  {
+    name: 'Mystic Forest — Spirit',
+    marker: 'spirit',
+    x: 650,
+    y: 155,
+    blurb: 'Quiet light between the trees.',
+    description:
+      'The Spirit stretch of the forest is where the field of light comes up out of the dark. Aurora keeps this realm.',
+  },
+];
+
+const MARKER_DEFAULTS = [
+  { name: 'Mystic Forest — Water', marker: 'water' },
+  { name: 'Mystic Forest — Earth', marker: 'earth' },
+  { name: 'Mystic Forest — Fire', marker: 'fire' },
+  { name: 'Mystic Forest — Air', marker: 'air' },
+  { name: 'Mystic Forest — Spirit', marker: 'spirit' },
+  { name: 'Bird Aviary', marker: 'park' },
+  { name: 'Polar Tundra', marker: 'park' },
+];
+
+/** Old catalog links. Corrected once, so a later admin change stays put. */
+const RETARGET = [
+  { slug: 'summit', from: 'Bird Aviary', to: 'Mystic Forest — Air' },
+  { slug: 'aurora', from: 'Polar Tundra', to: 'Mystic Forest — Spirit' },
+];
 
 const REALM_OPTIONS = [
   { id: 'water', label: 'Water', color: '#5df0cf' },
@@ -190,7 +234,7 @@ const QUEST_STATIONS = [
     discover_body:
       'Five physical flags in this area reveal the letters of a single word. Enter what they spell.',
     sort_order: 4,
-    poi: 'Bird Aviary',
+    poi: 'Mystic Forest — Air',
     challenge: CHALLENGES.summit,
   },
   {
@@ -204,7 +248,7 @@ const QUEST_STATIONS = [
     discover_body:
       'A physical installation plays several five-symbol Realm sequences on a loop. Repeat any one of them. The website answers on its own — no show-control hookup is required.',
     sort_order: 5,
-    poi: 'Polar Tundra',
+    poi: 'Mystic Forest — Spirit',
     challenge: CHALLENGES.aurora,
   },
   {
@@ -234,13 +278,142 @@ const QUEST_STATIONS = [
   },
 ];
 
-async function ensureQuestStations(adventureId) {
-  if (!adventureId) return 0;
+function forestSlots(byName) {
+  const anchors = ['Mystic Forest — Earth', 'Mystic Forest — Water', 'Mystic Forest — Fire']
+    .map((name) => byName.get(name))
+    .filter((p) => p && Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)))
+    .map((p) => ({ x: Number(p.x), y: Number(p.y) }))
+    .sort((a, b) => a.y - b.y || a.x - b.x);
+  if (anchors.length < 2) return null;
+  const gaps = [];
+  for (let i = 0; i < anchors.length - 1; i += 1) {
+    const a = anchors[i];
+    const b = anchors[i + 1];
+    gaps.push({
+      x: Math.round((a.x + b.x) / 2),
+      y: Math.round((a.y + b.y) / 2),
+    });
+  }
+  gaps.sort((a, b) => a.y - b.y);
+  return {
+    air: gaps[0],
+    spirit: gaps.length > 1
+      ? gaps[gaps.length - 1]
+      : { x: gaps[0].x + 36, y: gaps[0].y + 72 },
+    anchors,
+  };
+}
+
+/** Use the catalog spot only when it already sits with the other forest pins. */
+function placeForestPin(pin, slots) {
+  if (!slots) return { x: pin.x, y: pin.y };
+  const spot = slots[pin.marker];
+  if (!spot) return { x: pin.x, y: pin.y };
+  const nearest = Math.min(...slots.anchors.map((p) => Math.hypot(pin.x - p.x, pin.y - p.y)));
+  return nearest > 280 ? spot : { x: pin.x, y: pin.y };
+}
+
+async function uniqueScanCode() {
+  for (let i = 0; i < 50; i++) {
+    const code = shortCode(6);
+    const clash = await db.get('SELECT id FROM pois WHERE scan_code = ?', [code]);
+    if (!clash) return code;
+  }
+  return shortCode(10);
+}
+
+/**
+ * Put the Wind and Spirit seals on the Mystic Forest, and give Bird Aviary
+ * and Polar Tundra the ordinary park pin. Runs for parks that already have
+ * that layout. A marker an admin has already chosen is left alone.
+ */
+async function ensureMapMarkers(adventureId) {
   const pois = await db.all(
-    'SELECT id, name FROM pois WHERE adventure_id = ?',
+    'SELECT id, name, marker, sort_order, x, y FROM pois WHERE adventure_id = ?',
     [adventureId]
   );
-  const idByName = Object.fromEntries(pois.map((p) => [p.name, p.id]));
+  const byName = new Map(pois.map((p) => [p.name, p]));
+  const nhLayout = pois.some((p) =>
+    p.name.startsWith('Mystic Forest') || p.name === 'Bird Aviary' || p.name === 'Polar Tundra'
+  );
+  if (!nhLayout) return byName;
+
+  const ts = now();
+  const flagKey = `quest_pin_retarget:${adventureId}`;
+  const already = await db.get('SELECT value FROM settings WHERE "key" = ?', [flagKey]);
+
+  const slots = forestSlots(byName);
+
+  if (!already) {
+    let sort = pois.reduce((max, p) => Math.max(max, Number(p.sort_order) || 0), 0);
+    for (const pin of FOREST_PINS) {
+      if (byName.has(pin.name)) continue;
+      sort += 1;
+      const id = uuid();
+      const at = placeForestPin(pin, slots);
+      await db.run(
+        `INSERT INTO pois
+           (id, adventure_id, name, slug, category, zone, blurb, description, fun_fact, image_url,
+            x, y, scan_code, published, sort_order, marker, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [
+          id, adventureId, pin.name, slugify(pin.name), 'sculpture', 'Mystic Forest',
+          pin.blurb, pin.description, null, null,
+          at.x, at.y, await uniqueScanCode(), 1, sort, pin.marker, ts, ts,
+        ]
+      );
+      byName.set(pin.name, { id, name: pin.name, marker: pin.marker, sort_order: sort, x: at.x, y: at.y });
+    }
+
+    for (const move of RETARGET) {
+      const from = byName.get(move.from);
+      const to = byName.get(move.to);
+      if (!from || !to) continue;
+      await db.run(
+        `UPDATE touchpoints SET poi_id = ?, updated_at = ?
+          WHERE adventure_id = ? AND slug = ? AND poi_id = ?`,
+        [to.id, ts, adventureId, move.slug, from.id]
+      );
+    }
+
+    await db.run(
+      'INSERT INTO settings ("key", "value") VALUES (?, ?) ON CONFLICT ("key") DO NOTHING',
+      [flagKey, '1']
+    );
+  }
+
+  for (const pin of FOREST_PINS) {
+    const row = byName.get(pin.name);
+    if (!row) continue;
+    const stillAtCatalog = Math.round(Number(row.x)) === pin.x && Math.round(Number(row.y)) === pin.y;
+    if (!stillAtCatalog) continue;
+    const at = placeForestPin(pin, slots);
+    if (at.x === pin.x && at.y === pin.y) continue;
+    await db.run(
+      'UPDATE pois SET x = ?, y = ?, updated_at = ? WHERE id = ? AND x = ? AND y = ?',
+      [at.x, at.y, ts, row.id, pin.x, pin.y]
+    );
+    row.x = at.x;
+    row.y = at.y;
+  }
+
+  for (const pin of MARKER_DEFAULTS) {
+    const row = byName.get(pin.name);
+    if (!row || row.marker) continue;
+    await db.run(
+      `UPDATE pois SET marker = ?, updated_at = ? WHERE id = ? AND (marker IS NULL OR marker = '')`,
+      [pin.marker, ts, row.id]
+    );
+    row.marker = pin.marker;
+  }
+
+  return byName;
+}
+
+async function ensureQuestStations(adventureId) {
+  if (!adventureId) return 0;
+  const byName = await ensureMapMarkers(adventureId);
+  const idByName = Object.fromEntries([...byName.entries()].map(([name, p]) => [name, p.id]));
   const ts = now();
   let added = 0;
 
@@ -318,6 +491,7 @@ async function ensureQuestStationsAll() {
 module.exports = {
   CHALLENGES,
   QUEST_STATIONS,
+  POI_MARKERS,
   ensureQuestStations,
   ensureQuestStationsAll,
 };

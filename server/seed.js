@@ -40,6 +40,7 @@ const POIS = [
     description:
       'The Earth section holds the heaviest work in the forest: stone-shouldered figures, carved runes, and the Female Golem standing in the treeline. Look for the runes cut into the low walls.',
     fun_fact: 'The runes are carved rather than printed, so they read differently as you move.',
+    marker: 'earth',
   },
   {
     name: 'Mystic Forest — Water',
@@ -49,6 +50,7 @@ const POIS = [
     blurb: 'Frozen mid-pour.',
     description:
       'Water is the trickiest element to carve, because it has to look like it is still moving. Watch the lighting cycle — the colour shift is programmed to feel like a current.',
+    marker: 'water',
   },
   {
     name: 'Mystic Forest — Fire',
@@ -58,6 +60,27 @@ const POIS = [
     blurb: 'Warm light through cold silk.',
     description:
       'Amber silk lanterns and pixel-mapped LEDs give this section its flicker. Nothing here is actually burning, but stand still for a moment and it reads like heat.',
+    marker: 'fire',
+  },
+  {
+    name: 'Mystic Forest — Air',
+    category: 'sculpture',
+    zone: 'Mystic Forest',
+    x: 470, y: 150,
+    marker: 'air',
+    blurb: 'Wind through the silk, and paths that lift your gaze.',
+    description:
+      'The Air stretch of the forest is wings, flags, and open height. Summit keeps the Wind realm here.',
+  },
+  {
+    name: 'Mystic Forest — Spirit',
+    category: 'sculpture',
+    zone: 'Mystic Forest',
+    x: 650, y: 155,
+    marker: 'spirit',
+    blurb: 'Quiet light between the trees.',
+    description:
+      'The Spirit stretch of the forest is where the field of light comes up out of the dark. Aurora keeps this realm.',
   },
   {
     name: 'Bird Aviary',
@@ -68,6 +91,7 @@ const POIS = [
     description:
       'Wireframe bodies wrapped in painted silk, lit from the inside and hung at different heights so the flock moves with the wind. Walk the whole loop and look up more than once.',
     fun_fact: 'Each bird is painted by hand, so no two in the flock match.',
+    marker: 'park',
   },
   {
     name: 'Yeti Bend',
@@ -86,6 +110,7 @@ const POIS = [
     blurb: 'Bears, ice floes, and very little light.',
     description:
       'We keep the lighting low here on purpose so your eyes adjust. Give it thirty seconds and the whole field of sculptures comes up out of the dark.',
+    marker: 'park',
   },
   {
     name: 'Dragon Roost',
@@ -232,11 +257,11 @@ async function seed() {
     const id = uuid();
     await db.run(
       `INSERT INTO pois (id, adventure_id, name, slug, category, zone, blurb, description, fun_fact,
-         image_url, x, y, scan_code, published, sort_order, created_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         image_url, x, y, scan_code, published, sort_order, marker, created_at, updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         id, adventure.id, p.name, slugify(p.name), p.category, p.zone, p.blurb, p.description,
-        p.fun_fact || null, null, p.x, p.y, shortCode(6), 1, i, ts, ts,
+        p.fun_fact || null, null, p.x, p.y, shortCode(6), 1, i, p.marker || null, ts, ts,
       ]
     );
   }

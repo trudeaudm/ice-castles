@@ -95,6 +95,7 @@ const ICON_DISCOVER = `<img src="${ART}/icon-discover.png" alt="">`;
 const ICON_PLAY = `<img src="${ART}/icon-play.png" alt="">`;
 
 function setShrineFocus(key, { spin = true } = {}) {
+  stopStoryAudio();
   shrineFocus = key;
   const gate = document.querySelector('.shrineGate');
   if (!gate) return;
@@ -252,7 +253,63 @@ function storyHtml(text) {
   return parts.map((part) => `<p>${escapeHtml(part)}</p>`).join('');
 }
 
+const LISTEN_ICON = `<svg class="listenButton__icon" viewBox="0 0 24 24" aria-hidden="true">
+  <path d="M4 9.5v5h3.6L13 19V5L7.6 9.5H4z" fill="currentColor"/>
+  <path d="M16 9.2a4.2 4.2 0 0 1 0 5.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M18.4 6.8a7.2 7.2 0 0 1 0 10.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+</svg>`;
+
+function listenButtonHtml(src) {
+  if (!src) return '';
+  return `<button class="listenButton" type="button" data-listen aria-pressed="false" aria-label="Play this story">
+    ${LISTEN_ICON}<span class="listenButton__label">Listen</span>
+  </button>
+  <audio preload="none" src="${escapeHtml(src)}"></audio>`;
+}
+
+let storyAudio = null;
+
+function setListenButton(button, on) {
+  button.classList.toggle('is-on', on);
+  button.setAttribute('aria-pressed', on ? 'true' : 'false');
+  button.setAttribute('aria-label', on ? 'Stop the recording' : 'Play this story');
+  const label = button.querySelector('.listenButton__label');
+  if (label) label.textContent = on ? 'Stop' : 'Listen';
+}
+
+function stopStoryAudio() {
+  if (storyAudio) {
+    storyAudio.pause();
+    try { storyAudio.currentTime = 0; } catch { /* not loaded yet */ }
+    storyAudio = null;
+  }
+  document.querySelectorAll('[data-listen].is-on').forEach((button) => setListenButton(button, false));
+}
+
+function playStory(button) {
+  const audio = button.nextElementSibling;
+  if (!(audio instanceof HTMLAudioElement)) return;
+  if (button.classList.contains('is-on')) {
+    stopStoryAudio();
+    return;
+  }
+  stopStoryAudio();
+  storyAudio = audio;
+  setListenButton(button, true);
+  audio.onended = () => {
+    if (storyAudio !== audio) return;
+    storyAudio = null;
+    setListenButton(button, false);
+  };
+  audio.play().catch(() => {
+    if (storyAudio === audio) storyAudio = null;
+    setListenButton(button, false);
+    toast('Couldn’t play that recording.');
+  });
+}
+
 function renderStation(slug) {
+  stopStoryAudio();
   const station = Store.touchBySlug(slug) || Store.touchByType('threshold')[0];
   if (!station) {
     dom.stationView.innerHTML = `<div class="empty"><p class="empty__title">This station isn’t on tonight’s quest.</p></div>`;
@@ -317,12 +374,13 @@ function renderStation(slug) {
       </div>
       <section class="shrinePanel" data-panel="meet">
         <h3>${escapeHtml(shrineMeetTitle(station))}</h3>
+        ${station.type === 'guardian' ? listenButtonHtml(station.audioUrl) : ''}
         ${portrait ? `<img class="shrine__portrait" src="${escapeHtml(portrait)}" alt="">` : ''}
         ${storyHtml(station.body)}
-        ${station.audioUrl ? `<audio class="journeyAudio" controls preload="none" src="${escapeHtml(station.audioUrl)}"></audio>` : ''}
       </section>
       <section class="shrinePanel" data-panel="discover">
         <h3>${escapeHtml(shrineDiscoverTitle(station))}</h3>
+        ${station.type === 'guardian' ? listenButtonHtml(station.discoverAudioUrl) : ''}
         ${storyHtml(station.discoverBody || 'Look around this shrine. The castle keeps its own clues.')}
       </section>
       <section class="shrinePanel" data-panel="play" id="challenge">
@@ -1152,6 +1210,11 @@ function wire() {
   });
 
   document.addEventListener('click', (event) => {
+    const listen = event.target.closest('[data-listen]');
+    if (listen) {
+      playStory(listen);
+      return;
+    }
     const shrineBtn = event.target.closest('[data-shrine-focus]');
     if (shrineBtn) {
       setShrineFocus(shrineBtn.dataset.shrineFocus);
@@ -1225,6 +1288,7 @@ function wire() {
   });
 
   window.addEventListener('popstate', route);
+  window.addEventListener('pagehide', stopStoryAudio);
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
     if (Scanner.isOpen()) Scanner.close();

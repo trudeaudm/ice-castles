@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS pois (
   scan_code    TEXT UNIQUE,
   published    INTEGER NOT NULL DEFAULT 1,
   sort_order   INTEGER NOT NULL DEFAULT 0,
+  marker       TEXT,
   created_at   TEXT NOT NULL,
   updated_at   TEXT NOT NULL
 );
@@ -138,6 +139,7 @@ CREATE TABLE IF NOT EXISTS touchpoints (
   element         TEXT,
   image_url       TEXT,
   audio_url       TEXT,
+  discover_audio_url TEXT,
   poi_id          TEXT REFERENCES pois(id) ON DELETE SET NULL,
   sort_order      INTEGER NOT NULL DEFAULT 0,
   published       INTEGER NOT NULL DEFAULT 1,
@@ -334,6 +336,8 @@ async function migrate() {
   await ensureColumn('touchpoints', 'discover_body', 'discover_body TEXT');
   await ensureColumn('touchpoints', 'challenge_type', 'challenge_type TEXT');
   await ensureColumn('touchpoints', 'slug_locked', 'slug_locked INTEGER NOT NULL DEFAULT 0');
+  await ensureColumn('touchpoints', 'discover_audio_url', 'discover_audio_url TEXT');
+  await ensureColumn('pois', 'marker', 'marker TEXT');
 
   await db.exec(INDEX_DDL);
 

@@ -4,6 +4,10 @@ const KEY = 'ic.admin.v1';
 const el = (id) => document.getElementById(id);
 
 const CATEGORIES = ['landmark', 'sculpture', 'lantern', 'photo-op', 'ride', 'amenity'];
+const REALM_MARKERS = ['water', 'earth', 'fire', 'air', 'spirit'];
+const MARKER_LABELS = {
+  park: 'Park pin', water: 'Water', earth: 'Earth', fire: 'Fire', air: 'Air', spirit: 'Spirit',
+};
 const CATEGORY_LABELS = {
   landmark: 'Landmark', sculpture: 'Ice sculpture', lantern: 'Lantern display',
   'photo-op': 'Photo spot', ride: 'Ride', amenity: 'Facilities',
@@ -235,13 +239,37 @@ function initMap() {
   updateGridButton();
 }
 
+function markerSrc(id) {
+  return REALM_MARKERS.includes(id) ? `/assets/art/realm-${id}-on.png` : '/assets/art/pin-park.png';
+}
+
+/** The pin guests see: a saved choice, otherwise the linked Guardian’s seal. */
+function effectiveMarker(poi) {
+  if (poi.marker === 'park' || REALM_MARKERS.includes(poi.marker)) return poi.marker;
+  const linked = (state.touchpoints || []).find((tp) => tp.poi_id === poi.id && REALM_MARKERS.includes(tp.element));
+  return linked ? linked.element : 'park';
+}
+
+function syncMarkerPreview() {
+  const form = el('poiForm');
+  const img = el('markerPreview');
+  if (!form || !img || !form.marker) return;
+  const id = form.marker.value || 'park';
+  img.src = markerSrc(id);
+  img.alt = MARKER_LABELS[id] || 'Park pin';
+}
+
 function markerIcon(poi) {
   const node = document.createElement('div');
-  node.className = `apin${poi.published ? '' : ' is-draft'}${poi.id === selectedId ? ' is-selected' : ''}`;
+  const kind = effectiveMarker(poi);
+  const realm = REALM_MARKERS.includes(kind);
+  node.className = `apin${realm ? ' is-realm' : ''}${poi.published ? '' : ' is-draft'}${poi.id === selectedId ? ' is-selected' : ''}`;
   node.style.setProperty('--pin-color', colorFor(poi.category));
-  node.innerHTML = `<span class="apin__gem"></span><span class="apin__name"></span>`;
+  node.innerHTML = `<img class="apin__art" alt=""><span class="apin__name"></span>`;
+  node.querySelector('.apin__art').src = markerSrc(kind);
   node.querySelector('.apin__name').textContent = poi.name;
-  return L.divIcon({ html: node.outerHTML, className: '', iconSize: [30, 30], iconAnchor: [15, 15] });
+  const size = realm ? 44 : 36;
+  return L.divIcon({ html: node.outerHTML, className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
 }
 
 function renderMarkers() {
@@ -253,9 +281,13 @@ function renderMarkers() {
       icon: markerIcon(poi),
       draggable: true,
       autoPan: true,
+      bubblingMouseEvents: false,
     }).addTo(map);
 
-    marker.on('click', () => select(poi.id));
+    marker.on('click', (event) => {
+      if (event.originalEvent) L.DomEvent.stopPropagation(event.originalEvent);
+      select(poi.id);
+    });
 
     marker.on('dragend', async () => {
       const { x, y } = fromLatLng(marker.getLatLng());
@@ -304,6 +336,8 @@ function fillForm(poi) {
   form.x.value = Math.round(poi.x);
   form.y.value = Math.round(poi.y);
   form.published.checked = poi.published === 1 || poi.published === true;
+  form.marker.value = effectiveMarker(poi);
+  syncMarkerPreview();
   el('poiCode').textContent = poi.scan_code || '------';
   const qrSvg = `/api/admin/qr/${poi.id}.svg?token=${encodeURIComponent(token)}`;
   const qrPng = `/api/admin/qr/${poi.id}.png?token=${encodeURIComponent(token)}`;
@@ -312,6 +346,8 @@ function fillForm(poi) {
   el('qrPngLink').download = `${poi.scan_code || 'marker'}-qr.png`;
   el('qrPngCopy').dataset.copyQr = qrPng;
 }
+
+el('poiForm').marker.addEventListener('change', syncMarkerPreview);
 
 el('poiForm').addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -327,6 +363,7 @@ el('poiForm').addEventListener('submit', async (event) => {
     x: Number(form.x.value),
     y: Number(form.y.value),
     published: form.published.checked,
+    marker: form.marker.value,
   };
   try {
     const updated = await api(`/pois/${selectedId}`, { method: 'PATCH', body: JSON.stringify(payload) });
@@ -376,7 +413,7 @@ function renderTable() {
   }
   body.innerHTML = state.pois.map((poi) => `
     <tr>
-      <td class="name">${escapeHtml(poi.name)}</td>
+      <td class="name"><img class="markerThumb" src="${markerSrc(effectiveMarker(poi))}" alt="">${escapeHtml(poi.name)}</td>
       <td><span class="gemTag" style="--pin-color:${colorFor(poi.category)}">${escapeHtml(CATEGORY_LABELS[poi.category] || poi.category)}</span></td>
       <td class="muted">${escapeHtml(poi.zone || '—')}</td>
       <td class="mono muted"><span class="cellRef">${cellRef(poi.x, poi.y)}</span><br><span style="opacity:.6">${Math.round(poi.x)}, ${Math.round(poi.y)}</span></td>
@@ -698,6 +735,28 @@ const TOUCH_TYPES = [
   { id: 'heart', label: 'Heart of Winter' },
 ];
 
+function recordingField(tp, kind, label, url) {
+  return `<div class="recordingField" data-audio-status="${kind}">
+    <label>${label}
+      <input type="file" accept="audio/mpeg,audio/mp4,audio/wav,audio/webm,audio/ogg,.mp3,.m4a,.wav" data-audio-file="${kind}">
+    </label>
+    <p class="fieldHint">MP3 or M4A. Guests hear this when they tap Listen.</p>
+    ${url ? `<audio controls preload="none" src="${escapeHtml(url)}"></audio>
+      <button class="ghostButton" type="button" data-clear-audio="${kind}" data-touch="${escapeHtml(tp.id)}">Remove recording</button>` : ''}
+  </div>`;
+}
+
+function paintRecording(form, kind, url, touchId) {
+  const slot = form.querySelector(`[data-audio-status="${kind}"]`);
+  if (!slot) return;
+  slot.querySelectorAll('audio, [data-clear-audio]').forEach((node) => node.remove());
+  const input = slot.querySelector('[data-audio-file]');
+  if (input) input.value = '';
+  if (!url) return;
+  slot.insertAdjacentHTML('beforeend', `<audio controls preload="none" src="${escapeHtml(url)}"></audio>
+    <button class="ghostButton" type="button" data-clear-audio="${kind}" data-touch="${escapeHtml(touchId)}">Remove recording</button>`);
+}
+
 function renderTouchpoints() {
   const list = el('touchList');
   if (!list) return;
@@ -735,6 +794,7 @@ function renderTouchpoints() {
         <label>Subtitle<input name="subtitle" value="${escapeHtml(tp.subtitle || '')}" maxlength="200"></label>
         <label>Meet / story<textarea name="body" rows="4" maxlength="8000">${escapeHtml(tp.body || '')}</textarea></label>
         <label>Discover<textarea name="discover_body" rows="3" maxlength="8000">${escapeHtml(tp.discover_body || '')}</textarea></label>
+        ${tp.type === 'guardian' ? `${recordingField(tp, 'meet', 'Meet recording', tp.audio_url)}${recordingField(tp, 'discover', 'Discover recording', tp.discover_audio_url)}` : ''}
         <div class="form__row">
           <label>Challenge
             <select name="challenge_type">
@@ -814,7 +874,45 @@ el('touchList')?.addEventListener('submit', async (event) => {
   }
 });
 
+el('touchList')?.addEventListener('change', async (event) => {
+  const input = event.target.closest('[data-audio-file]');
+  const file = input?.files?.[0];
+  if (!input || !file) return;
+  const form = input.closest('[data-touch-form]');
+  const id = form?.dataset.touchForm;
+  const kind = input.dataset.audioFile;
+  try {
+    const updated = await api(`/touchpoints/${id}/audio/${kind}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      body: file,
+    });
+    const idx = state.touchpoints.findIndex((t) => t.id === id);
+    if (idx >= 0) state.touchpoints[idx] = updated;
+    paintRecording(form, kind, kind === 'meet' ? updated.audio_url : updated.discover_audio_url, id);
+    toast('Recording saved.');
+  } catch {
+    input.value = '';
+    toast('Couldn’t save that recording. Use an MP3 or M4A.', true);
+  }
+});
+
 el('touchList')?.addEventListener('click', async (event) => {
+  const clear = event.target.closest('[data-clear-audio]');
+  if (clear) {
+    const id = clear.dataset.touch;
+    const kind = clear.dataset.clearAudio;
+    try {
+      const updated = await api(`/touchpoints/${id}/audio/${kind}`, { method: 'DELETE' });
+      const idx = state.touchpoints.findIndex((t) => t.id === id);
+      if (idx >= 0) state.touchpoints[idx] = updated;
+      paintRecording(clear.closest('form'), kind, '', id);
+      toast('Recording removed.');
+    } catch {
+      toast('Couldn’t remove that recording.', true);
+    }
+    return;
+  }
   const del = event.target.closest('[data-del-touch]');
   if (!del) return;
   if (!confirm('Delete this journey page?')) return;

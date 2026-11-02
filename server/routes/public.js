@@ -84,6 +84,7 @@ function publicPoi(row) {
     imageUrl: row.image_url,
     x: row.x,
     y: row.y,
+    marker: row.marker || null,
   };
 }
 
@@ -126,6 +127,7 @@ function publicTouchpoint(row, venueCode, sessionPublic) {
     element: row.element,
     imageUrl: row.image_url,
     audioUrl: row.audio_url,
+    discoverAudioUrl: row.discover_audio_url,
     poiId: row.poi_id,
     sortOrder: row.sort_order,
     path: `/${venueCode || 'nh'}/${row.slug}`,

@@ -1960,6 +1960,30 @@ body.quest .topbar {
 .shrinePanel p + p { margin-top: 12px; }
 .shrinePanel h3 { color: var(--ice-mid); }
 
+.listenButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  min-height: 40px;
+  padding: 8px 14px 8px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--ice-card);
+  background: var(--snow);
+  color: var(--ink-text);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.listenButton__icon { width: 18px; height: 18px; display: block; }
+.listenButton.is-on {
+  background: #d7f1fb;
+  border-color: #1a4f73;
+  color: #1a4f73;
+}
+.listenButton + audio { display: none; }
+
 .shrineGate {
   display: flex;
   align-items: flex-end;

@@ -238,7 +238,17 @@ code { font-family: var(--mono); font-size: 0.9em; color: var(--aurora); }
 
 /* admin markers ----------------------------------------------------------- */
 
-.apin { width: 30px; height: 30px; display: grid; place-items: center; cursor: grab; }
+.apin { width: 36px; height: 36px; display: grid; place-items: center; cursor: grab; }
+.apin__art { width: 30px; height: 30px; object-fit: contain; pointer-events: none; }
+.apin.is-realm { width: 44px; height: 44px; }
+.apin.is-realm .apin__art { width: 40px; height: 40px; }
+.markerPick { display: flex; align-items: center; gap: 10px; }
+.markerPick img { width: 40px; height: 40px; object-fit: contain; flex: none; }
+.markerPick select { flex: 1; }
+.markerThumb {
+  width: 22px; height: 22px; object-fit: contain;
+  vertical-align: middle; margin-right: 6px;
+}
 .apin__gem {
   width: 15px; height: 15px;
   transform: rotate(45deg);
@@ -248,11 +258,11 @@ code { font-family: var(--mono); font-size: 0.9em; color: var(--aurora); }
   border: 1.7px solid var(--pin-color);
   box-shadow: 0 0 10px -1px var(--pin-color);
 }
-.apin.is-draft .apin__gem { border-style: dashed; opacity: 0.6; }
-.apin.is-selected { transform: scale(1.45); z-index: 900; }
+.apin.is-draft .apin__art { opacity: 0.45; }
+.apin.is-selected { transform: scale(1.25); z-index: 900; }
 .apin__name {
   position: absolute;
-  top: 27px;
+  top: calc(100% + 2px);
   white-space: nowrap;
   font-size: 10px;
   color: var(--frost-300);
@@ -373,6 +383,9 @@ code { font-family: var(--mono); font-size: 0.9em; color: var(--aurora); }
   color: var(--frost-500);
 }
 .form input[readonly] { color: var(--frost-300); }
+.recordingField { margin: 0 0 14px; }
+.recordingField audio { display: block; width: min(100%, 420px); margin-top: 8px; }
+.recordingField .ghostButton { margin-top: 8px; }
 
 /* ---------------------------------- table --------------------------------- */
 

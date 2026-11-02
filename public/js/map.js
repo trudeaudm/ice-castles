@@ -124,6 +124,19 @@ const ParkMap = (() => {
     map.options.zoomSnap = prevSnap;
   }
 
+  const REALM_MARKERS = ['water', 'earth', 'fire', 'air', 'spirit'];
+
+  /**
+   * A saved marker wins. `park` stays the location pin even when a Guardian
+   * is linked here. An empty marker still follows that Guardian, so older
+   * stops keep their seal until someone picks a pin.
+   */
+  function pinRealm(poi, linkedRealm) {
+    if (poi.marker === 'park') return null;
+    if (REALM_MARKERS.includes(poi.marker)) return poi.marker;
+    return REALM_MARKERS.includes(linkedRealm) ? linkedRealm : null;
+  }
+
   function buildIcon(poi, { visited, isTarget, isGlow, isDimmed, label, realm }) {
     const el = document.createElement('div');
     el.className = 'pin';
@@ -132,9 +145,10 @@ const ParkMap = (() => {
     if (isTarget) el.classList.add('is-target');
     if (isGlow) el.classList.add('is-glow');
     if (isDimmed) el.classList.add('is-dimmed');
-    if (realm) el.classList.add('is-realm');
-    const art = realm
-      ? `/assets/art/realm-${realm}-${isDimmed ? 'off' : 'on'}.png`
+    const shown = pinRealm(poi, realm);
+    if (shown) el.classList.add('is-realm');
+    const art = shown
+      ? `/assets/art/realm-${shown}-${isDimmed ? 'off' : 'on'}.png`
       : '/assets/art/pin-park.png';
     el.innerHTML = `
       <span class="pin__halo"></span>
@@ -142,7 +156,7 @@ const ParkMap = (() => {
       <span class="pin__tick"><img src="/assets/art/icon-check.png" alt=""></span>
       <span class="pin__label"></span>`;
     el.querySelector('.pin__label').textContent = label;
-    const size = realm ? 44 : 36;
+    const size = shown ? 44 : 36;
     return L.divIcon({ html: el.outerHTML, className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
   }
 

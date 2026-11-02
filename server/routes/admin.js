@@ -21,10 +21,18 @@ const {
   clearReference,
   publishMap,
 } = require('../parkMap');
+const { kindColumn, saveRecording, clearRecording } = require('../recordings');
 
 const router = express.Router();
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'letmein';
+const POI_MARKERS = new Set(['park', 'water', 'earth', 'fire', 'air', 'spirit']);
+
+function normalizeMarker(value, fallback = 'park') {
+  const v = clean(value, 20);
+  if (!v) return fallback || 'park';
+  return POI_MARKERS.has(v) ? v : (fallback || 'park');
+}
 
 function requireAdmin(req, res, next) {
   const header = req.get('authorization') || '';
@@ -296,8 +304,8 @@ router.post('/pois', async (req, res) => {
   await db.run(
     `INSERT INTO pois
        (id, adventure_id, name, slug, category, zone, blurb, description, fun_fact, image_url,
-        x, y, scan_code, published, sort_order, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        x, y, scan_code, published, sort_order, marker, created_at, updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       id,
       adventureId,
@@ -314,6 +322,7 @@ router.post('/pois', async (req, res) => {
       await uniqueScanCode(),
       bool(b.published === undefined ? true : b.published),
       num(b.sort_order, 0),
+      normalizeMarker(b.marker, 'park'),
       ts,
       ts,
     ]
@@ -337,7 +346,7 @@ router.patch('/pois/:id', async (req, res) => {
 
   await db.run(
     `UPDATE pois SET name=?, slug=?, category=?, zone=?, blurb=?, description=?,
-       fun_fact=?, image_url=?, x=?, y=?, published=?, sort_order=?, updated_at=?
+       fun_fact=?, image_url=?, x=?, y=?, published=?, sort_order=?, marker=?, updated_at=?
      WHERE id=?`,
     [
       name,
@@ -352,6 +361,7 @@ router.patch('/pois/:id', async (req, res) => {
       b.y !== undefined ? num(b.y, existing.y) : existing.y,
       b.published !== undefined ? bool(b.published) : existing.published,
       b.sort_order !== undefined ? num(b.sort_order, existing.sort_order) : existing.sort_order,
+      b.marker !== undefined ? normalizeMarker(b.marker, existing.marker || 'park') : (existing.marker || null),
       now(),
       existing.id,
     ]
@@ -640,7 +650,44 @@ router.delete('/touchpoints/:id', async (req, res) => {
     return res.status(409).json({ error: 'banner_printed' });
   }
   await db.run('DELETE FROM touchpoints WHERE id = ?', [req.params.id]);
+  clearRecording(req.params.id, 'meet');
+  clearRecording(req.params.id, 'discover');
   res.json({ ok: true });
+});
+
+const AUDIO_TYPES = [
+  'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'audio/m4a', 'audio/aac',
+  'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/webm', 'audio/ogg',
+  'application/octet-stream',
+];
+
+router.put(
+  '/touchpoints/:id/audio/:kind',
+  express.raw({ type: AUDIO_TYPES, limit: '20mb' }),
+  async (req, res) => {
+    const column = kindColumn(req.params.kind);
+    const existing = await db.get('SELECT id FROM touchpoints WHERE id = ?', [req.params.id]);
+    if (!column || !existing) return res.status(404).json({ error: 'not_found' });
+    const url = saveRecording(req.params.id, req.params.kind, req.body, req.get('content-type'));
+    if (!url) return res.status(400).json({ error: 'bad_audio' });
+    await db.run(
+      `UPDATE touchpoints SET ${column} = ?, updated_at = ? WHERE id = ?`,
+      [url, now(), existing.id]
+    );
+    res.json(await db.get('SELECT * FROM touchpoints WHERE id = ?', [existing.id]));
+  }
+);
+
+router.delete('/touchpoints/:id/audio/:kind', async (req, res) => {
+  const column = kindColumn(req.params.kind);
+  const existing = await db.get('SELECT id FROM touchpoints WHERE id = ?', [req.params.id]);
+  if (!column || !existing) return res.status(404).json({ error: 'not_found' });
+  clearRecording(existing.id, req.params.kind);
+  await db.run(
+    `UPDATE touchpoints SET ${column} = NULL, updated_at = ? WHERE id = ?`,
+    [now(), existing.id]
+  );
+  res.json(await db.get('SELECT * FROM touchpoints WHERE id = ?', [existing.id]));
 });
 
 /* --------------------------------- QR codes ------------------------------ */

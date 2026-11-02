@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,500;1,9..144,600;1,9..144,700&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
-<link rel="stylesheet" href="/admin/admin.css?v=4">
+<link rel="stylesheet" href="/admin/admin.css?v=5">
 </head>
 <body>
 
@@ -94,6 +94,21 @@
           </label>
           <label>Zone<input name="zone" maxlength="80" placeholder="Dragon Roost"></label>
         </div>
+
+        <label>Map marker
+          <span class="markerPick">
+            <img id="markerPreview" alt="" width="40" height="40">
+            <select name="marker">
+              <option value="park">Park pin</option>
+              <option value="water">Water</option>
+              <option value="earth">Earth</option>
+              <option value="fire">Fire</option>
+              <option value="air">Air</option>
+              <option value="spirit">Spirit</option>
+            </select>
+          </span>
+        </label>
+        <p class="fieldHint">This is the pin guests see for this location. Park is the ordinary location pin. Water, Earth, Fire, Air, and Spirit are the realm seals. Air is the wind seal.</p>
 
         <label>Short line on the map card
           <input name="blurb" maxlength="300" placeholder="Three dragons, and a great many fire lizards.">
@@ -321,6 +336,6 @@
 <script src="/vendor/leaflet.js"></script>
 <script src="/js/grid.js"></script>
 <script src="/admin/draw.js?v=50"></script>
-<script src="/admin/admin.js?v=4"></script>
+<script src="/admin/admin.js?v=5"></script>
 </body>
 </html>

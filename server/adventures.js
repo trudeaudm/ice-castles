@@ -300,8 +300,8 @@ async function carryStationUrls(locationId, adventureId) {
       await db.run(
         `INSERT INTO touchpoints
            (id, adventure_id, type, slug, title, subtitle, body, discover_body, element, image_url, audio_url,
-            poi_id, sort_order, published, challenge_type, config, slug_locked, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            discover_audio_url, poi_id, sort_order, published, challenge_type, config, slug_locked, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           uuid(),
           adventureId,
@@ -314,6 +314,7 @@ async function carryStationUrls(locationId, adventureId) {
           row.element,
           row.image_url,
           row.audio_url,
+          row.discover_audio_url,
           null,
           row.sort_order,
           row.published,
