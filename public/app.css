@@ -41,6 +41,17 @@
   --air: #8fa8bc;
   --spirit: #9b6bc3;
   --realm: var(--aurora);
+  --badge-ink: #123056;
+  --badge-out: #2f7eb8;
+  --badge-in: #8fd0f4;
+  --badge-spark: #f4fbff;
+  --badge-tip: #6d5ed0;
+  --badge-arc: #f6b27a;
+  --play-a: #3d92cc;
+  --play-b: #f7fcff;
+  --play-c: #b7e6fb;
+  --play-d: #6d5ed0;
+  --play-e: #2f78b4;
 
   /* category keys, reused by map markers and the legend */
   --cat-landmark: #bfeaff;
@@ -2407,16 +2418,33 @@ body.quest .topbar {
   object-fit: contain;
   filter: drop-shadow(0 2px 0 rgba(18, 48, 86, 0.16));
 }
-.shrineIcon__gem svg {
-  width: 40px;
-  height: 40px;
-  stroke: var(--realm);
+.shrineIcon__gem .realmBtn {
+  width: 76px;
+  height: 76px;
+  display: block;
+  overflow: visible;
   fill: none;
-  stroke-width: 1.8;
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--realm) 55%, transparent));
+  stroke: none;
+  filter: drop-shadow(0 2px 0 rgba(18, 48, 86, 0.16));
 }
-.shrineIcon__gem--play svg { color: var(--play); fill: none; stroke: var(--play); }
-.shrineIcon__gem--play path:last-child { fill: var(--play); stroke: none; }
+.shrineIcon__gem .bOut { fill: var(--badge-out); stroke: var(--badge-ink); stroke-width: 3.5; }
+.shrineIcon__gem .bIn { fill: var(--badge-in); stroke: var(--badge-ink); stroke-width: 2; }
+.shrineIcon__gem .bGem { fill: var(--badge-spark); stroke: var(--badge-ink); stroke-width: 1.15; }
+.shrineIcon__gem .bTip { fill: var(--badge-tip); stroke: none; }
+.shrineIcon__gem .bArc { fill: none; stroke: var(--badge-arc); stroke-width: 3; }
+.shrineIcon__gem .rose { fill: var(--badge-spark); stroke: var(--badge-ink); stroke-width: 1.8; }
+.shrineIcon__gem .roseN { fill: var(--badge-tip); stroke: var(--badge-ink); stroke-width: 1.3; }
+.shrineIcon__gem .roseHub { fill: var(--badge-ink); stroke: none; }
+.shrineIcon__gem .hand { stroke: var(--badge-ink); stroke-width: 1.7; }
+.shrineIcon__gem .hand--warm { fill: #f6b27a; }
+.shrineIcon__gem .hand--pale { fill: #f7fcff; }
+.shrineIcon__gem .playA { fill: var(--play-a); stroke: none; }
+.shrineIcon__gem .playB { fill: var(--play-b); stroke: none; }
+.shrineIcon__gem .playC { fill: var(--play-c); stroke: none; }
+.shrineIcon__gem .playD { fill: var(--play-d); stroke: none; }
+.shrineIcon__gem .playE { fill: var(--play-e); stroke: none; }
+.shrineIcon__gem .playEdge { fill: none; stroke: var(--badge-ink); stroke-width: 1.8; }
+.shrineIcon__gem .playStar { fill: #f6c56a; stroke: var(--badge-ink); stroke-width: 1; }
 .shrineIcon__orbit {
   position: absolute;
   top: -8px;
@@ -3023,8 +3051,52 @@ body[data-realm] .challenge__hint {
 }
 body[data-realm] .questProgress { color: rgba(255, 255, 255, 0.9); }
 
+body[data-realm] .textButton,
+body[data-realm] .textButton--play {
+  color: var(--btn-label, #fff);
+  border-color: var(--btn-ink, #123056);
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--btn-ink, #123056) 45%, transparent);
+  background: linear-gradient(180deg, var(--btn-hi, #e7f7ff) 0%, var(--btn-mid, #8ecff4) 28%, var(--btn-deep, #3d97d4) 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.75), 0 3px 0 var(--btn-lip, #143e66);
+}
+body[data-realm="air"] .textButton,
+body[data-realm="air"] .textButton--play { text-shadow: none; }
+body[data-realm] .textButton.is-pressed,
+body[data-realm] .textButton:active {
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.75), 0 0 0 var(--btn-lip, #143e66);
+}
+body[data-realm] .listenButton {
+  border-color: var(--btn-ink);
+  background: var(--btn-hi);
+  color: var(--btn-ink);
+  box-shadow: inset 0 2px 0 #fff, 0 3px 0 color-mix(in srgb, var(--btn-lip) 40%, white);
+}
+body[data-realm] .listenButton.is-on {
+  background: var(--btn-mid);
+  border-color: var(--btn-ink);
+  color: var(--btn-ink);
+}
+body[data-realm] .challenge__clear { color: var(--realm-ink); }
+
 body[data-realm="water"] {
   --realm-ink: #145a9a;
+  --badge-ink: #123056;
+  --badge-out: #2f7eb8;
+  --badge-in: #8fd0f4;
+  --badge-spark: #f4fbff;
+  --badge-tip: #6d5ed0;
+  --badge-arc: #f6b27a;
+  --play-a: #3d92cc;
+  --play-b: #f7fcff;
+  --play-c: #b7e6fb;
+  --play-d: #6d5ed0;
+  --play-e: #2f78b4;
+  --btn-ink: #123056;
+  --btn-hi: #e7f7ff;
+  --btn-mid: #8ecff4;
+  --btn-deep: #3d97d4;
+  --btn-lip: #143e66;
+  --btn-label: #fff;
   background:
     radial-gradient(90% 46% at 50% -6%, rgba(210, 242, 255, 0.7), transparent 58%),
     linear-gradient(180deg, #0d4c8c 0%, #1c86c9 34%, #79c7ea 68%, #dff6fc 100%);
@@ -3070,6 +3142,23 @@ body[data-realm="water"] .realmSky i:nth-child(6) { left: 86%; width: 22px; heig
 
 body[data-realm="earth"] {
   --realm-ink: #2c5a28;
+  --badge-ink: #1c3316;
+  --badge-out: #3d6b32;
+  --badge-in: #c6de8a;
+  --badge-spark: #f6fbe6;
+  --badge-tip: #8a6230;
+  --badge-arc: #f0c56a;
+  --play-a: #4e7c3a;
+  --play-b: #f4f8e4;
+  --play-c: #c6de8a;
+  --play-d: #8a6230;
+  --play-e: #2c5a28;
+  --btn-ink: #1c3316;
+  --btn-hi: #eef6d4;
+  --btn-mid: #b7d56a;
+  --btn-deep: #3d6b32;
+  --btn-lip: #1e3d18;
+  --btn-label: #fff;
   background:
     radial-gradient(80% 40% at 50% 0%, rgba(210, 230, 160, 0.35), transparent 55%),
     linear-gradient(180deg, #1b3d22 0%, #3d6b32 32%, #8eae5c 66%, #efe0b4 100%);
@@ -3098,6 +3187,23 @@ body[data-realm="earth"] .leaves {
 
 body[data-realm="fire"] {
   --realm-ink: #9a2a10;
+  --badge-ink: #4a1608;
+  --badge-out: #e25a14;
+  --badge-in: #ffc98a;
+  --badge-spark: #fff4e4;
+  --badge-tip: #9a1c0c;
+  --badge-arc: #fff6d2;
+  --play-a: #e25a14;
+  --play-b: #fff6e4;
+  --play-c: #ffc27a;
+  --play-d: #9a1c0c;
+  --play-e: #c2410c;
+  --btn-ink: #4a1608;
+  --btn-hi: #ffe7c2;
+  --btn-mid: #ffb15a;
+  --btn-deep: #e25a14;
+  --btn-lip: #8a240c;
+  --btn-label: #fff;
   background:
     radial-gradient(70% 36% at 50% 108%, rgba(255, 170, 50, 0.55), transparent 62%),
     linear-gradient(180deg, #4a0d0a 0%, #a32210 30%, #e25a14 58%, #f6c98a 100%);
@@ -3164,9 +3270,31 @@ body[data-realm="fire"] .ember:nth-of-type(14) { left: 34%; animation-duration: 
 
 body[data-realm="air"] {
   --realm-ink: #3a627c;
+  --badge-ink: #243e52;
+  --badge-out: #6f97b4;
+  --badge-in: #eef7fc;
+  --badge-spark: #ffffff;
+  --badge-tip: #3d6f90;
+  --badge-arc: #f6b27a;
+  --play-a: #6f97b4;
+  --play-b: #ffffff;
+  --play-c: #d5e8f4;
+  --play-d: #3d6f90;
+  --play-e: #5f86a4;
+  --btn-ink: #243e52;
+  --btn-hi: #ffffff;
+  --btn-mid: #d7ebf6;
+  --btn-deep: #7fa8c4;
+  --btn-lip: #3a627c;
+  --btn-label: #123056;
   background:
     radial-gradient(80% 42% at 50% -8%, rgba(255, 255, 255, 0.72), transparent 56%),
     linear-gradient(180deg, #5f86a4 0%, #b7d4e6 40%, #f7fcff 100%);
+}
+body[data-realm="air"] .shrineIcon__label,
+body[data-realm="air"] .shrineGate.is-focus .shrineIcon.is-on .shrineIcon__label {
+  color: #1d3a4e;
+  text-shadow: none;
 }
 body.quest[data-realm="air"] .topbar {
   background: linear-gradient(to bottom, rgba(95, 134, 164, 0.92) 0%, rgba(183, 212, 230, 0.45) 70%, rgba(183, 212, 230, 0));
@@ -3185,6 +3313,23 @@ body[data-realm="air"] .wind {
 
 body[data-realm="spirit"] {
   --realm-ink: #5b2d86;
+  --badge-ink: #2a1248;
+  --badge-out: #7a4eab;
+  --badge-in: #e7cffc;
+  --badge-spark: #fbf7ff;
+  --badge-tip: #f0c14a;
+  --badge-arc: #f6c56a;
+  --play-a: #7a4eab;
+  --play-b: #fbf7ff;
+  --play-c: #e4c6ff;
+  --play-d: #f0c14a;
+  --play-e: #5b2d86;
+  --btn-ink: #2a1248;
+  --btn-hi: #f7f0ff;
+  --btn-mid: #d7b4ff;
+  --btn-deep: #7a4eab;
+  --btn-lip: #3a1868;
+  --btn-label: #fff;
   background:
     radial-gradient(70% 40% at 50% 0%, rgba(230, 200, 255, 0.4), transparent 58%),
     linear-gradient(180deg, #26124f 0%, #6a3d9a 38%, #c9a6e8 74%, #f7f0ff 100%);

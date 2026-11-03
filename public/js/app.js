@@ -636,9 +636,46 @@ let shrineSlug = null;
 let mapModalMode = null;
 let mapModalStation = null;
 
-const ICON_MEET = `<img src="${ART}/ui/icon-meet.svg?v=7" alt="">`;
-const ICON_DISCOVER = `<img src="${ART}/ui/icon-discover.svg?v=7" alt="">`;
-const ICON_PLAY = `<img src="${ART}/ui/icon-play.svg?v=8" alt="">`;
+const ICON_BADGE = `
+  <circle class="bOut" cx="32" cy="32" r="26"/>
+  <circle class="bIn" cx="32" cy="32" r="20.5"/>
+  <g class="bGem">
+    <path d="M32 4.2 34.3 8.2 32 12.2 29.7 8.2Z"/>
+    <path d="M59.8 32 55.8 34.3 51.8 32 55.8 29.7Z"/>
+    <path d="M32 59.8 29.7 55.8 32 51.8 34.3 55.8Z"/>
+    <path d="M4.2 32 8.2 29.7 12.2 32 8.2 34.3Z"/>
+  </g>
+  <path class="bTip" d="M32 4.2 34.3 8.2 32 8.2Z"/>`;
+const ICON_MEET = `<svg class="realmBtn" viewBox="0 0 64 64" aria-hidden="true">${ICON_BADGE}
+  <g class="hand hand--warm" transform="rotate(14 33 33)">
+    <rect x="38" y="28" width="15" height="12" rx="4"/>
+    <rect x="24" y="23.5" width="18" height="5.2" rx="2.6"/>
+    <rect x="22" y="30" width="20" height="5.2" rx="2.6"/>
+    <rect x="25" y="36.5" width="16" height="5.2" rx="2.6"/>
+  </g>
+  <g class="hand hand--pale" transform="rotate(-14 31 33)">
+    <rect x="11" y="26" width="15" height="12" rx="4"/>
+    <rect x="22" y="21" width="16" height="5.2" rx="2.6"/>
+    <rect x="20" y="27.5" width="18" height="5.2" rx="2.6"/>
+    <rect x="22" y="34" width="14" height="5.2" rx="2.6"/>
+    <ellipse cx="34" cy="20.5" rx="5.4" ry="3.3" transform="rotate(-28 34 20.5)"/>
+  </g>
+</svg>`;
+const ICON_DISCOVER = `<svg class="realmBtn" viewBox="0 0 64 64" aria-hidden="true">${ICON_BADGE}
+  <path class="bArc" d="M44 16.5a14 14 0 0 1 6.5 12"/>
+  <path class="rose" d="M32 14.5 37.2 27.2 49.5 32 37.2 36.8 32 49.5 26.8 36.8 14.5 32 26.8 27.2Z"/>
+  <path class="roseN" d="M32 14.5 37.2 27.2 32 32 26.8 27.2Z"/>
+  <circle class="roseHub" cx="32" cy="32" r="2.4"/>
+</svg>`;
+const ICON_PLAY = `<svg class="realmBtn" viewBox="0 0 64 64" aria-hidden="true">${ICON_BADGE}
+  <path class="playA" d="M25 19 45 32 25 45Z"/>
+  <path class="playB" d="M25 19 45 32 33 32Z"/>
+  <path class="playC" d="M25 19 33 32 25 32Z"/>
+  <path class="playD" d="M25 32 33 32 25 45Z"/>
+  <path class="playE" d="M33 32 45 32 25 45Z"/>
+  <path class="playEdge" d="M25 19 45 32 25 45Z"/>
+  <path class="playStar" d="M46 15.5 47.3 18.6 50.4 19.9 47.3 21.2 46 24.3 44.7 21.2 41.6 19.9 44.7 18.6Z"/>
+</svg>`;
 
 function setShrineFocus(key, { spin = true } = {}) {
   stopStoryAudio();
@@ -1730,21 +1767,17 @@ function waveStillEl(paintHost, mode) {
     : paintHost.querySelector('.shrine__art');
 }
 
-function waveStillOpacity(video) {
-  const t = video.currentTime || 0;
-  const dur = video.duration;
-  const intro = t < WAVE_STILL_S ? 1 - t / WAVE_STILL_S : 0;
-  const outro = Number.isFinite(dur) && dur - t < WAVE_STILL_S
-    ? 1 - Math.max(0, dur - t) / WAVE_STILL_S
-    : 0;
-  return Math.min(1, Math.max(intro, outro));
-}
-
-function syncWaveStill(el, video) {
+function primeWaveStill(el) {
   if (!el) return;
   el.style.animation = 'none';
   el.style.transition = 'none';
-  el.style.opacity = String(waveStillOpacity(video));
+  el.style.opacity = '1';
+}
+
+function fadeWaveStill(el, to, seconds) {
+  if (!el) return;
+  el.style.transition = `opacity ${Math.max(0.05, seconds)}s linear`;
+  el.style.opacity = String(to);
 }
 
 function clearWaveStill(el) {
@@ -2082,8 +2115,9 @@ async function runWave(realm, mode, paintHost, wavingHost, gen) {
     return false;
   }
   const still = waveStillEl(paintHost, mode);
+  primeWaveStill(still);
+  if (still) void still.offsetWidth;
   paintWaveFrame(canvas, video, mode, realm);
-  syncWaveStill(still, video);
   wavingHost.classList.add('is-waving');
   try {
     await video.play();
@@ -2094,12 +2128,39 @@ async function runWave(realm, mode, paintHost, wavingHost, gen) {
     return false;
   }
   silenceWave(video);
+  fadeWaveStill(still, 0, WAVE_STILL_S);
+  let outroAt = 0;
+  let outroMs = WAVE_STILL_S * 1000;
+  let outroTimer = 0;
+  const armOutro = () => {
+    if (outroAt || gen !== waveGen) return;
+    window.clearTimeout(outroTimer);
+    const dur = video.duration;
+    const remain = Number.isFinite(dur) ? Math.max(0, dur - (video.currentTime || 0)) : WAVE_STILL_S;
+    const seconds = remain > 0.08 ? Math.min(WAVE_STILL_S, remain) : WAVE_STILL_S;
+    outroMs = seconds * 1000;
+    outroAt = performance.now();
+    fadeWaveStill(still, 1, seconds);
+  };
+  const planOutro = () => {
+    if (outroAt || gen !== waveGen) return;
+    const dur = video.duration;
+    if (!Number.isFinite(dur)) return;
+    const ms = (dur - (video.currentTime || 0) - WAVE_STILL_S) * 1000;
+    window.clearTimeout(outroTimer);
+    if (ms <= 0) armOutro();
+    else outroTimer = window.setTimeout(armOutro, ms);
+  };
+  planOutro();
   const natural = await new Promise((resolve) => {
     let safety = 0;
     const finish = (ok) => {
       window.clearTimeout(safety);
       video.removeEventListener('ended', onEnd);
       video.removeEventListener('pause', onPause);
+      video.removeEventListener('durationchange', planOutro);
+      if (!outroAt) armOutro();
+      window.clearTimeout(outroTimer);
       resolve(ok);
     };
     const onEnd = () => finish(gen === waveGen);
@@ -2108,10 +2169,13 @@ async function runWave(realm, mode, paintHost, wavingHost, gen) {
     };
     video.addEventListener('ended', onEnd);
     video.addEventListener('pause', onPause);
+    video.addEventListener('durationchange', planOutro);
     safety = window.setTimeout(() => finish(false), 8000);
     const draw = () => {
       if (gen !== waveGen || !canvas.isConnected) return;
-      syncWaveStill(still, video);
+      if (!outroAt && Number.isFinite(video.duration) && video.duration - video.currentTime <= WAVE_STILL_S) {
+        armOutro();
+      }
       if (video.ended) return;
       if (!video.muted || video.volume !== 0) silenceWave(video);
       paintWaveFrame(canvas, video, mode, realm);
@@ -2119,7 +2183,12 @@ async function runWave(realm, mode, paintHost, wavingHost, gen) {
     };
     waveRaf = window.requestAnimationFrame(draw);
   });
-  if (gen === waveGen) syncWaveStill(still, video);
+  if (gen === waveGen && !outroAt) armOutro();
+  if (gen === waveGen && outroAt) {
+    const left = outroMs - (performance.now() - outroAt);
+    if (left > 20) await new Promise((resolve) => window.setTimeout(resolve, left));
+  }
+  window.clearTimeout(outroTimer);
   if (gen === waveGen && canvas.isConnected) canvas.remove();
   clearWaveStill(still);
   wavingHost.classList.remove('is-waving');
