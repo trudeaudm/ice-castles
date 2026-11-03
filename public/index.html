@@ -9,13 +9,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" href="/assets/art/icon-app.png" type="image/png">
-<link rel="apple-touch-icon" href="/assets/art/icon-app.png">
+<link rel="icon" href="/assets/art/logo-mark.png" type="image/png">
+<link rel="apple-touch-icon" href="/assets/art/logo-mark-app.png">
 <link rel="stylesheet" href="/vendor/leaflet.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap">
-<link rel="stylesheet" href="/app.css?v=79">
+<link rel="stylesheet" href="/app.css?v=82">
 </head>
 <body class="quest">
 
@@ -28,9 +28,12 @@
 <header class="topbar">
   <div class="topbar__id">
     <span class="topbar__eyebrow" id="parkLocation">Loading</span>
-    <h1 class="topbar__name" id="parkName">Castle Quest</h1>
-    <p class="questProgress" id="questProgress">0 of 5 Realms Awakened</p>
-    <div class="realmPips" id="realmPips" aria-hidden="true"></div>
+    <img class="topbar__mark" src="/assets/art/logo-mark.png" alt="">
+    <div class="topbar__copy">
+      <h1 class="topbar__name" id="parkName">Castle Quest</h1>
+      <p class="questProgress" id="questProgress">0 of 5 Realms Awakened</p>
+      <div class="realmPips" id="realmPips" aria-hidden="true"></div>
+    </div>
   </div>
   <div class="topbar__actions">
     <button class="progressRing" id="progressButton" type="button" aria-label="View my journey">
@@ -99,7 +102,7 @@
 <section class="threshold landing" id="threshold" hidden>
   <p class="landing__place" id="landingPlace">North Woodstock, New Hampshire</p>
   <div class="landing__brand">
-    <img class="landing__crest" src="/assets/art/icon-guardians.png" alt="">
+    <img class="landing__crest" src="/assets/art/logo-mark.png" alt="">
     <h1 class="landing__title">Castle Quest</h1>
     <p class="landing__kicker">Awaken the five Realms</p>
     <div class="landing__crew">
@@ -264,7 +267,7 @@
 
 <div class="bootSplash" id="bootSplash">
   <div class="bootSplash__mark" aria-hidden="true">
-    <span></span><span></span><span></span>
+    <img src="/assets/art/logo-mark.png" alt="">
   </div>
   <p class="bootSplash__text">Growing the ice…</p>
 </div>
