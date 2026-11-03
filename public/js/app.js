@@ -679,21 +679,33 @@ const ICON_PLAY = `<svg class="realmBtn" viewBox="0 0 64 64" aria-hidden="true">
 
 function setShrineFocus(key, { spin = true } = {}) {
   stopStoryAudio();
-  shrineFocus = key;
   const gate = document.querySelector('.shrineGate');
   if (!gate) return;
-  gate.dataset.focus = key;
-  gate.classList.add('is-focus');
-  if (spin) {
+  const closing = shrineFocus === key;
+  shrineFocus = closing ? null : key;
+  gate.classList.toggle('is-focus', !closing);
+  if (closing) {
+    gate.dataset.focus = '';
     gate.classList.remove('is-spinning');
-    void gate.offsetWidth;
-    gate.classList.add('is-spinning');
+  } else {
+    gate.dataset.focus = key;
+    if (spin) {
+      gate.classList.remove('is-spinning');
+      void gate.offsetWidth;
+      gate.classList.add('is-spinning');
+      window.clearTimeout(setShrineFocus.spinTimer);
+      setShrineFocus.spinTimer = window.setTimeout(() => {
+        if (gate.isConnected) gate.classList.remove('is-spinning');
+      }, 820);
+    }
   }
   gate.querySelectorAll('[data-shrine-focus]').forEach((btn) => {
-    btn.classList.toggle('is-on', btn.dataset.shrineFocus === key);
+    const on = btn.dataset.shrineFocus === shrineFocus;
+    btn.classList.toggle('is-on', on);
+    btn.setAttribute('aria-expanded', on ? 'true' : 'false');
   });
   document.querySelectorAll('.shrinePanel').forEach((panel) => {
-    panel.classList.toggle('is-open', panel.dataset.panel === key);
+    panel.classList.toggle('is-open', panel.dataset.panel === shrineFocus);
   });
 }
 
@@ -1461,17 +1473,17 @@ function renderStation(slug) {
       ${station.element ? `<p class="chip chip--target">${escapeHtml(REALM_META[station.element]?.label || station.element)}</p>` : ''}
       ${artHtml}
       <div class="shrineGate" data-focus="">
-        <button class="shrineIcon" data-shrine-focus="meet" type="button">
+        <button class="shrineIcon" data-shrine-focus="meet" type="button" aria-expanded="false">
           <span class="shrineIcon__orbit" aria-hidden="true"></span>
           <span class="shrineIcon__gem">${ICON_MEET}</span>
           <span class="shrineIcon__label">Meet</span>
         </button>
-        <button class="shrineIcon" data-shrine-focus="discover" type="button">
+        <button class="shrineIcon" data-shrine-focus="discover" type="button" aria-expanded="false">
           <span class="shrineIcon__orbit" aria-hidden="true"></span>
           <span class="shrineIcon__gem">${ICON_DISCOVER}</span>
           <span class="shrineIcon__label">Discover</span>
         </button>
-        <button class="shrineIcon" data-shrine-focus="play" type="button">
+        <button class="shrineIcon" data-shrine-focus="play" type="button" aria-expanded="false">
           <span class="shrineIcon__orbit" aria-hidden="true"></span>
           <span class="shrineIcon__gem shrineIcon__gem--play">${ICON_PLAY}</span>
           <span class="shrineIcon__label">Play</span>
@@ -1655,24 +1667,31 @@ function renderJourney() {
     else if (tp.type === 'monument') status = session?.builderQuizAt ? 'Quiz done' : session?.buildersVisitedAt ? 'Visited' : 'Optional';
     else if (tp.type === 'threshold') status = session ? 'Welcome' : 'Start here';
     else if (tp.complete) status = 'Realm awake';
+    const awake = Boolean(tp.complete || (tp.type === 'heart' && session?.winterKeeper));
+    const realm = tp.element ? ` data-realm="${escapeHtml(tp.element)}"` : '';
+    const hint = tp.element ? `${REALM_META[tp.element]?.label || tp.element} · ${status}` : status;
+    let token;
+    if (tp.element) token = `<img src="${realmPfp(tp.element)}" alt="">`;
+    else if (tp.type === 'heart') token = `<img src="${ART}/seal-winter-keeper.png" alt="">`;
+    else if (tp.type === 'monument') token = `<img src="${ART}/pin-park.png" alt="">`;
+    else token = `<img src="${ART}/ui/icon-journey.svg" alt="">`;
     return `<li>
-      <button class="stop ${tp.complete || (tp.type === 'heart' && session?.winterKeeper) ? 'is-found' : 'is-secret'}" data-go-station="${escapeHtml(tp.slug)}" type="button">
-        <span class="stop__token">${
-          tp.element
-            ? `<img src="${realmPfp(tp.element)}" alt="">`
-            : (tp.type === 'heart' ? `<img src="${ART}/seal-winter-keeper.png" alt="">` : tp.type === 'monument' ? `<img src="${ART}/pin-park.png" alt="">` : '◇')
-        }</span>
-        <span>
+      <button class="stop${awake ? ' is-found' : ''}"${realm} data-kind="${escapeHtml(tp.type || '')}" data-go-station="${escapeHtml(tp.slug)}" type="button">
+        <span class="stop__token">${token}</span>
+        <span class="stop__copy">
           <p class="stop__name">${escapeHtml(tp.title)}</p>
-          <p class="stop__hint">${escapeHtml(status)}</p>
+          <p class="stop__hint">${escapeHtml(hint)}</p>
         </span>
       </button>
     </li>`;
   }).join('');
 
+  const awakened = Store.realmsAwakened();
   dom.journeyBody.innerHTML = `
-    <p class="sectionLabel">Castle Quest</p>
-    <p class="fineprint" style="margin-bottom:16px">${Store.realmsAwakened()} of 5 Realms Awakened. Builder’s Monument is optional. The Heart finishes the quest.</p>
+    <div class="journeyHead">
+      <p class="journeyHead__count"><b>${awakened}</b><span>of 5 Realms Awakened</span></p>
+      <p class="journeyHead__note">Builder’s Monument is optional. The Heart finishes the quest.</p>
+    </div>
     <ul class="stopList">${rows}</ul>`;
 }
 

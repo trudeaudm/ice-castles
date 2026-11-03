@@ -1547,23 +1547,93 @@ body.sheet-open .sheet { transform: none; }
 }
 .tally__count { font-family: var(--mono); font-size: 11px; color: var(--frost-500); flex: none; }
 
-.stopList { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.journeyHead {
+  margin: 0 0 16px;
+  padding: 14px 16px 16px;
+  border-radius: 18px;
+  border: 3px solid #123056;
+  background: linear-gradient(180deg, #f7fcff 0%, #d7eef8 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.8), 0 3px 0 #143e66;
+}
+.journeyHead__count {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  color: #123056;
+}
+.journeyHead__count b {
+  font-family: var(--display);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 0.9;
+}
+.journeyHead__count span {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.journeyHead__note {
+  margin: 8px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #1a4060;
+}
+
+.stopList { display: grid; gap: 10px; list-style: none; margin: 0; padding: 0; }
 
 .stop {
   display: flex;
-  align-items: flex-start;
-  gap: 11px;
-  padding: 11px 12px;
-  border-radius: var(--r-md);
-  background: #fff;
-  border: 2px solid var(--ice-card);
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px 10px 10px;
+  border-radius: 22px;
+  background: #f7fcff;
+  border: 3px solid #123056;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.85), 0 3px 0 #d4e8f4;
   width: 100%;
   text-align: left;
 }
-.stop.is-found { border-color: rgba(245, 185, 66, 0.55); background: #fff8e8; }
+.stop[data-realm="water"] { --row: #2f7eb8; }
+.stop[data-realm="earth"] { --row: #3d6b32; }
+.stop[data-realm="fire"] { --row: #e25a14; }
+.stop[data-realm="air"] { --row: #3d6f90; }
+.stop[data-realm="spirit"] { --row: #7a4eab; }
+.stop[data-realm] .stop__hint { color: var(--row); }
+.stop.is-found {
+  border-color: var(--row, #c9892a);
+  background: color-mix(in srgb, var(--row, #f0a820) 16%, #fff);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.85), 0 3px 0 color-mix(in srgb, var(--row, #a86a10) 70%, #123056);
+}
 
-.stop__token { flex: none; margin-top: 1px; }
-.stop__token img { width: 28px; height: 28px; object-fit: contain; display: block; }
+.stop__token { flex: none; display: grid; place-items: center; }
+.stop__token img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 0 rgba(18, 48, 86, 0.16));
+}
+.stop__copy { min-width: 0; }
+.stop__name {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 2px;
+  color: #123056;
+}
+.stop.is-found .stop__name { color: #123056; }
+.stop__hint {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  margin: 0;
+  text-transform: uppercase;
+  color: #4a7fa3;
+}
 .remainList {
   list-style: none;
   display: flex;
@@ -1583,9 +1653,6 @@ body.sheet-open .sheet { transform: none; }
 }
 .remainList img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
 
-.stop__name { font-size: 14px; margin: 0 0 2px; color: var(--ink-text); }
-.stop.is-found .stop__name { color: #ffd6a3; }
-.stop__hint { font-size: 12px; line-height: 1.45; margin: 0; color: var(--frost-500); }
 .stop__zone {
   font-family: var(--mono);
   font-size: 9px;
@@ -1594,9 +1661,6 @@ body.sheet-open .sheet { transform: none; }
   color: var(--frost-500);
   margin: 3px 0 0;
 }
-
-/* Unfound stops keep their name hidden — the hint is the puzzle. */
-.stop.is-secret .stop__name { color: var(--frost-500); font-style: italic; }
 
 .reward {
   margin-top: 15px;
@@ -2908,8 +2972,17 @@ button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm).is-pop {
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.75), 0 0 0 #143e66;
 }
 
-.shrineIcon__gem { transition: transform 200ms var(--ease-spring), filter 200ms; }
-.shrineIcon.is-pressed .shrineIcon__gem { transform: scale(0.86); }
+.shrineIcon__gem {
+  transition: filter 200ms;
+  animation: shrineBob 2.8s ease-in-out infinite;
+}
+.shrineIcon:nth-child(2) .shrineIcon__gem { animation-delay: -0.95s; }
+.shrineIcon:nth-child(3) .shrineIcon__gem { animation-delay: -1.9s; }
+@keyframes shrineBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.shrineIcon.is-pressed .shrineIcon__gem { animation: none; transform: scale(0.86); }
 .shrineIcon.is-pop .shrineIcon__gem { animation: btnPop 460ms var(--ease-spring); }
 
 .sheet__grip::before {
