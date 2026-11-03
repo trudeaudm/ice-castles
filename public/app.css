@@ -661,7 +661,6 @@ body.landing-open .station { visibility: hidden; }
 .landing__face img {
   position: relative;
   z-index: 1;
-  transition: opacity 0.25s linear;
 }
 .landing__wave {
   position: absolute;
@@ -687,7 +686,6 @@ body.landing-open .station { visibility: hidden; }
   animation: pfpTalk 560ms var(--ease-spring);
   filter: drop-shadow(0 0 14px currentColor);
 }
-.landing__realm.is-waving .landing__face img { opacity: 0; }
 .landing__realm.is-waving .landing__face::after { opacity: 1; }
 .waveSource {
   position: fixed;
@@ -2238,9 +2236,6 @@ body.quest .topbar {
   z-index: 0;
   pointer-events: none;
 }
-.shrine__hero .shrine__art { transition: opacity 0.25s linear; }
-.shrine__hero.is-waving .shrine__art { opacity: 0; }
-.summon.shrine__hero.is-waving.is-shown .shrine__art { opacity: 0; animation: none; }
 
 .summon {
   position: relative;
