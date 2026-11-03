@@ -636,9 +636,9 @@ let shrineSlug = null;
 let mapModalMode = null;
 let mapModalStation = null;
 
-const ICON_MEET = `<img src="${ART}/icon-meet.png" alt="">`;
-const ICON_DISCOVER = `<img src="${ART}/icon-discover.png" alt="">`;
-const ICON_PLAY = `<img src="${ART}/icon-play.png" alt="">`;
+const ICON_MEET = `<img src="${ART}/ui/icon-meet.svg?v=4" alt="">`;
+const ICON_DISCOVER = `<img src="${ART}/ui/icon-discover.svg" alt="">`;
+const ICON_PLAY = `<img src="${ART}/ui/icon-play.svg" alt="">`;
 
 function setShrineFocus(key, { spin = true } = {}) {
   stopStoryAudio();
@@ -1722,6 +1722,7 @@ let talkHide = 0;
 let waveGen = 0;
 let waveTimer = 0;
 let waveRaf = 0;
+const WAVE_STILL_S = 0.25;
 
 function waveVideoEl() {
   if (waveVideoEl.el) return waveVideoEl.el;
@@ -2059,12 +2060,36 @@ async function runWave(realm, mode, paintHost, wavingHost, gen) {
     return false;
   }
   silenceWave(video);
+  let coveredAt = 0;
+  let coverTimer = 0;
+  const coverWithStill = () => {
+    if (coveredAt || gen !== waveGen) return;
+    window.clearTimeout(coverTimer);
+    wavingHost.classList.remove('is-waving');
+    coveredAt = performance.now();
+  };
+  const planCover = () => {
+    if (coveredAt || gen !== waveGen) return;
+    const dur = video.duration;
+    if (!Number.isFinite(dur)) return;
+    const ms = (dur - video.currentTime - WAVE_STILL_S) * 1000;
+    if (ms <= 0) {
+      coverWithStill();
+      return;
+    }
+    window.clearTimeout(coverTimer);
+    coverTimer = window.setTimeout(coverWithStill, ms);
+  };
+  planCover();
   const natural = await new Promise((resolve) => {
     let safety = 0;
+    let coverPoll = 0;
     const finish = (ok) => {
       window.clearTimeout(safety);
+      window.clearInterval(coverPoll);
       video.removeEventListener('ended', onEnd);
       video.removeEventListener('pause', onPause);
+      video.removeEventListener('timeupdate', planCover);
       resolve(ok);
     };
     const onEnd = () => finish(gen === waveGen);
@@ -2073,18 +2098,26 @@ async function runWave(realm, mode, paintHost, wavingHost, gen) {
     };
     video.addEventListener('ended', onEnd);
     video.addEventListener('pause', onPause);
+    video.addEventListener('timeupdate', planCover);
+    coverPoll = window.setInterval(planCover, 50);
     safety = window.setTimeout(() => finish(false), 8000);
     const draw = () => {
-      if (gen !== waveGen || video.ended || !canvas.isConnected) return;
+      if (gen !== waveGen || !canvas.isConnected) return;
+      planCover();
+      if (video.ended) return;
       if (!video.muted || video.volume !== 0) silenceWave(video);
       paintWaveFrame(canvas, video, mode, realm);
       waveRaf = window.requestAnimationFrame(draw);
     };
     waveRaf = window.requestAnimationFrame(draw);
   });
-  wavingHost.classList.remove('is-waving');
-  if (natural) await new Promise((resolve) => window.setTimeout(resolve, 220));
-  if (canvas.isConnected) canvas.remove();
+  coverWithStill();
+  if (gen === waveGen && coveredAt) {
+    const left = Math.max(0, WAVE_STILL_S * 1000 - (performance.now() - coveredAt));
+    if (left > 0) await new Promise((resolve) => window.setTimeout(resolve, left));
+  }
+  window.clearTimeout(coverTimer);
+  if (gen === waveGen && canvas.isConnected) canvas.remove();
   return natural;
 }
 

@@ -212,9 +212,9 @@ body.map-moving .aurora__band { animation-play-state: paused; }
 }
 
 .progressRing svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.progressRing__track { stroke: rgba(126, 243, 255, 0.18); stroke-width: 3.5; }
+.progressRing__track { stroke: #123056; stroke-width: 3.2; opacity: 0.55; }
 .progressRing__fill {
-  stroke: var(--aurora);
+  stroke: #2f78b4;
   stroke-width: 3.5;
   stroke-linecap: round;
   stroke-dasharray: 113;
@@ -236,8 +236,8 @@ body.map-moving .aurora__band { animation-play-state: paused; }
   font-family: var(--mono);
   font-weight: 700;
   font-size: 13px;
-  color: var(--frost-100);
-  text-shadow: 0 0 8px #04101f, 0 1px 2px #04101f;
+  color: #123056;
+  text-shadow: none;
 }
 
 /* ----------------------------------- map ---------------------------------- */
@@ -403,7 +403,7 @@ body.map-moving .aurora__band { animation-play-state: paused; }
   padding: 0;
 }
 .mapTool svg { width: 19px; height: 19px; }
-.mapTool img { width: 36px; height: 36px; object-fit: contain; display: block; }
+.mapTool img { width: 42px; height: 42px; object-fit: contain; display: block; }
 .mapTool.is-on { color: var(--aurora); border-color: rgba(93, 240, 207, 0.45); }
 
 .challenge {
@@ -658,15 +658,17 @@ body.landing-open .station { visibility: hidden; }
   object-fit: cover;
   display: block;
 }
+.landing__face img {
+  position: relative;
+  z-index: 1;
+  transition: opacity 0.25s linear;
+}
 .landing__wave {
   position: absolute;
   inset: 0;
-  opacity: 0;
+  z-index: 0;
   pointer-events: none;
-  transition: opacity 180ms ease;
 }
-.landing__realm.is-waving .landing__face img,
-.landing__face img { transition: opacity 180ms ease; }
 .landing__face::after {
   content: "";
   position: absolute;
@@ -685,7 +687,6 @@ body.landing-open .station { visibility: hidden; }
   animation: pfpTalk 560ms var(--ease-spring);
   filter: drop-shadow(0 0 14px currentColor);
 }
-.landing__realm.is-waving .landing__wave { opacity: 1; }
 .landing__realm.is-waving .landing__face img { opacity: 0; }
 .landing__realm.is-waving .landing__face::after { opacity: 1; }
 .waveSource {
@@ -821,30 +822,54 @@ body.landing-open .station { visibility: hidden; }
 .landing__begin {
   position: relative;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: min(380px, 100%);
-  min-height: 118px;
-  margin-top: 8px;
-  padding: 36px 48px 16px;
-  border-radius: 0;
+  min-height: 64px;
+  margin-top: 20px;
+  padding: 0 28px;
+  border: 3px solid #123056;
+  border-radius: 999px;
   font-family: var(--display);
   font-weight: 800;
   font-size: 17px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: #fff;
-  text-shadow:
-    0 1px 2px rgba(8, 32, 56, 0.75),
-    0 0 10px rgba(8, 32, 56, 0.45);
-  background: url("/assets/art/btn-begin-quest.png") center / 100% 100% no-repeat;
-  box-shadow: none;
+  text-shadow: 0 1px 0 rgba(18, 48, 86, 0.45);
+  background: linear-gradient(180deg, #e7f7ff 0%, #8ecff4 26%, #3d97d4 62%, #246eae 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.75), 0 3px 0 #143e66;
 }
 .landing__begin span { position: relative; z-index: 1; }
+.landing__gem {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  width: 36px;
+  height: 46px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 2;
+  overflow: visible;
+}
+.landing__gem .f1 { fill: #f4fbff; }
+.landing__gem .f2 { fill: #b7e6fb; }
+.landing__gem .f3 { fill: #6d5ed0; }
+.landing__gem .f4 { fill: #3d92cc; }
+.landing__gem .edge {
+  fill: none;
+  stroke: #123056;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.landing__gem .edge--split { stroke-width: 1.3; }
 .landing__begin::after {
   content: "";
   position: absolute;
-  inset: 24% 12% 34%;
-  border-radius: 40px;
-  background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.45) 50%, transparent 65%);
+  inset: 5px 16px;
+  border-radius: 999px;
+  background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.4) 50%, transparent 65%);
   transform: translateX(-130%);
   pointer-events: none;
   animation: btnShimmer 3.2s var(--ease-out) 0.9s infinite;
@@ -863,21 +888,19 @@ body.landing-open .station { visibility: hidden; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 68px;
-  padding: 0 28px;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 22px;
   border-radius: 999px;
-  border: 0;
-  background: url("/assets/art/btn-pill-a.png") center / 100% 100% no-repeat;
-  box-shadow: none;
-  font-size: 12px;
+  border: 3px solid #123056;
+  background: linear-gradient(180deg, #e7f7ff 0%, #8ecff4 26%, #3d97d4 62%, #246eae 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.75), 0 3px 0 #143e66;
+  font-size: 13px;
   font-weight: 900;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #fff;
-  text-shadow:
-    0 1px 2px rgba(8, 32, 56, 0.7),
-    0 0 8px rgba(8, 32, 56, 0.4);
+  text-shadow: 0 1px 0 rgba(18, 48, 86, 0.4);
 }
 .landing__link img {
   width: 20px;
@@ -885,23 +908,21 @@ body.landing-open .station { visibility: hidden; }
   object-fit: contain;
   flex: none;
 }
-.landing__link svg {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  fill: none;
+.btnGlyph {
+  width: 18px;
+  height: 18px;
   flex: none;
+  fill: currentColor;
+  stroke: #123056;
+  stroke-width: 1.5;
 }
-.landing__link + .landing__link,
-.landing__map { background-image: url("/assets/art/btn-pill-b.png"); }
 .landing__map { width: 100%; }
 .landing__link::after {
   content: "";
   position: absolute;
-  inset: 18% 10% 22%;
+  inset: 4px 14px;
   border-radius: 999px;
-  background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.4) 50%, transparent 65%);
+  background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.38) 50%, transparent 65%);
   transform: translateX(-130%);
   pointer-events: none;
 }
@@ -968,9 +989,9 @@ body.landing-open .station { visibility: hidden; }
   height: 36px;
   margin-top: 2px;
   border-radius: 50%;
-  border: 2px solid var(--ice-card);
-  background: var(--snow);
-  color: var(--ink-text);
+  border: 3px solid #123056;
+  background: #f4fbff;
+  color: #123056;
 }
 .beginBrief__close svg,
 .storyModal__close svg {
@@ -1005,10 +1026,10 @@ body.landing-open .station { visibility: hidden; }
   min-height: 52px;
   margin: 4px 0 18px;
   padding: 12px 14px;
-  border-radius: 14px;
-  border: 2px solid var(--ice-card);
-  background: var(--snow);
-  color: var(--ink-text);
+  border-radius: 16px;
+  border: 3px solid #123056;
+  background: #f4fbff;
+  color: #123056;
   font-weight: 800;
   font-size: 15px;
   text-align: left;
@@ -1088,25 +1109,28 @@ body.landing-open .station { visibility: hidden; }
 .threshold__primary,
 .threshold__ghost {
   min-height: 56px;
-  border-radius: 14px;
+  border-radius: 999px;
+  border: 3px solid #123056;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .threshold__primary {
-  background: linear-gradient(#b8fbff, var(--aurora) 55%, var(--aurora-dim));
-  color: var(--ink-text);
-  border-bottom: 4px solid var(--candy-lip);
+  background: linear-gradient(180deg, #e7f7ff 0%, #8ecff4 26%, #3d97d4 62%, #246eae 100%);
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(18, 48, 86, 0.4);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.75), 0 3px 0 #143e66;
 }
 .threshold__primary--earned {
-  background: linear-gradient(#ffe28a, var(--lantern) 50%, var(--lantern-dim));
-  color: #3a2200;
-  border-bottom-color: #b07810;
+  background: linear-gradient(180deg, #fff6d2 0%, #ffd56a 34%, #f0a820 100%);
+  color: #123056;
+  text-shadow: none;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.75), 0 3px 0 #a86a10;
 }
 .threshold__ghost {
-  border: 2px solid var(--ice-mid);
-  color: var(--ink-text);
-  background: var(--snow);
+  color: #123056;
+  background: #f4fbff;
+  box-shadow: inset 0 2px 0 #fff, 0 3px 0 #b7d4e6;
 }
 
 .mapModal {
@@ -1688,20 +1712,22 @@ body.sheet-open .sheet { transform: none; }
   margin-top: 18px;
   min-height: 54px;
   padding: 12px 24px;
-  border-radius: 14px;
-  border: 0;
-  border-bottom: 4px solid var(--candy-lip);
-  color: var(--ink-text);
-  background: linear-gradient(#b8fbff, var(--aurora) 55%, var(--aurora-dim));
+  border-radius: 999px;
+  border: 3px solid #123056;
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(18, 48, 86, 0.4);
+  background: linear-gradient(180deg, #e7f7ff 0%, #8ecff4 26%, #3d97d4 62%, #246eae 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.75), 0 3px 0 #143e66;
   font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 .textButton--play {
-  color: #073014;
-  background: linear-gradient(#81c784, var(--play) 50%, var(--play-deep));
-  border-bottom-color: #1b5e20;
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(18, 48, 86, 0.35);
+  background: linear-gradient(180deg, #e5f8e4 0%, #7dce80 32%, #3d9a42 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.7), 0 3px 0 #1d5c28;
 }
 
 .fineprint { font-size: 11.5px; line-height: 1.5; color: var(--frost-500); }
@@ -1810,10 +1836,13 @@ body.sheet-open .sheet { transform: none; }
 .scanner__row button {
   flex: none;
   padding: 0 22px;
-  border-radius: var(--r-md);
-  background: var(--aurora);
-  color: #032a24;
-  font-weight: 600;
+  border-radius: 999px;
+  border: 3px solid #123056;
+  background: linear-gradient(180deg, #e7f7ff 0%, #8ecff4 26%, #3d97d4 62%, #246eae 100%);
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(18, 48, 86, 0.4);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.75), 0 3px 0 #143e66;
+  font-weight: 800;
   font-size: 15px;
 }
 
@@ -1926,14 +1955,15 @@ body.sheet-open .sheet { transform: none; }
 
 .award__done {
   padding: 15px 34px;
-  border-radius: 14px;
-  background: linear-gradient(#ffe28a, var(--lantern) 50%, var(--lantern-dim));
-  color: #3a2200;
+  border-radius: 999px;
+  border: 3px solid #123056;
+  background: linear-gradient(180deg, #fff6d2 0%, #ffd56a 34%, #f0a820 100%);
+  color: #123056;
   font-weight: 800;
   font-size: 15px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  border-bottom: 4px solid #b07810;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.75), 0 3px 0 #a86a10;
 }
 
 .award.is-final .award__title { color: var(--lantern); }
@@ -1998,7 +2028,7 @@ body.sheet-open .sheet { transform: none; }
   box-shadow: none;
 }
 .scanFab svg { width: 27px; height: 27px; stroke-width: 2; position: relative; }
-.scanFab img { width: 60px; height: 60px; object-fit: contain; position: relative; }
+.scanFab img { width: 56px; height: 56px; object-fit: contain; position: relative; }
 .scanFab img { transition: transform 220ms var(--ease-spring); }
 
 .scanFab__pulse {
@@ -2205,13 +2235,10 @@ body.quest .topbar {
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 3;
-  opacity: 0;
+  z-index: 0;
   pointer-events: none;
-  transition: opacity 220ms ease;
 }
-.shrine__hero .shrine__art { transition: opacity 220ms ease; }
-.shrine__hero.is-waving .shrine__wave { opacity: 1; }
+.shrine__hero .shrine__art { transition: opacity 0.25s linear; }
 .shrine__hero.is-waving .shrine__art { opacity: 0; }
 .summon.shrine__hero.is-waving.is-shown .shrine__art { opacity: 0; animation: none; }
 
@@ -2331,9 +2358,9 @@ body.quest .topbar {
   min-height: 40px;
   padding: 8px 14px 8px 12px;
   border-radius: 999px;
-  border: 2px solid var(--ice-card);
-  background: var(--snow);
-  color: var(--ink-text);
+  border: 3px solid #123056;
+  background: #f4fbff;
+  color: #123056;
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -2379,7 +2406,7 @@ body.quest .topbar {
   width: 76px;
   height: 76px;
   object-fit: contain;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 2px 0 rgba(18, 48, 86, 0.16));
 }
 .shrineIcon__gem svg {
   width: 40px;
@@ -2468,15 +2495,15 @@ body.quest .topbar {
   flex: none;
 }
 .mapChip {
-  min-height: 36px;
-  width: 108px;
+  min-height: 40px;
+  width: 112px;
   padding: 0;
   border-radius: 0;
   border: 0;
   color: var(--ink-text);
   background: transparent;
 }
-.mapChip img { width: 100%; height: 36px; object-fit: contain; display: block; }
+.mapChip img { width: 100%; height: 40px; object-fit: contain; display: block; }
 .mapChip img { transition: transform 220ms var(--ease-spring); }
 .guideFab {
   display: none;
@@ -2486,24 +2513,26 @@ body.quest .topbar {
   z-index: 55;
   min-width: 112px;
   min-height: 48px;
-  padding: 0 10px;
-  border-radius: 0;
-  background: transparent;
-  border: 0;
-  color: #e8f6ff;
+  padding: 0 16px 0 12px;
+  gap: 6px;
+  border-radius: 999px;
+  border: 3px solid #123056;
+  background: linear-gradient(180deg, #e7f7ff 0%, #8ecff4 26%, #3d97d4 62%, #246eae 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.75), 0 3px 0 #143e66;
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(18, 48, 86, 0.4);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-size: 12px;
-  gap: 0;
+  font-size: 13px;
 }
-.guideFab img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  pointer-events: none;
+.guideFab svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
 }
 .guideFab span { position: relative; }
 body.guide-open .guideFab { display: inline-flex; align-items: center; justify-content: center; }
@@ -2807,7 +2836,7 @@ button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm) {
   .beginStory:hover { filter: brightness(1.06); }
   .landing__realm:hover .landing__face { animation: pfpTalk 480ms var(--ease-spring); }
   .landing__begin:hover {
-    filter: brightness(1.1) drop-shadow(0 10px 18px rgba(126, 243, 255, 0.35));
+    filter: brightness(1.06);
   }
   .landing__link:hover::after { animation: btnShimmer 700ms var(--ease-out); }
   .mapTool:hover img,
@@ -2841,9 +2870,15 @@ button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm).is-pop {
 .threshold__primary.is-pressed,
 .threshold__primary:active,
 .award__done.is-pressed,
-.award__done:active {
-  transform: translateY(2px) scale(0.99);
-  border-bottom-width: 2px;
+.award__done:active,
+.landing__begin.is-pressed,
+.landing__begin:active,
+.landing__link.is-pressed,
+.landing__link:active,
+.guideFab.is-pressed,
+.guideFab:active {
+  transform: translateY(3px) scale(0.99);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.75), 0 0 0 #143e66;
 }
 
 .shrineIcon__gem { transition: transform 200ms var(--ease-spring), filter 200ms; }

@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap">
-<link rel="stylesheet" href="/app.css?v=82">
+<link rel="stylesheet" href="/app.css?v=86">
 </head>
 <body class="quest">
 
@@ -41,11 +41,11 @@
         <circle class="progressRing__track" cx="22" cy="22" r="18"></circle>
         <circle class="progressRing__fill" cx="22" cy="22" r="18" id="progressFill"></circle>
       </svg>
-      <img class="progressRing__gem" src="/assets/art/icon-journey.png" alt="">
+      <img class="progressRing__gem" src="/assets/art/ui/icon-journey.svg" alt="">
       <span class="progressRing__label" id="progressLabel">0</span>
     </button>
     <button class="mapChip" id="headerMap" type="button" aria-label="Open map">
-      <img src="/assets/art/chip-map-path.png" alt="">
+      <img src="/assets/art/ui/chip-map.svg" alt="">
     </button>
   </div>
 </header>
@@ -56,13 +56,13 @@
   <main id="map" aria-label="Park map"></main>
   <div class="mapTools">
     <button class="mapTool" id="recenterButton" type="button" aria-label="Fit the whole park on screen">
-      <img src="/assets/art/icon-recenter.png" alt="">
+      <img src="/assets/art/ui/icon-recenter.svg" alt="">
     </button>
     <button class="mapTool" id="journeyButton" type="button" aria-pressed="false" aria-label="Show Guardian stops only">
-      <img src="/assets/art/icon-guardians.png" alt="">
+      <img src="/assets/art/ui/icon-guardians.svg" alt="">
     </button>
     <button class="mapTool" id="filterButton" type="button" aria-label="Filter what the map shows">
-      <img src="/assets/art/icon-filter.png" alt="">
+      <img src="/assets/art/ui/icon-filter.svg" alt="">
     </button>
   </div>
   <div class="legend" id="legend" hidden>
@@ -75,10 +75,10 @@
   </section>
   <button class="scanFab scanFab--guide" id="scanFab" type="button" aria-label="Scan a map code">
     <span class="scanFab__pulse" aria-hidden="true"></span>
-    <img src="/assets/art/icon-scan.png" alt="">
+    <img src="/assets/art/ui/icon-scan.svg" alt="">
   </button>
   <button class="guideFab" id="guideToggle" type="button" aria-pressed="false" aria-label="Back to Castle Quest">
-    <img src="/assets/art/btn-back-quest.png" alt="">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6 8 12.5 14.5 19"/></svg>
     <span>Quest</span>
   </button>
 </div>
@@ -151,9 +151,22 @@
     <input id="landingPartySize" name="partySize" type="number" inputmode="numeric" min="1" max="20" step="1" placeholder="How many?" autocomplete="off" enterkeyhint="done">
   </label>
   <p class="landing__partyHint" id="landingPartyHint" role="status">Enter your party size to continue.</p>
-  <button class="landing__begin" id="thresholdStart" type="button"><span>Begin Quest</span></button>
+  <button class="landing__begin" id="thresholdStart" type="button">
+    <svg class="landing__gem" viewBox="0 0 36 48" aria-hidden="true">
+      <path class="f1" d="M18 2 29 22 18 24Z"/>
+      <path class="f2" d="M18 2 7 22 18 24Z"/>
+      <path class="f3" d="M7 22 18 46 18 24Z"/>
+      <path class="f4" d="M29 22 18 46 18 24Z"/>
+      <path class="edge" d="M18 2 29 22 18 46 7 22Z"/>
+      <path class="edge edge--split" d="M18 2v44M7 22h22"/>
+    </svg>
+    <span>Begin Quest</span>
+  </button>
   <div class="landing__foot">
-    <button class="landing__link landing__map" id="landingMap" type="button">Map</button>
+    <button class="landing__link landing__map" id="landingMap" type="button">
+      <svg class="btnGlyph" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2.6c-3.7 0-6.4 2.9-6.4 6.6 0 4.8 6.4 11.2 6.4 11.2s6.4-6.4 6.4-11.2c0-3.7-2.7-6.6-6.4-6.6zm0 8.8a2.3 2.3 0 1 1 0-4.6 2.3 2.3 0 0 1 0 4.6z"/></svg>
+      Map
+    </button>
   </div>
   <div class="beginBrief" id="beginBrief" hidden>
     <div class="beginBrief__card">
@@ -277,6 +290,6 @@
 <script src="/js/map.js?v=29"></script>
 <script src="/js/scanner.js?v=19"></script>
 <script src="/js/wind-wisps.js?v=9"></script>
-<script src="/js/app.js?v=92"></script>
+<script src="/js/app.js?v=97"></script>
 </body>
 </html>
