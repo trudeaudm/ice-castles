@@ -617,7 +617,8 @@ const dom = {
   landingBubbleWho: el('landingBubbleWho'), landingBubbleText: el('landingBubbleText'),
   landingRealms: el('landingRealms'),
   mapModal: el('mapModal'), mapModalEyebrow: el('mapModalEyebrow'),
-  mapModalTitle: el('mapModalTitle'), mapModalBody: el('mapModalBody'),
+  mapModalTitle: el('mapModalTitle'), mapModalGuardians: el('mapModalGuardians'),
+  mapModalBody: el('mapModalBody'),
   mapModalPrimary: el('mapModalPrimary'), mapModalGhost: el('mapModalGhost'),
   finale: el('finale'), finaleCard: el('finaleCard'),
   award: el('award'), awardGlyph: el('awardGlyph'), awardTitle: el('awardTitle'),
@@ -2426,6 +2427,10 @@ function hideMapModal() {
   if (!dom.mapModal) return;
   mapModalMode = null;
   mapModalStation = null;
+  if (dom.mapModalGuardians) {
+    dom.mapModalGuardians.hidden = true;
+    dom.mapModalGuardians.innerHTML = '';
+  }
   dom.mapModal.classList.remove('is-open', 'mapModal--hint');
   dom.mapModal.inert = true;
   document.body.classList.remove('map-modal-open');
@@ -2434,10 +2439,38 @@ function hideMapModal() {
   }, 280);
 }
 
+function renderBeginGuideGuardians() {
+  if (!dom.mapModalGuardians) return;
+  const guardians = Store.touchByType('guardian')
+    .slice()
+    .sort((a, b) => REALM_ORDER.indexOf(a.element) - REALM_ORDER.indexOf(b.element));
+  if (!guardians.length) {
+    dom.mapModalGuardians.hidden = true;
+    dom.mapModalGuardians.innerHTML = '';
+    return;
+  }
+  dom.mapModalGuardians.hidden = false;
+  dom.mapModalGuardians.innerHTML = guardians.map((g) => {
+    const realm = g.element || '';
+    const name = g.title || REALM_META[realm]?.label || 'Guardian';
+    const realmLabel = REALM_META[realm]?.label || '';
+    const done = g.complete ? ' is-done' : '';
+    return `<button class="mapModal__guardian${done}" type="button" data-slug="${escapeHtml(g.slug)}" aria-label="${escapeHtml(name)}">
+      <span class="mapModal__face mapModal__face--${escapeHtml(realm)}"><img src="${realmPfp(realm)}" alt=""></span>
+      <span class="mapModal__guardianName">${escapeHtml(realmLabel || name)}</span>
+    </button>`;
+  }).join('');
+}
+
 function showMapModal({ mode, eyebrow, title, body, primary, ghost, placement }) {
   mapModalMode = mode;
   dom.mapModalEyebrow.textContent = eyebrow;
   dom.mapModalTitle.textContent = title;
+  if (mode === 'beginGuide') renderBeginGuideGuardians();
+  else if (dom.mapModalGuardians) {
+    dom.mapModalGuardians.hidden = true;
+    dom.mapModalGuardians.innerHTML = '';
+  }
   dom.mapModalBody.textContent = body;
   dom.mapModalPrimary.textContent = primary;
   dom.mapModalGhost.textContent = ghost || '';
@@ -2478,7 +2511,7 @@ function showBeginGuide() {
     placement: 'hint',
     eyebrow: 'Begin Quest',
     title: 'Pick a Guardian',
-    body: 'These glowing seals are the five Guardians. Walk to any one, then tap its seal to meet them and play their challenge.',
+    body: 'Tap a Guardian below, or walk to a glowing seal on the map to meet them and play their challenge.',
     primary: 'Got it',
   });
 }
@@ -2901,6 +2934,11 @@ function wire() {
 
   dom.mapModalPrimary.addEventListener('click', handleMapModalPrimary);
   dom.mapModalGhost.addEventListener('click', handleMapModalGhost);
+  dom.mapModalGuardians?.addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-slug]');
+    if (!btn || mapModalMode !== 'beginGuide') return;
+    goStation(btn.dataset.slug);
+  });
   dom.mapModal.addEventListener('click', (event) => {
     if (event.target !== dom.mapModal) return;
     if (mapModalMode === 'begin' || mapModalMode === 'beginGuide') hideMapModal();

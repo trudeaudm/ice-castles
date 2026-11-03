@@ -840,8 +840,9 @@ body.landing-open .station { visibility: hidden; }
   justify-content: center;
   width: min(380px, 100%);
   min-height: 64px;
-  margin-top: 42px;
+  margin-top: 18px;
   padding: 0 28px;
+  gap: 10px;
   border: 3px solid #123056;
   border-radius: 999px;
   font-family: var(--display);
@@ -855,28 +856,17 @@ body.landing-open .station { visibility: hidden; }
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.75), 0 3px 0 #143e66;
 }
 .landing__begin span { position: relative; z-index: 1; }
-.landing__gem {
-  position: absolute;
-  top: -28px;
-  left: 50%;
-  width: 36px;
-  height: 46px;
-  transform: translateX(-50%);
-  pointer-events: none;
-  z-index: 2;
-  overflow: visible;
+.beginCompass {
+  position: relative;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  flex: none;
 }
-.landing__gem .f1 { fill: #f4fbff; }
-.landing__gem .f2 { fill: #b7e6fb; }
-.landing__gem .f3 { fill: #6d5ed0; }
-.landing__gem .f4 { fill: #3d92cc; }
-.landing__gem .edge {
-  fill: none;
-  stroke: #123056;
-  stroke-width: 2;
-  stroke-linejoin: round;
-}
-.landing__gem .edge--split { stroke-width: 1.3; }
+.beginCompass__ring { fill: #f7fcff; stroke: #123056; stroke-width: 1.7; }
+.beginCompass__rose { fill: #2f78b4; stroke: #123056; stroke-width: 1.2; }
+.beginCompass__north { fill: #7a68d4; stroke: #123056; stroke-width: 1; }
+.beginCompass__hub { fill: #123056; stroke: none; }
 .landing__begin::after {
   content: "";
   position: absolute;
@@ -1204,6 +1194,69 @@ body.begin-frame.map-modal-open .guideFab {
   font-size: 26px;
   line-height: 1.1;
   color: var(--ink-text);
+}
+.mapModal__guardians {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 14px 0 0;
+}
+.mapModal__guardian {
+  flex: 1;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ice-mid);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.mapModal__face {
+  position: relative;
+  width: clamp(44px, 11vw, 56px);
+  height: clamp(44px, 11vw, 56px);
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 42%, #1a568f 0%, #0c335f 72%, #071526 100%);
+  box-shadow: 0 3px 8px rgba(4, 16, 31, 0.28);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+}
+.mapModal__face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.mapModal__face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px rgba(186, 226, 248, 0.9);
+  pointer-events: none;
+}
+.mapModal__guardianName {
+  font-family: var(--body);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.1;
+  text-align: center;
+}
+.mapModal__guardian:active .mapModal__face,
+.mapModal__guardian:focus-visible .mapModal__face {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 3px rgba(74, 168, 220, 0.45), 0 4px 12px rgba(4, 16, 31, 0.3);
+}
+.mapModal__guardian.is-done {
+  opacity: 0.52;
+}
+.mapModal__guardian.is-done .mapModal__face {
+  filter: grayscale(0.35);
 }
 .mapModal__body {
   margin: 10px 0 0;
@@ -2915,17 +2968,21 @@ body.quest.guide-open .toast {
 
 button.is-fun { position: relative; overflow: visible; }
 
-button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm) {
+button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__guardian) {
   transition: transform 200ms var(--ease-spring), filter 200ms var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.beginStory):hover {
+  button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__guardian):not(.beginStory):hover {
     transform: translateY(-3px) scale(1.045);
     filter: brightness(1.08);
   }
   .beginStory:hover { filter: brightness(1.06); }
   .landing__realm:hover .landing__face { animation: pfpTalk 480ms var(--ease-spring); }
+  .mapModal__guardian:hover .mapModal__face {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 3px rgba(74, 168, 220, 0.45), 0 4px 12px rgba(4, 16, 31, 0.3);
+  }
   .landing__begin:hover {
     filter: brightness(1.06);
   }
@@ -2939,14 +2996,14 @@ button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm) {
   }
 }
 
-button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):active,
-button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm).is-pressed {
+button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__guardian):active,
+button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__guardian).is-pressed {
   transform: scale(0.985);
   filter: brightness(0.94);
   transition-duration: 70ms;
 }
 
-button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm).is-pop {
+button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__guardian).is-pop {
   animation: btnPop 480ms var(--ease-spring);
 }
 
