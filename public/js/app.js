@@ -3051,7 +3051,11 @@ function wire() {
     renderMap();
   });
   dom.scanFab.addEventListener('click', () => Scanner.open(handleCode));
-  dom.awardDone.addEventListener('click', dismissAward);
+  dom.awardDone.addEventListener('click', () => {
+    const goJourney = !dom.award.classList.contains('is-final');
+    dismissAward();
+    if (goJourney) openPanel('journey');
+  });
   document.querySelectorAll('[data-close-panel]').forEach((button) => {
     button.addEventListener('click', closePanels);
   });
