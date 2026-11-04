@@ -18,6 +18,22 @@ const WAVE_FACE = {
   spirit: { zoom: 0.7, top: 0.07 },
 };
 const REALM_ORDER = ['water', 'earth', 'fire', 'air', 'spirit'];
+const ELEMENT_LINES = [
+  'Your quest has begun. Five elements await.',
+  'One element awakened. Four remain.',
+  'Two elements awakened. Keep exploring.',
+  'More than halfway. Two elements remain.',
+  'One Guardian remains. Awaken the final element.',
+  'All five elements are awake. Visit the Winter Keeper Throne to confirm your quest is complete.',
+];
+const RUNE_SHAPES = {
+  gust: '<svg viewBox="0 0 80 80" aria-hidden="true"><path d="M10 50c16-30 44-30 60-6" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/></svg>',
+  barb: '<svg viewBox="0 0 80 80" aria-hidden="true"><path d="M16 64 40 12l24 52" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+  drift: '<svg viewBox="0 0 80 80" aria-hidden="true"><path d="M8 30c18 10 36 10 64-8M8 50c18 10 36 10 64-8" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/></svg>',
+  hush: '<svg viewBox="0 0 80 80" aria-hidden="true"><path d="M40 8c16 16 16 48 0 64-16-16-16-48 0-64z" fill="currentColor"/></svg>',
+  block: '<svg viewBox="0 0 80 80" aria-hidden="true"><rect x="18" y="18" width="44" height="44" rx="3" fill="currentColor"/></svg>',
+  loop: '<svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="22" fill="none" stroke="currentColor" stroke-width="8"/></svg>',
+};
 const TILE_ART = {
   'ice-vein': `${ART}/cascade-ice-vein.png`,
   'lantern-glow': `${ART}/cascade-lantern-glow.png`,
@@ -595,6 +611,7 @@ const dom = {
   progressFill: el('progressFill'), progressLabel: el('progressLabel'),
   progressButton: el('progressButton'),
   questProgress: el('questProgress'), realmPips: el('realmPips'),
+  landingProgressLine: el('landingProgressLine'),
   stationView: el('stationView'),
   guideToggle: el('guideToggle'), headerMap: el('headerMap'), guide: el('guide'),
   sheet: el('sheet'), sheetBody: el('sheetBody'), sheetGrip: el('sheetGrip'),
@@ -762,7 +779,10 @@ function renderProgress() {
   dom.progressFill.style.strokeDasharray = String(circumference);
   dom.progressFill.style.strokeDashoffset = String(circumference * (1 - ratio));
   dom.progressLabel.textContent = String(awakened);
-  dom.questProgress.textContent = `${awakened} of 5 Realms Awakened`;
+  dom.questProgress.textContent = `${awakened} / 5`;
+  const line = ELEMENT_LINES[awakened] || ELEMENT_LINES[0];
+  if (dom.landingProgress) dom.landingProgress.textContent = `${awakened} / 5`;
+  if (dom.landingProgressLine) dom.landingProgressLine.textContent = line;
   const realms = Store.state.session?.realms || [];
   dom.realmPips.innerHTML = REALM_ORDER.map((realm) => {
     const on = realms.some((r) => r.realm === realm && r.complete);
@@ -779,7 +799,7 @@ function challengeHtml(station) {
   const challenge = station.challenge || {};
   if (!type || station.complete && station.type === 'guardian') {
     return station.type === 'guardian' && station.complete
-      ? `<div class="challenge"><p class="challenge__prompt">This Realm is awake. Find the others, then scan The Heart.</p></div>`
+      ? `<div class="challenge"><p class="challenge__prompt">This element is awake. Find the others, then scan the Winter Keeper Throne.</p></div>`
       : '';
   }
 
@@ -842,18 +862,28 @@ function challengeHtml(station) {
     </div>`;
   }
 
-  if (type === 'quiz') {
-    const questions = (challenge.questions || []).map((q, qi) => `
-      <fieldset class="quizQ">
-        <legend>${escapeHtml(q.question)}</legend>
-        ${(q.choices || []).map((c, ci) =>
-          `<label class="quizChoice"><input type="radio" name="q${qi}" value="${ci}"> ${escapeHtml(c)}</label>`
-        ).join('')}
-      </fieldset>`).join('');
-    return `<div class="challenge" data-station="${escapeHtml(station.slug)}">
+  if (type === 'shape_match') {
+    const pieces = (challenge.pieces || []).map((piece) => `
+      <button class="runePiece" type="button" data-piece="${escapeHtml(piece.id)}" data-fits="${piece.fits ? '1' : '0'}">
+        ${RUNE_SHAPES[piece.id] || RUNE_SHAPES.block}
+        <span>${escapeHtml(piece.label || '')}</span>
+      </button>`).join('');
+    return `<div class="challenge runePlay" data-station="${escapeHtml(station.slug)}">
       <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
-      ${questions}
-      <button class="textButton textButton--play" data-quiz-submit type="button">Finish quiz</button>
+      <div class="runeAltar" data-rune-altar>
+        <div class="runeAltar__mark" aria-hidden="true"></div>
+        <div class="runeAltar__set" data-rune-set></div>
+        <p class="runeAltar__hint">Drag matching shapes here</p>
+      </div>
+      <div class="runeTray">${pieces}</div>
+    </div>`;
+  }
+
+  if (type === 'quiz') {
+    return `<div class="challenge" data-station="${escapeHtml(station.slug)}" data-quiz-step="0">
+      <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
+      <div data-quiz-card>${quizCardHtml(station, 0, null)}</div>
+      <button class="textButton" data-quiz-skip type="button">Skip the quiz</button>
     </div>`;
   }
 
@@ -862,14 +892,35 @@ function challengeHtml(station) {
 
 function shrineMeetTitle(station) {
   if (station.type === 'guardian') return 'Meet the Guardian';
-  if (station.type === 'monument') return 'Meet the builders';
-  if (station.type === 'heart') return 'Meet the Heart';
+  if (station.type === 'monument') return 'Meet the First Builder';
+  if (station.type === 'heart') return 'The Winter Keeper Throne';
   return `Meet ${station.title}`;
 }
 
 function shrineDiscoverTitle(station) {
   if (station.type === 'guardian') return 'Discover the Element';
+  if (station.type === 'monument') return 'How Ice Castles Grow';
   return 'Discover';
+}
+
+function quizCardHtml(station, step, picked) {
+  const questions = station.challenge?.questions || [];
+  const q = questions[step];
+  if (!q) return '';
+  if (picked == null) {
+    const choices = (q.choices || []).map((choice, index) =>
+      `<button class="quizChoice" type="button" data-quiz-choice="${index}">${escapeHtml(choice)}</button>`
+    ).join('');
+    return `<p class="quizQ__ask">${escapeHtml(q.question)}</p><div class="quizChoices">${choices}</div>`;
+  }
+  const index = Number.isFinite(Number(q.correctIndex)) ? Number(q.correctIndex) : 0;
+  const letter = 'ABCD'[index] || '';
+  const correct = q.choices?.[index] || '';
+  const last = step >= questions.length - 1;
+  return `<p class="quizQ__ask">${escapeHtml(q.question)}</p>
+    <p class="quizReveal__answer">Correct answer: ${escapeHtml(letter)}. ${escapeHtml(correct)}</p>
+    <p class="quizReveal__fact">${escapeHtml(q.fact || '')}</p>
+    <button class="textButton textButton--play" data-quiz-next type="button">${last ? 'Finish quiz' : 'Next question'}</button>`;
 }
 
 function storyHtml(text) {
@@ -1550,18 +1601,21 @@ function renderHeartSlot(heartResult) {
     || (session.realms || []).filter((r) => !r.complete).map((r) => r.realm);
 
   if (remaining.length) {
-    const names = remaining.map((r) => REALM_META[r]?.label || r);
     const icons = remaining.map((r) =>
       `<li><img src="${realmPfp(r)}" alt=""><span>${escapeHtml(REALM_META[r]?.label || r)}</span></li>`
     ).join('');
     slot.innerHTML = `<div class="challenge">
-      <p class="challenge__prompt">The Heart is still sleeping. ${names.length === 1 ? 'This Realm' : 'These Realms'} remain:</p>
+      <p class="challenge__prompt">The Throne is waiting, but one or more elements are still sleeping. Return to the missing Guardian challenges, then scan here again to confirm your completion.</p>
       <ul class="remainList">${icons}</ul>
       <button class="textButton" data-open-journey type="button">View my journey</button>
     </div>`;
     return;
   }
 
+  if (!throneRevealPlayed) {
+    throneRevealPlayed = true;
+    openThroneReveal();
+  }
   slot.innerHTML = keepersFormHtml();
 }
 
@@ -1573,17 +1627,13 @@ function keepersFormHtml() {
       <input class="challenge__input" name="partySize" type="number" min="1" max="20" value="1" required>
     </label>`;
   return `<form class="challenge keepers" id="keepersForm">
-    <p class="challenge__prompt">The Heart is open. Enter the Winter Keepers in your party.</p>
+    <p class="challenge__prompt">Water, Earth, Fire, Air, and Spirit are awake. You completed all five Guardian challenges, and the Throne confirms your quest is complete. You are Winter Keepers, Protectors of Winter Magic. Enter your first names for your recognition.</p>
     ${sizeField}
     <label>First names
       <input class="challenge__input" name="names" placeholder="Ada, Sam, Juniper" required>
     </label>
-    <label>Email for the digital seal (optional)
+    <label>Email for a digital copy of your Winter Keeper recognition (optional)
       <input class="challenge__input" name="email" type="email" autocomplete="email">
-    </label>
-    <label class="check">
-      <input type="checkbox" name="marketing">
-      <span>Also send Ice Castles news to this address. Separate from the digital reward.</span>
     </label>
     <button class="threshold__primary threshold__primary--earned" type="submit">Become Winter Keepers</button>
   </form>`;
@@ -1592,12 +1642,13 @@ function keepersFormHtml() {
 function staffScreenHtml(session) {
   const names = session.keeperNames || [];
   const park = Store.state.park || {};
+  const count = session.partySize || names.length || 1;
   return `<div class="staffCard">
-    <p class="staffCard__kicker">Show this at the Gear Shop</p>
-    <h3>Winter Keepers</h3>
+    <p class="staffCard__kicker">Gift Shop</p>
+    <h3>Winter Keeper medallion</h3>
     <p class="staffCard__names">${escapeHtml(names.join(' · ') || 'This party')}</p>
-    <p class="staffCard__count">${session.partySize || names.length || 1} adventurer${(session.partySize || 1) === 1 ? '' : 's'}</p>
-    <p class="fineprint">${escapeHtml(park.badgeRedemption || 'One physical reward per adventurer.')}</p>
+    <p class="staffCard__count">Winter Keepers in this party: ${count}</p>
+    <p class="fineprint">${escapeHtml(park.badgeRedemption || 'Show this screen at the Gift Shop to receive your Winter Keeper medallion.')}</p>
   </div>`;
 }
 
@@ -1620,21 +1671,43 @@ async function submitKeepers(form) {
     names,
     partySize,
     email: form.email.value || null,
-    marketingOptIn: form.marketing.checked,
+    marketingOptIn: false,
   });
   renderProgress();
   renderHeartSlot();
   showFinale();
 }
 
+let throneRevealPlayed = false;
+
+function openThroneReveal() {
+  const pieces = REALM_ORDER.map((id, index) =>
+    `<img class="combine__piece combine__piece--${id}" src="${realmIcon(id, true)}" alt="" style="--i:${index}">`
+  ).join('');
+  dom.finaleCard.innerHTML = `
+    <div class="finaleStage combine">
+      <div class="combine__stage" aria-hidden="true">
+        ${pieces}
+        <span class="combine__burst"></span>
+        <img class="combine__medal" src="${ART}/seal-winter-keeper.png" alt="">
+      </div>
+      <p class="combine__kicker">Winter Keeper</p>
+      <h2 class="combine__title">Protector of Winter Magic</h2>
+      <p class="finaleStage__lead">The five elements rush together, and the Winter Keeper medallion appears.</p>
+      <p class="combine__photo">If you like, take a group photo here at the Throne. That part is entirely optional.</p>
+      <button class="threshold__primary threshold__primary--earned finaleStage__btn" data-close-finale type="button">Continue</button>
+    </div>`;
+  dom.finale.hidden = false;
+  requestAnimationFrame(() => dom.finale.classList.add('is-open'));
+}
+
 function showFinale() {
   const session = Store.state.session;
   if (!session?.winterKeeper) return;
   dom.finaleCard.innerHTML = `
-    <div class="finaleStage">
-      ${sealHtml(session)}
-      <p class="finaleStage__lead">The castle knows your names. Continue, then show the next screen at the Gear Shop.</p>
-      <button class="threshold__primary threshold__primary--earned finaleStage__btn" data-show-reward type="button">Continue</button>
+    <div class="finaleStage finaleStage--staff">
+      ${staffScreenHtml(session)}
+      <button class="textButton finaleStage__btn" data-close-finale type="button">Done</button>
     </div>`;
   dom.finale.hidden = false;
   requestAnimationFrame(() => dom.finale.classList.add('is-open'));
@@ -1667,7 +1740,7 @@ function renderJourney() {
     if (tp.type === 'heart') status = session?.winterKeeper ? 'Complete' : session?.realmsComplete ? 'Ready to scan' : 'Final destination';
     else if (tp.type === 'monument') status = session?.builderQuizAt ? 'Quiz done' : session?.buildersVisitedAt ? 'Visited' : 'Optional';
     else if (tp.type === 'threshold') status = session ? 'Welcome' : 'Start here';
-    else if (tp.complete) status = 'Realm awake';
+    else if (tp.complete) status = 'Element awake';
     const awake = Boolean(tp.complete || (tp.type === 'heart' && session?.winterKeeper));
     const realm = tp.element ? ` data-realm="${escapeHtml(tp.element)}"` : '';
     const hint = tp.element ? `${REALM_META[tp.element]?.label || tp.element} · ${status}` : status;
@@ -1690,8 +1763,8 @@ function renderJourney() {
   const awakened = Store.realmsAwakened();
   dom.journeyBody.innerHTML = `
     <div class="journeyHead">
-      <p class="journeyHead__count"><b>${awakened}</b><span>of 5 Realms Awakened</span></p>
-      <p class="journeyHead__note">Builder’s Monument is optional. The Heart finishes the quest.</p>
+      <p class="journeyHead__count"><b>${awakened}</b><span>/ 5</span></p>
+      <p class="journeyHead__note">${escapeHtml(ELEMENT_LINES[awakened] || ELEMENT_LINES[0])} Builder’s Monument is optional.</p>
     </div>
     <ul class="stopList">${rows}</ul>`;
 }
@@ -1731,7 +1804,7 @@ function renderPassport() {
     ? `${staffScreenHtml(session)}<p class="fineprint">${escapeHtml(park.badgeBody || '')}</p>`
     : `<div class="empty">
         <h3 class="empty__title">Not a Winter Keeper yet</h3>
-        <p class="empty__body">Awaken five Realms, then scan The Heart. Progress lasts until 4 AM Eastern.</p>
+        <p class="empty__body">Awaken five elements, then scan the Winter Keeper Throne. Progress lasts until 4 AM Eastern.</p>
       </div>`;
 }
 
@@ -1741,29 +1814,29 @@ function renderPassport() {
 
 const LANDING_FACTS = {
   water: [
-    { who: 'Cascade', text: 'Water is the trickiest ice to grow — it has to look like it’s still pouring!' },
-    { who: 'Cascade', text: 'Hunt for veins, ripples, and arches pressed into the walls beside you.' },
-    { who: 'Cascade', text: 'The lights in this realm cycle like a current under the ice.' },
+    { who: 'Cascade', text: 'Cascade notices water’s smallest wonders.' },
+    { who: 'Cascade', text: 'A bubble, a ripple, a reflection. The smallest detail may hold the biggest wonder.' },
+    { who: 'Cascade', text: 'Every Ice Castle begins and ends with water.' },
   ],
   earth: [
-    { who: 'Granite', text: 'The runes are carved, not printed — they change as you walk past.' },
-    { who: 'Granite', text: 'A single archway can take two people most of a night to grow.' },
-    { who: 'Granite', text: 'Four moose hide nearby. Each one holds a letter of a builder’s word.' },
+    { who: 'Granite', text: 'Granite remembers the ground beneath the ice.' },
+    { who: 'Granite', text: 'The castle begins with a place to build and a plan for people to move through it.' },
+    { who: 'Granite', text: 'Notice what supports the magic, not only what sparkles above it.' },
   ],
   fire: [
-    { who: 'Ember', text: 'Nothing here is actually burning — amber silk and LEDs do the flicker.' },
-    { who: 'Ember', text: 'Three dragons roost on the horse path. Count the fire lizards if you can!' },
-    { who: 'Ember', text: 'Those lizards are printed in-house. No two sit the same way twice.' },
+    { who: 'Ember', text: 'Ember finds balance in cold and light.' },
+    { who: 'Ember', text: 'Light reveals color, bubbles, and texture that daylight may hide.' },
+    { who: 'Ember', text: 'Fire and ice can share a story without one conquering the other.' },
   ],
   air: [
-    { who: 'Summit', text: 'A finished castle can hold more than twenty million pounds of ice.' },
-    { who: 'Summit', text: 'Artists harvest icicles by hand each night, then spray them until they fuse.' },
-    { who: 'Summit', text: 'Look up in the Aviary — every silk bird is painted by hand, and no two match.' },
+    { who: 'Summit', text: 'Summit follows the wind.' },
+    { who: 'Summit', text: 'Watch a flag flutter, snow drift, or warm breath appear in the cold.' },
+    { who: 'Summit', text: 'Curiosity moves like the wind. It carries you toward something you had not noticed yet.' },
   ],
   spirit: [
-    { who: 'Aurora', text: 'The Tundra stays dark on purpose. Give your eyes thirty seconds.' },
-    { who: 'Aurora', text: 'Everything you see was grown, not built — water, cold, and time.' },
-    { who: 'Aurora', text: 'Fairy Village doors are kid-height, and every silk is a different color.' },
+    { who: 'Aurora', text: 'Aurora gathers the memories people carry away.' },
+    { who: 'Aurora', text: 'What lasts is the fond memories people carry with them.' },
+    { who: 'Aurora', text: 'Wonder can continue as a memory, long after the ice has changed.' },
   ],
 };
 
@@ -2314,7 +2387,9 @@ function showThreshold() {
     dom.landingPlace.textContent = park.locationName || park.name || 'Ice Castles';
   }
   if (dom.landingProgress) {
-    dom.landingProgress.textContent = `${Store.realmsAwakened()} / 5 Realms Awakened`;
+    const awakened = Store.realmsAwakened();
+    dom.landingProgress.textContent = `${awakened} / 5`;
+    if (dom.landingProgressLine) dom.landingProgressLine.textContent = ELEMENT_LINES[awakened] || ELEMENT_LINES[0];
   }
   hideBeginBrief();
   clearPartyReminder();
@@ -2735,12 +2810,14 @@ function dismissAward() {
 async function handleStationChallenge(slug, answer) {
   const result = await Store.completeStation(slug, answer);
   if (result.status === 'error') {
+    const station = Store.touchBySlug(slug);
     const messages = {
       bad_code: 'That word isn’t right. Try again.',
       bad_images: 'Not those three — look again at the ice.',
       bad_sequence: 'Not that order. Watch once more.',
+      bad_shapes: 'These shapes have not found each other yet.',
     };
-    toast(messages[result.error] || 'Not quite — try again.');
+    toast(station?.challenge?.retry || messages[result.error] || 'Not quite — try again.');
     return;
   }
   renderProgress();
@@ -2751,9 +2828,9 @@ async function handleStationChallenge(slug, answer) {
     enqueueAward({
       glyph: meta.glyph,
       glyphUrl: realmIcon(result.realmAwakened, true),
-      kicker: 'Realm Awakened',
+      kicker: 'Element Awakened',
       title: meta.label,
-      meta: `${Store.realmsAwakened()} of 5 Realms`,
+      meta: Store.touchBySlug(slug)?.challenge?.success || `${Store.realmsAwakened()} / 5`,
     });
   } else if (result.status === 'repeat') {
     toast('Already recorded.');
@@ -3057,10 +3134,93 @@ function wire() {
       handleStationChallenge(root.dataset.station, { code });
       return;
     }
-    if (event.target.closest('[data-quiz-submit]')) {
+    if (event.target.closest('[data-quiz-choice]')) {
       const root = event.target.closest('[data-station]');
-      handleStationChallenge(root.dataset.station, { done: true });
+      const station = Store.touchBySlug(root.dataset.station);
+      const step = Number(root.dataset.quizStep || 0);
+      const card = root.querySelector('[data-quiz-card]');
+      if (card) card.innerHTML = quizCardHtml(station, step, Number(event.target.closest('[data-quiz-choice]').dataset.quizChoice));
+      return;
     }
+    if (event.target.closest('[data-quiz-next]')) {
+      const root = event.target.closest('[data-station]');
+      const station = Store.touchBySlug(root.dataset.station);
+      const questions = station?.challenge?.questions || [];
+      const step = Number(root.dataset.quizStep || 0) + 1;
+      if (step >= questions.length) {
+        handleStationChallenge(root.dataset.station, { done: true });
+        return;
+      }
+      root.dataset.quizStep = String(step);
+      const card = root.querySelector('[data-quiz-card]');
+      if (card) card.innerHTML = quizCardHtml(station, step, null);
+      return;
+    }
+    if (event.target.closest('[data-quiz-skip]')) {
+      toast('The quiz is optional. It does not change your quest.');
+      return;
+    }
+  });
+
+  let runeDrag = null;
+  const releaseRunePiece = (piece) => {
+    piece.classList.remove('is-dragging');
+    piece.style.position = '';
+    piece.style.left = '';
+    piece.style.top = '';
+    piece.style.width = '';
+    piece.style.zIndex = '';
+    piece.style.transform = '';
+  };
+  document.addEventListener('pointerdown', (event) => {
+    const piece = event.target.closest('.runePiece');
+    if (!piece || piece.classList.contains('is-placed')) return;
+    if (piece.closest('.runeAltar.is-forged')) return;
+    try { piece.setPointerCapture?.(event.pointerId); } catch { /* synthetic drags have no capture */ }
+    runeDrag = { piece, pointerId: event.pointerId, root: piece.closest('[data-station]') };
+    piece.classList.add('is-dragging');
+  });
+  document.addEventListener('pointermove', (event) => {
+    if (!runeDrag || event.pointerId !== runeDrag.pointerId) return;
+    const piece = runeDrag.piece;
+    if (!runeDrag.origin) {
+      const rect = piece.getBoundingClientRect();
+      runeDrag.origin = { x: rect.left, y: rect.top, cx: event.clientX, cy: event.clientY };
+      piece.style.position = 'fixed';
+      piece.style.left = `${rect.left}px`;
+      piece.style.top = `${rect.top}px`;
+      piece.style.width = `${rect.width}px`;
+      piece.style.zIndex = '40';
+    }
+    const dx = event.clientX - runeDrag.origin.cx;
+    const dy = event.clientY - runeDrag.origin.cy;
+    piece.style.transform = `translate(${dx}px, ${dy}px)`;
+  });
+  document.addEventListener('pointerup', (event) => {
+    if (!runeDrag || event.pointerId !== runeDrag.pointerId) return;
+    const { piece, root } = runeDrag;
+    runeDrag = null;
+    releaseRunePiece(piece);
+    const altar = root?.querySelector('[data-rune-altar]');
+    if (!altar || altar.classList.contains('is-forged')) return;
+    const rect = altar.getBoundingClientRect();
+    const inside = event.clientX >= rect.left && event.clientX <= rect.right
+      && event.clientY >= rect.top && event.clientY <= rect.bottom;
+    if (!inside) return;
+    if (piece.dataset.fits !== '1') {
+      const station = Store.touchBySlug(root.dataset.station);
+      toast(station?.challenge?.retry || 'These shapes have not found each other yet.');
+      piece.classList.add('is-rejected');
+      setTimeout(() => piece.classList.remove('is-rejected'), 450);
+      return;
+    }
+    piece.classList.add('is-placed');
+    altar.querySelector('[data-rune-set]').appendChild(piece);
+    const placed = [...altar.querySelectorAll('.runePiece.is-placed')];
+    if (placed.length < 4) return;
+    altar.classList.add('is-forged');
+    const ids = placed.map((node) => node.dataset.piece);
+    setTimeout(() => handleStationChallenge(root.dataset.station, { ids }), 780);
   });
 
   document.addEventListener('submit', (event) => {

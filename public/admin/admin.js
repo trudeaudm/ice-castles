@@ -558,7 +558,7 @@ el('addHuntButton').addEventListener('click', async () => {
         title: 'New trail',
         tagline: 'Find them all.',
         reward_title: 'Reward unlocked',
-        reward_body: 'Show this screen at the Warming Hut to claim it.',
+        reward_body: 'Show this screen at the Gift Shop to receive your Winter Keeper medallion.',
         active: false,
         adventure_id: adventureId(),
       }),
@@ -732,7 +732,7 @@ const TOUCH_TYPES = [
   { id: 'threshold', label: 'Threshold' },
   { id: 'guardian', label: 'Guardian' },
   { id: 'monument', label: 'Builder’s Monument' },
-  { id: 'heart', label: 'Heart of Winter' },
+  { id: 'heart', label: 'Winter Keeper Throne' },
 ];
 
 function recordingField(tp, kind, label, url) {

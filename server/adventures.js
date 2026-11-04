@@ -13,6 +13,7 @@ const CHALLENGE_TYPES = [
   'sequence',
   'multi_sequence',
   'quiz',
+  'shape_match',
 ];
 
 function parseConfig(raw) {
@@ -130,7 +131,7 @@ function parkFromAdventure(row) {
     safetyNote: row.safety_note,
     badgeTitle: row.badge_title || 'Winter Keeper',
     badgeBody: row.badge_body || 'You completed the journey.',
-    badgeRedemption: row.badge_redemption || 'Show this badge at the Warming Hut to claim your pin.',
+    badgeRedemption: row.badge_redemption || 'Show this screen at the Gift Shop to receive your Winter Keeper medallion.',
   };
 }
 
@@ -215,7 +216,7 @@ async function ensureMontreal() {
     is_active: true,
     welcome_headline: 'Welcome, Winter Keeper',
     welcome_body:
-      'Explore the castle. Discover the five Guardians, complete their challenges in any order, then scan The Heart to become a Winter Keeper.',
+      'Explore the castle. Discover the five Guardians, complete their challenges in any order, then scan the Winter Keeper Throne to become a Winter Keeper.',
     hours_note: 'Open nightly, weather permitting. Check the front gate for tonight’s closing time.',
     safety_note: 'Ice is uneven and slippery. Walk, don’t run, and keep little ones in reach.',
     map_image_url: '/assets/park-map.webp',
@@ -485,6 +486,14 @@ function validateChallengeAnswer(type, config, answer) {
     }
     case 'quiz':
       return { ok: true };
+    case 'shape_match': {
+      const need = (cfg.correctIds || []).map(String).sort();
+      const got = (answer?.ids || []).map(String).sort();
+      if (!need.length || got.length !== need.length || got.join('|') !== need.join('|')) {
+        return { ok: false, error: 'bad_shapes' };
+      }
+      return { ok: true };
+    }
     default:
       return { ok: false, error: 'wrong_type' };
   }
@@ -501,6 +510,8 @@ function publicChallengeConfig(type, config) {
       return {
         prompt: cfg.prompt || 'Enter the code at this stop.',
         hint: cfg.hint || '',
+        retry: cfg.retry || '',
+        success: cfg.success || '',
         fieldLabel: cfg.fieldLabel || '',
         placeholder: cfg.placeholder || '',
         submitLabel: cfg.submitLabel || '',
@@ -514,6 +525,8 @@ function publicChallengeConfig(type, config) {
       return {
         prompt: cfg.prompt || 'Choose the matching details.',
         hint: cfg.hint || '',
+        retry: cfg.retry || '',
+        success: cfg.success || '',
         selectCount: Number(cfg.selectCount) || (cfg.correctIds || []).length || 3,
         images: (cfg.images || []).map((img) => ({
           id: img.id,
@@ -527,6 +540,8 @@ function publicChallengeConfig(type, config) {
       return {
         prompt: cfg.prompt || 'Repeat the sequence you see.',
         hint: cfg.hint || '',
+        retry: cfg.retry || '',
+        success: cfg.success || '',
         kind: cfg.kind || 'symbol',
         options: cfg.options || [],
         length: Number(cfg.length) || (cfg.correct || [])[0]?.length || 5,
@@ -539,6 +554,19 @@ function publicChallengeConfig(type, config) {
         questions: (cfg.questions || []).map((q) => ({
           question: q.question,
           choices: q.choices || [],
+          correctIndex: Number.isFinite(Number(q.correctIndex)) ? Number(q.correctIndex) : null,
+          fact: q.fact || '',
+        })),
+      };
+    case 'shape_match':
+      return {
+        prompt: cfg.prompt || 'Drag the matching shapes together.',
+        retry: cfg.retry || '',
+        success: cfg.success || '',
+        pieces: (cfg.pieces || []).map((piece) => ({
+          id: piece.id,
+          label: piece.label || '',
+          fits: Boolean(piece.fits),
         })),
       };
     default:

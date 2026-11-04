@@ -66,6 +66,8 @@ const CHALLENGES = {
     type: 'image_select',
     config: {
       prompt: 'Cascade spotted tiny frozen wonders nearby. Look closely at the ice, then choose the three images that match what you see.',
+      retry: 'Not quite. Take another look. Cascade knows the smallest details can hold the biggest wonder.',
+      success: 'Water awakens. You found the wonder hidden in the ice, and Cascade’s mark joins your quest. When all five elements are awake, the Winter Keeper Throne will confirm your completion.',
       hint: 'Look for the clues on the monument around you.',
       selectCount: 3,
       correctIds: ['ice-vein', 'ice-arch', 'ice-ripple'],
@@ -83,6 +85,8 @@ const CHALLENGES = {
     type: 'code_entry',
     config: {
       prompt: 'Four of Granite’s moose are hiding nearby, each with a letter. Find them all and arrange the letters to reveal a shape you can find in a castle.',
+      retry: 'Those letters are not in the right order yet. Check each moose again, then try once more.',
+      success: 'Earth awakens. You found the word beneath the wonder, and Granite’s mark joins your quest. When all five elements are awake, the Winter Keeper Throne will confirm your completion.',
       hint: 'Look for the clues on the monument around you.',
       fieldLabel: 'The word you found',
       placeholder: 'Enter the word',
@@ -94,6 +98,8 @@ const CHALLENGES = {
     type: 'sequence',
     config: {
       prompt: 'Watch Ember’s four lanterns glow in sequence. Then tap their colors on your screen in the same order.',
+      retry: 'The colors slipped out of order. Watch Ember’s lanterns again, then follow their glow.',
+      success: 'Fire awakens. You followed the lantern light, and Ember’s spark joins your quest. When all five elements are awake, the Winter Keeper Throne will confirm your completion.',
       hint: 'Look for the clues on the monument around you.',
       clearLabel: 'Clear sequence',
       submitLabel: 'Awaken Fire',
@@ -109,13 +115,28 @@ const CHALLENGES = {
     },
   },
   summit: {
-    type: 'code_entry',
-    config: { prompt: 'Five flags reveal a word. Enter it.', code: 'CARVE' },
+    type: 'shape_match',
+    config: {
+      prompt: 'Summit scattered the pieces of an air rune nearby. Find the shapes that match, then drag them together until they form the rune.',
+      retry: 'These shapes have not found each other yet. Look for the pieces that belong together, then try once more.',
+      success: 'Air awakens. You joined the shapes into the rune, and Summit’s mark joins your quest. When all five elements are awake, the Winter Keeper Throne will confirm your completion.',
+      correctIds: ['gust', 'barb', 'drift', 'hush'],
+      pieces: [
+        { id: 'gust', label: 'Gust', fits: true },
+        { id: 'block', label: 'Block', fits: false },
+        { id: 'barb', label: 'Barb', fits: true },
+        { id: 'loop', label: 'Loop', fits: false },
+        { id: 'drift', label: 'Drift', fits: true },
+        { id: 'hush', label: 'Hush', fits: true },
+      ],
+    },
   },
   aurora: {
     type: 'multi_sequence',
     config: {
-      prompt: 'Watch the installation, then tap the five Realm symbols in the order you saw.',
+      prompt: 'Aurora’s symbols bring the five elements into harmony. Find the sequence nearby, then tap the symbols on your screen in the same order.',
+      retry: 'The symbols are not in harmony yet. Look closely at the sequence and try again.',
+      success: 'Spirit awakens. Aurora’s mark joins the others, carrying your quest toward its final meeting at the Winter Keeper Throne.',
       kind: 'symbol',
       length: 5,
       options: REALM_OPTIONS,
@@ -129,27 +150,52 @@ const CHALLENGES = {
   builders: {
     type: 'quiz',
     config: {
-      prompt: 'A short builder quiz. There is no passing score — finish it when you are ready.',
+      prompt: 'Optional: Take five quick multiple-choice questions to discover how an Ice Castle is built and reveal a surprising fact after each answer. Skip the quiz or play for fun; answers do not affect Castle Quest progress or Winter Keeper completion.',
       questions: [
         {
-          question: 'What is an Ice Castle grown from?',
-          choices: ['Cut stone blocks', 'Water, cold, and time', 'Carved foam', 'Glass panels'],
+          question: 'How did Ice Castles begin?',
+          choices: [
+            'As a mountain resort',
+            'As an ice playground Brent Christensen built for his children',
+            'As a town winter festival',
+            'As a school science project',
+          ],
+          correctIndex: 1,
+          fact: 'Christensen’s children called the ice playground in his yard an ‘ice castle.’ Their neighborhood friends soon wanted to explore it too.',
         },
         {
-          question: 'How do icicles become walls?',
-          choices: ['They are printed overnight', 'Harvested, placed by hand, then sprayed until they fuse', 'Poured into molds', 'Shipped in from a factory'],
+          question: 'About how much ice can one Ice Castle use?',
+          choices: ['20,000 pounds', '200,000 pounds', '2 million pounds', '20 million pounds'],
+          correctIndex: 3,
+          fact: 'Ice Castles’ current website lists about 20 million pounds of ice per castle. That scale takes planning, teamwork, and ongoing care.',
         },
         {
-          question: 'Who began growing these castles?',
-          choices: ['A lighting designer', 'Brent Christensen', 'A municipal ice crew', 'An unknown winter spirit'],
+          question: 'About how many icicles does Ice Castles report growing each day?',
+          choices: ['50', '500', '5,000', '50,000'],
+          correctIndex: 2,
+          fact: 'The current Ice Castles website reports 5,000 icicles grown every day. Each season’s castle uses hundreds of thousands of hand-placed icicles.',
         },
         {
-          question: 'Why does the forest lighting stay low in some rooms?',
-          choices: ['To save power', 'So your eyes adjust and the sculptures appear', 'Because the LEDs failed', 'To hide unfinished work'],
+          question: 'How do many walls and arches take shape?',
+          choices: [
+            'Ice artists place icicles one by one and mist them with water',
+            'One giant block is carved into the whole castle',
+            'Snow is packed into molds and painted',
+            'Metal frames are covered with glass',
+          ],
+          correctIndex: 0,
+          fact: 'Individual icicles are hand-placed by ice artists. Water helps join the ice, while repeated work and cold conditions let the structure grow.',
         },
         {
-          question: 'What should you do on uneven ice?',
-          choices: ['Run the loops', 'Walk, and keep little ones in reach', 'Climb the walls', 'Sit until it melts'],
+          question: 'Why can the weather change the build schedule?',
+          choices: [
+            'Wind chooses the castle’s colors',
+            'Ice grows only during snowfall',
+            'The team must work with changing temperatures and site conditions',
+            'Warm days make icicles grow faster',
+          ],
+          correctIndex: 2,
+          fact: 'Ice Castles is a weather-built experience. Cold supports ice growth, while warmth, rain, and changing surfaces can affect construction and operations.',
         },
       ],
     },
@@ -190,6 +236,50 @@ const PREVIOUS_COPY = {
   },
 };
 
+/** Copy shipped just before elements, the Throne, and the air-rune puzzle. */
+const SHIPPED_COPY = {
+  threshold: {
+    subtitle: 'Where the Winter Keeper tradition begins',
+    body: 'Explore the castle. Discover the five Guardians — Water, Earth, Fire, Air, and Spirit — and complete their challenges in any order. When all five Realms are awake, scan The Heart to become a Winter Keeper.',
+    discover_body: 'You may begin at any Castle Quest station. The Threshold is a welcome, not a gate you must find first.',
+  },
+  cascade: {
+    subtitle: 'Water Realm · Penguin',
+    body: 'Cascade is a bright-eyed penguin who sees what hurried explorers miss: a bubble caught in clear ice, a ripple held still, a reflection that shimmers like a secret window.\n\nCascade remembers the first Winter Keeper asking how a single drop could become a castle. The answer came slowly: one icicle joined to another, shaped by cold and careful hands.\n\nIn the Water Realm, pause and look into the ice. The smallest detail may hold the biggest wonder.',
+  },
+  granite: {
+    subtitle: 'Earth Realm · Moose',
+    body: 'Granite is a big-hearted moose with the memory of an old trail and the patience of a builder. He knows the castle begins before the first icicle is placed: with a place to build, a plan for people to move through it, and close attention to the ground beneath everyone’s boots.\n\nGranite leaves clues for explorers who look steadily. In the Earth Realm, notice what supports the magic, not only what sparkles above it.',
+  },
+  ember: {
+    subtitle: 'Fire Realm · Dragon',
+  },
+  summit: {
+    subtitle: 'Air Realm · Yeti',
+    body: 'Summit is a friendly Yeti who lives where the wind has room to play. He listens for flags snapping, snow skimming across open ground, and the hush that follows a gust. His clues may be overhead or around the next bend.\n\nSummit knows that curiosity moves like the wind: it carries you toward something you had not noticed yet. In the Air Realm, lift your eyes and follow what the air sets in motion.',
+    discover_body: 'Air is invisible, but winter shows where it travels. Watch a flag flutter, snow drift, or warm breath appear in the cold. Air temperature helps determine whether water can freeze and new ice can grow. Carving adds the final touches you see in the Ice Castle today. Wind also changes what builders and guests feel on site.\n\nSummit invites you to read the signs of something you cannot see by noticing what it moves.',
+    prompt: 'Five flags reveal a word. Enter it.',
+  },
+  aurora: {
+    subtitle: 'Spirit Realm · Polar Bear',
+    body: 'Aurora is the Guardian of Spirit and the thread that connects the other Realms. She notices a first brave slide, a family photo that will be retold, and the quiet moment when someone stops to take in the ice.\n\nAurora knows the castle will change with the season. What lasts is the fond memories people carry with them.',
+    discover_body: 'An Ice Castle is temporary by nature. Cold nights, warm days, snowfall, and the movement of guests all shape it, so no two Ice Castles are ever alike. Water, Earth, Fire, and Air help make the castle; Spirit is the curiosity, courage, laughter, and connection guests bring to it.\n\nAurora reminds us that wonder can continue as a memory, shared long after the ice has changed.',
+    prompt: 'Watch the installation, then tap the five Realm symbols in the order you saw.',
+  },
+  builders: {
+    subtitle: 'The First Winter Keeper and the craft of ice',
+    body: 'Brent Christensen, First Winter Keeper, began growing castles from water, cold, and patience. This monument is optional — it does not affect becoming a Winter Keeper.',
+    discover_body: 'Icicles are harvested, placed by hand, and sprayed until they fuse. Lighting, carving, and overnight growth turn a field into a castle that can hold more than twenty million pounds of ice.',
+    prompt: 'A short builder quiz. There is no passing score — finish it when you are ready.',
+  },
+  heart: {
+    title: 'Heart of Winter',
+    subtitle: 'Recognition at the end of the path',
+    body: 'The five Realms must already be awake. Scanning The Heart is what finishes Castle Quest — completing the last Guardian is not enough.',
+    discover_body: 'If a Realm is still sleeping, this page will tell you which one. When all five are complete, the Winter Keeper finale opens here.',
+  },
+};
+
 const QUEST_STATIONS = [
   {
     type: 'threshold',
@@ -197,7 +287,7 @@ const QUEST_STATIONS = [
     title: 'The Threshold',
     subtitle: 'Where the Winter Keeper tradition begins',
     body:
-      'Explore the castle. Discover the five Guardians — Water, Earth, Fire, Air, and Spirit — and complete their challenges in any order. When all five Realms are awake, scan The Heart to become a Winter Keeper.',
+      'Explore the castle. Discover the five Guardians — Water, Earth, Fire, Air, and Spirit — and complete their challenges in any order. When all five elements are awake, scan the Winter Keeper Throne to become a Winter Keeper.',
     discover_body: 'You may begin at any Castle Quest station. The Threshold is a welcome, not a gate you must find first.',
     sort_order: 0,
     poi: 'Entrance & Ticketing',
@@ -206,10 +296,10 @@ const QUEST_STATIONS = [
     type: 'guardian',
     slug: 'cascade',
     title: 'Cascade',
-    subtitle: 'Water Realm · Penguin',
+    subtitle: 'Guardian of Water · Penguin',
     element: 'water',
     body:
-      'Cascade is a bright-eyed penguin who sees what hurried explorers miss: a bubble caught in clear ice, a ripple held still, a reflection that shimmers like a secret window.\n\nCascade remembers the first Winter Keeper asking how a single drop could become a castle. The answer came slowly: one icicle joined to another, shaped by cold and careful hands.\n\nIn the Water Realm, pause and look into the ice. The smallest detail may hold the biggest wonder.',
+      'Cascade is a bright-eyed penguin who sees what hurried explorers miss: a bubble caught in clear ice, a ripple held still, a reflection that shimmers like a secret window.\n\nCascade remembers the first Winter Keeper asking how a single drop could become a castle. The answer came slowly: one icicle joined to another, shaped by cold and careful hands.\n\nWith Water, pause and look into the ice. The smallest detail may hold the biggest wonder.',
     discover_body:
       'Every Ice Castle begins and ends with Water. In the beginning, water changes its shape with temperature: it flows, freezes, and catches light. Ice Castles artisans grow and place icicles, fusing them into walls, arches, tunnels, and towers.\n\nLook closely and you may spot bubbles, layered textures, or blue light inside the ice. Each detail records a meeting of water, cold, time, and light. In the spring water changes its shape again, returning to the landscape around it.\n\nCascade invites you to notice how a single frozen detail belongs to a much larger, fleeting creation.',
     sort_order: 1,
@@ -220,10 +310,10 @@ const QUEST_STATIONS = [
     type: 'guardian',
     slug: 'granite',
     title: 'Granite',
-    subtitle: 'Earth Realm · Moose',
+    subtitle: 'Guardian of Earth · Moose',
     element: 'earth',
     body:
-      'Granite is a big-hearted moose with the memory of an old trail and the patience of a builder. He knows the castle begins before the first icicle is placed: with a place to build, a plan for people to move through it, and close attention to the ground beneath everyone’s boots.\n\nGranite leaves clues for explorers who look steadily. In the Earth Realm, notice what supports the magic, not only what sparkles above it.',
+      'Granite is a big-hearted moose with the memory of an old trail and the patience of a builder. He knows the castle begins before the first icicle is placed: with a place to build, a plan for people to move through it, and close attention to the ground beneath everyone’s boots.\n\nGranite leaves clues for explorers who look steadily. With Earth, notice what supports the magic, not only what sparkles above it.',
     discover_body:
       'Every build begins with a site and a plan. Builders consider the ground, drainage, water and guest flow, access, safety, snow, and the way weather may change the work. Conditions keep shifting: ice can grow, surfaces can wear, and a warm spell can alter the schedule. The craft is to work with the site and the season. Granite stands for the planning and practical care that help a beautiful place welcome guests.',
     sort_order: 2,
@@ -234,7 +324,7 @@ const QUEST_STATIONS = [
     type: 'guardian',
     slug: 'ember',
     title: 'Ember',
-    subtitle: 'Fire Realm · Dragon',
+    subtitle: 'Guardian of Fire · Dragon',
     element: 'fire',
     body:
       'Ember is a dragon who belongs in the snow. He loves the moment blue ice turns gold and lantern light dances across a frozen wall. Bold and a little mischievous, Ember knows fire and ice can share a story without one conquering the other.\n\nHe also honors the creative fire in the hearts of Ice Castles artisans: the imagination and purpose that help keep them warm in spirit through the coldest nights as they shape the castle. Watch closely; Ember’s clues flicker and change.',
@@ -248,12 +338,12 @@ const QUEST_STATIONS = [
     type: 'guardian',
     slug: 'summit',
     title: 'Summit',
-    subtitle: 'Air Realm · Yeti',
+    subtitle: 'Guardian of Air · Yeti',
     element: 'air',
     body:
-      'Summit is a friendly Yeti who lives where the wind has room to play. He listens for flags snapping, snow skimming across open ground, and the hush that follows a gust. His clues may be overhead or around the next bend.\n\nSummit knows that curiosity moves like the wind: it carries you toward something you had not noticed yet. In the Air Realm, lift your eyes and follow what the air sets in motion.',
+      'Summit is a friendly Yeti who lives where the wind has room to play. He listens for flags snapping, snow skimming across open ground, and the hush that follows a gust. His clues may be overhead or around the next bend.\n\nSummit knows that curiosity moves like the wind: it carries you toward something you had not noticed yet. With Air, lift your eyes and follow what the wind sets in motion.',
     discover_body:
-      'Air is invisible, but winter shows where it travels. Watch a flag flutter, snow drift, or warm breath appear in the cold. Air temperature helps determine whether water can freeze and new ice can grow. Carving adds the final touches you see in the Ice Castle today. Wind also changes what builders and guests feel on site.\n\nSummit invites you to read the signs of something you cannot see by noticing what it moves.',
+      'Air is invisible, but winter shows where it travels. Watch a flag flutter, snow drift, or warm breath appear in the cold. Cold air helps water freeze and new ice grow; wind and changing temperatures also shape when and how builders can work. When the structure is ready, artisans carve details that give the Ice Castle its final character.\n\nSummit invites you to read the signs of something you cannot see by noticing what it moves.',
     sort_order: 4,
     poi: 'Mystic Forest — Air',
     challenge: CHALLENGES.summit,
@@ -262,12 +352,12 @@ const QUEST_STATIONS = [
     type: 'guardian',
     slug: 'aurora',
     title: 'Aurora',
-    subtitle: 'Spirit Realm · Polar Bear',
+    subtitle: 'Guardian of Spirit · Polar Bear',
     element: 'spirit',
     body:
-      'Aurora is the Guardian of Spirit and the thread that connects the other Realms. She notices a first brave slide, a family photo that will be retold, and the quiet moment when someone stops to take in the ice.\n\nAurora knows the castle will change with the season. What lasts is the fond memories people carry with them.',
+      'Aurora is the Guardian of Spirit, the spark of wonder that connects the elements and everyone who visits. She notices a first brave slide, a family photo that will be retold, and the quiet moment when someone stops to take in the ice.\n\nAurora knows the castle will change with the season. What lasts is the fond memories people carry with them.',
     discover_body:
-      'An Ice Castle is temporary by nature. Cold nights, warm days, snowfall, and the movement of guests all shape it, so no two Ice Castles are ever alike. Water, Earth, Fire, and Air help make the castle; Spirit is the curiosity, courage, laughter, and connection guests bring to it.\n\nAurora reminds us that wonder can continue as a memory, shared long after the ice has changed.',
+      'An Ice Castle changes with the season. Cold nights, warm days, snowfall, and the movement of guests shape it, so each season is different. Water, Earth, Fire, and Air shape the frozen structure; Spirit is the curiosity, courage, laughter, and connection people bring to the experience.\n\nAurora reminds us that wonder can continue as a memory, shared long after the ice has changed.',
     sort_order: 5,
     poi: 'Mystic Forest — Spirit',
     challenge: CHALLENGES.aurora,
@@ -276,11 +366,11 @@ const QUEST_STATIONS = [
     type: 'monument',
     slug: 'builders',
     title: 'Builder’s Monument',
-    subtitle: 'The First Winter Keeper and the craft of ice',
+    subtitle: 'Optional discovery',
     body:
-      'Brent Christensen, First Winter Keeper, began growing castles from water, cold, and patience. This monument is optional — it does not affect becoming a Winter Keeper.',
+      'Ice Castles began with a father trying to give his six children a winter adventure. One wintery night, a fierce storm engulfed Alpine, Utah. In the still of the morning, Brent Christensen was standing at his kitchen window when he noticed newly formed icicles covering his children’s playground, sparkling in the early morning sunlight. Inspired, Brent Christensen built an ice playground in his yard. The children called it an ‘ice castle,’ and neighborhood families soon came to explore.\n\nThat small family creation grew into a winter attraction built anew each season. Today, more than 50 Ice Castles have risen across North America and millions of guests just like you have discovered the magic of Ice Castles.\n\nThe Builder’s Monument honors the passionate winter artisans who turn a simple idea into a place guests can enter, explore, and make lasting memories. This stop is optional and does not affect becoming a Winter Keeper.',
     discover_body:
-      'Icicles are harvested, placed by hand, and sprayed until they fuse. Lighting, carving, and overnight growth turn a field into a castle that can hold more than twenty million pounds of ice.',
+      'An Ice Castle is assembled through many careful steps. Teams plan around the site and the weather. Icicles are grown, harvested, and carried up and into the structure, where ice artisans place them one by one to shape walls, arches, tunnels, and towers. Water is misted over the structure to help the ice fuse and grow.\n\nThen the team keeps tending it: checking conditions, adding ice, shaping spaces, and caring for guest routes as the castle changes. The work calls for coordination, patience, physical skill, and constant attention to winter.\n\nThe finished walls may look like a single frozen wonder, but look closely and you can see the individual icicles and layers that make it.',
     sort_order: 6,
     poi: 'The Ice Castle',
     challenge: CHALLENGES.builders,
@@ -288,12 +378,12 @@ const QUEST_STATIONS = [
   {
     type: 'heart',
     slug: 'heart',
-    title: 'Heart of Winter',
-    subtitle: 'Recognition at the end of the path',
+    title: 'Winter Keeper Throne',
+    subtitle: 'Final scan and the medallion',
     body:
-      'The five Realms must already be awake. Scanning The Heart is what finishes Castle Quest — completing the last Guardian is not enough.',
+      'All five elements are awake. Now gather your party at the Winter Keeper Throne and scan its QR code to confirm that you completed every Guardian challenge. The Throne welcomes you as a Winter Keeper, a Protector of Winter Magic.\n\nIf you like, take a group photo here. Then show the completion screen at the Gift Shop to receive your Winter Keeper medallion. If an element is still sleeping, the screen will show which Guardian challenge remains.',
     discover_body:
-      'If a Realm is still sleeping, this page will tell you which one. When all five are complete, the Winter Keeper finale opens here.',
+      'Scanning the Throne confirms the quest. Completing the last Guardian is not enough on its own.',
     sort_order: 7,
     poi: 'Warming Hut',
   },
@@ -448,7 +538,7 @@ async function ensureQuestStations(adventureId) {
 
   for (const tp of QUEST_STATIONS) {
     const row = await db.get(
-      'SELECT id, poi_id, subtitle, body, discover_body, config FROM touchpoints WHERE adventure_id = ? AND slug = ?',
+      'SELECT id, poi_id, title, subtitle, body, discover_body, challenge_type, config FROM touchpoints WHERE adventure_id = ? AND slug = ?',
       [adventureId, tp.slug]
     );
     const poiId = idByName[tp.poi] || null;
@@ -475,29 +565,34 @@ async function ensureQuestStations(adventureId) {
       );
     }
     const previous = PREVIOUS_COPY[tp.slug];
-    if (previous) {
-      const copySame = row.subtitle === previous.subtitle
-        && row.body === previous.body
-        && row.discover_body === previous.discover_body;
-      if (copySame) {
+    const shipped = SHIPPED_COPY[tp.slug];
+    const copyMatches = (snap) => snap
+      && (!snap.subtitle || row.subtitle === snap.subtitle)
+      && (!snap.body || row.body === snap.body)
+      && (!snap.discover_body || row.discover_body === snap.discover_body);
+    const titleMatches = (snap) => snap && snap.title && row.title === snap.title;
+    if (copyMatches(previous) || copyMatches(shipped) || titleMatches(shipped)) {
+      await db.run(
+        'UPDATE touchpoints SET title = ?, subtitle = ?, body = ?, discover_body = ?, updated_at = ? WHERE id = ?',
+        [tp.title, tp.subtitle, tp.body, tp.discover_body || null, ts, row.id]
+      );
+    }
+    if (tp.challenge && row.config) {
+      let cfg = null;
+      try { cfg = JSON.parse(row.config); } catch { cfg = null; }
+      const oldPrompt = cfg && (
+        cfg.prompt === previous?.prompt
+        || cfg.prompt === shipped?.prompt
+        || cfg.code === 'CARVE'
+        || cfg.questions?.[0]?.question === 'What is an Ice Castle grown from?'
+      );
+      const needsLines = cfg && tp.challenge.config.retry && cfg.prompt === tp.challenge.config.prompt && !cfg.retry;
+      if (cfg && (oldPrompt || needsLines)) {
+        const next = oldPrompt ? tp.challenge.config : { ...cfg, retry: tp.challenge.config.retry, success: tp.challenge.config.success };
         await db.run(
-          'UPDATE touchpoints SET subtitle = ?, body = ?, discover_body = ?, updated_at = ? WHERE id = ?',
-          [tp.subtitle, tp.body, tp.discover_body || null, ts, row.id]
+          'UPDATE touchpoints SET challenge_type = ?, config = ?, updated_at = ? WHERE id = ?',
+          [tp.challenge.type, JSON.stringify(next), ts, row.id]
         );
-      }
-      if (previous.prompt && tp.challenge && row.config) {
-        let cfg = null;
-        try { cfg = JSON.parse(row.config); } catch { cfg = null; }
-        if (cfg && cfg.prompt === previous.prompt) {
-          cfg.prompt = tp.challenge.config.prompt;
-          for (const key of ['hint', 'fieldLabel', 'placeholder', 'submitLabel', 'clearLabel']) {
-            if (tp.challenge.config[key]) cfg[key] = tp.challenge.config[key];
-          }
-          await db.run(
-            'UPDATE touchpoints SET config = ?, updated_at = ? WHERE id = ?',
-            [JSON.stringify(cfg), ts, row.id]
-          );
-        }
       }
     }
   }
@@ -514,6 +609,33 @@ async function ensureQuestStationsAll() {
   for (const row of adventures) {
     total += await ensureQuestStations(row.id);
   }
+  const redemption = 'Show this screen at the Gift Shop to receive your Winter Keeper medallion.';
+  const oldRedemptions = [
+    'Show this badge at the Warming Hut to claim your Winter Keeper pin.',
+    'Show this badge at the Warming Hut to claim your pin.',
+  ];
+  for (const old of oldRedemptions) {
+    await db.run(
+      'UPDATE adventures SET badge_redemption = ? WHERE badge_redemption = ?',
+      [redemption, old]
+    );
+  }
+  await db.run(
+    `UPDATE adventures SET badge_body = ?
+      WHERE badge_body = ?`,
+    [
+      'You met the Guardians, awakened the five elements, and were named a Winter Keeper.',
+      'You walked the Threshold, met the Guardians, and carried light to the Heart of Winter.',
+    ]
+  );
+  await db.run(
+    `UPDATE adventures SET welcome_body = ?
+      WHERE welcome_body = ?`,
+    [
+      'Explore the castle. Discover the five Guardians, complete their challenges in any order, then scan the Winter Keeper Throne to become a Winter Keeper.',
+      'Explore the castle. Discover the five Guardians, complete their challenges in any order, then scan The Heart to become a Winter Keeper.',
+    ]
+  );
   return total;
 }
 

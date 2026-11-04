@@ -1,10 +1,10 @@
 /* Service worker: keeps the park usable where cell service isn't.
    Artwork and vendor stay cache-first. HTML/CSS/JS are network-first so
    a new deploy is what guests see, with the last good copy as fallback. */
-const CACHE = 'icecastles-v117';
+const CACHE = 'icecastles-v120';
 const SHELL = [
-  '/', '/app.css?v=93', '/manifest.webmanifest',
-  '/js/api.js?v=23', '/js/map.js?v=29', '/js/scanner.js?v=19', '/js/wind-wisps.js?v=9', '/js/app.js?v=105',
+  '/', '/app.css?v=94', '/manifest.webmanifest',
+  '/js/api.js?v=23', '/js/map.js?v=29', '/js/scanner.js?v=19', '/js/wind-wisps.js?v=9', '/js/app.js?v=108',
   '/vendor/leaflet.js', '/vendor/leaflet.css', '/vendor/jsqr.js',
   '/assets/park-map.webp', '/assets/art/logo-mark.png', '/assets/art/logo-mark-app.png',
 ];

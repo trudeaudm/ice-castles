@@ -720,6 +720,13 @@ body.landing-open .station { visibility: hidden; }
   text-transform: uppercase;
   color: rgba(198, 230, 255, 0.7);
 }
+.landing__progressLine {
+  margin: 6px auto 0;
+  max-width: 280px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: rgba(232, 246, 255, 0.86);
+}
 .landing__gate {
   position: fixed;
   inset: 0;
@@ -3600,3 +3607,161 @@ body[data-realm="spirit"] .realmSky i {
     transform: translateX(-50%);
   }
 }
+
+.quizQ__ask { margin: 0 0 10px; font-weight: 800; color: var(--ink-text); }
+.quizChoices { display: grid; gap: 8px; }
+.quizChoice {
+  text-align: left;
+  min-height: 48px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 2px solid var(--ice-card);
+  background: var(--snow);
+  color: var(--ink-text);
+  font: inherit;
+  font-size: 16px;
+}
+.quizReveal__answer { margin: 0 0 8px; font-weight: 800; color: #123056; }
+.quizReveal__fact { margin: 0 0 12px; color: var(--ink-text); }
+
+.runeAltar {
+  position: relative;
+  min-height: 180px;
+  margin: 8px 0 14px;
+  border-radius: 24px;
+  border: 2px dashed rgba(186, 230, 255, 0.55);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(186, 230, 255, 0.18), transparent 62%),
+    rgba(6, 20, 40, 0.28);
+}
+.runeAltar__hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(232, 246, 255, 0.72);
+}
+.runeAltar__mark {
+  position: absolute;
+  inset: 28px 28px 40px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 0 24px rgba(186, 230, 255, 0.2);
+}
+.runeAltar__set {
+  position: absolute;
+  inset: 24px 16px 36px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  place-items: center;
+  gap: 4px;
+}
+.runeTray { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.runePiece {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-height: 84px;
+  padding: 8px 4px;
+  border-radius: 16px;
+  border: 1px solid rgba(186, 230, 255, 0.28);
+  background: rgba(6, 20, 40, 0.35);
+  color: #e7f6ff;
+  touch-action: none;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.runePiece svg { width: 48px; height: 48px; }
+.runePiece.is-dragging { opacity: 0.92; }
+.runePiece.is-placed { min-height: 0; padding: 0; border: 0; background: none; }
+.runePiece.is-placed span { display: none; }
+.runePiece.is-rejected { animation: runeReject 420ms ease; }
+.runeAltar.is-forged .runeAltar__hint { opacity: 0; }
+.runeAltar.is-forged .runeAltar__set {
+  animation: runeForge 700ms ease forwards;
+}
+@keyframes runeReject {
+  0%, 100% { transform: translateX(0); }
+  30% { transform: translateX(-6px); }
+  60% { transform: translateX(6px); }
+}
+@keyframes runeForge {
+  to { filter: drop-shadow(0 0 18px rgba(186, 230, 255, 0.9)); transform: scale(1.08); }
+}
+
+.combine__stage {
+  position: relative;
+  height: 220px;
+  margin: 0 auto 8px;
+}
+.combine__piece {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 64px;
+  height: 64px;
+  animation: pieceRush 1.15s cubic-bezier(.2, .8, .2, 1) forwards;
+  animation-delay: calc(var(--i) * 80ms);
+}
+.combine__piece--water { --x: -120px; --y: -70px; }
+.combine__piece--earth { --x: 110px; --y: -60px; }
+.combine__piece--fire { --x: -100px; --y: 80px; }
+.combine__piece--air { --x: 120px; --y: 70px; }
+.combine__piece--spirit { --x: 0px; --y: -110px; }
+@keyframes pieceRush {
+  0% { transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1); opacity: 1; }
+  68% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.15); opacity: 0; }
+}
+.combine__burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  animation: burst 0.55s 1.05s ease-out forwards;
+}
+@keyframes burst {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(0.4); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(14); }
+}
+.combine__medal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 128px;
+  height: 128px;
+  transform: translate(-50%, -50%) scale(0.2);
+  opacity: 0;
+  animation: medalPop 0.7s 1.2s cubic-bezier(.2, .9, .2, 1) forwards;
+  filter: drop-shadow(0 0 18px rgba(245, 185, 66, 0.8));
+}
+@keyframes medalPop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+  70% { opacity: 1; transform: translate(-50%, -50%) scale(1.12); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.combine__kicker {
+  margin: 0;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: #8a5a12;
+}
+.combine__title {
+  margin: 4px 0 8px;
+  font-family: var(--display);
+  font-size: 28px;
+  color: var(--ink-text);
+}
+.combine__photo { margin: 0; color: #3d5a7a; font-size: 14px; }

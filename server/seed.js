@@ -243,10 +243,10 @@ async function seed() {
        welcome_headline=?, welcome_body=?, updated_at=? WHERE id=?`,
     [
       'Winter Keeper',
-      'You walked the Threshold, met the Guardians, and carried light to the Heart of Winter.',
-      'Show this badge at the Warming Hut to claim your Winter Keeper pin.',
+      'You met the Guardians, awakened the five elements, and were named a Winter Keeper.',
+      'Show this screen at the Gift Shop to receive your Winter Keeper medallion.',
       'Welcome, Winter Keeper',
-      'Explore the castle. Discover the five Guardians, complete their challenges in any order, then scan The Heart to become a Winter Keeper.',
+      'Explore the castle. Discover the five Guardians, complete their challenges in any order, then scan the Winter Keeper Throne to become a Winter Keeper.',
       now(),
       adventure.id,
     ]
