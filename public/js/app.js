@@ -3546,10 +3546,7 @@ function paintImagePick(root, { clearError = false } = {}) {
     readout.textContent = `${count} of ${need} selected`;
     readout.classList.toggle('is-ready', count === need);
   }
-  if (clearError) {
-    const err = root.querySelector('[data-pick-error]');
-    if (err) err.hidden = true;
-  }
+  if (clearError) clearChallengeIssue(root);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -4099,6 +4096,7 @@ function wire() {
     if (event.target.closest('[data-spirit-undo]')) {
       const root = event.target.closest('[data-station]');
       sequenceBuffer.pop();
+      clearChallengeIssue(root);
       paintSpiritSequence(root);
       return;
     }
@@ -4108,6 +4106,7 @@ function wire() {
       const len = Number(root.dataset.seqLen || 4);
       if (sequenceBuffer.length >= len) return;
       sequenceBuffer.push(spiritColor.dataset.spiritColor);
+      clearChallengeIssue(root);
       paintSpiritSequence(root);
       return;
     }
@@ -4117,6 +4116,7 @@ function wire() {
       const len = Number(root.dataset.seqLen || 5);
       if (sequenceBuffer.length >= len) return;
       sequenceBuffer.push(seq.dataset.seq);
+      clearChallengeIssue(root);
       paintSequence(root);
       if (!root.querySelector('[data-seq-submit]') && sequenceBuffer.length >= len) {
         const answer = { sequence: [...sequenceBuffer] };
@@ -4128,6 +4128,7 @@ function wire() {
     if (event.target.closest('[data-seq-clear]')) {
       const root = event.target.closest('[data-station]');
       sequenceBuffer = [];
+      clearChallengeIssue(root);
       if (root?.dataset.challengeType === 'button_lantern') paintSpiritSequence(root);
       else paintSequence(root);
       return;
@@ -4136,11 +4137,12 @@ function wire() {
       const root = event.target.closest('[data-station]');
       const len = Number(root.dataset.seqLen || 5);
       if (sequenceBuffer.length < len) {
-        toast(root?.dataset.challengeType === 'button_lantern'
+        showChallengeIssue(root, root?.dataset.challengeType === 'button_lantern'
           ? 'Enter the full lantern sequence first.'
           : 'Tap the full sequence first.');
         return;
       }
+      clearChallengeIssue(root);
       const answer = { sequence: [...sequenceBuffer] };
       if (root.dataset.challengeType === 'button_lantern') {
         answer.challengeId = root.dataset.spiritId
@@ -4156,6 +4158,11 @@ function wire() {
     if (event.target.closest('[data-challenge-submit]')) {
       const root = event.target.closest('[data-station]');
       const code = root.querySelector('[data-challenge-code]')?.value;
+      if (!String(code || '').trim()) {
+        showChallengeIssue(root, 'Enter the word first.');
+        return;
+      }
+      clearChallengeIssue(root);
       handleStationChallenge(root.dataset.station, { code });
       return;
     }
@@ -4297,6 +4304,11 @@ function wire() {
         selectRunePiece(piece, root);
       }
     }
+  });
+
+  document.addEventListener('input', (event) => {
+    if (!event.target.closest?.('[data-challenge-code]')) return;
+    clearChallengeIssue(event.target.closest('[data-station]'));
   });
 
   document.addEventListener('submit', (event) => {
