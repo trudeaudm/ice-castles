@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img">
+  <title>Winter Keeper Throne</title>
+  <desc>A faceted ice throne in a crystal medallion.</desc>
+  <defs>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d7f6ff"/>
+      <stop offset="0.42" stop-color="#6eb6ee"/>
+      <stop offset="1" stop-color="#b7e4fb"/>
+    </linearGradient>
+    <radialGradient id="face" cx="46%" cy="38%" r="74%">
+      <stop offset="0" stop-color="#4b92e6"/>
+      <stop offset="0.58" stop-color="#2859c0"/>
+      <stop offset="1" stop-color="#6550d2"/>
+    </radialGradient>
+    <linearGradient id="ice" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7ffff"/>
+      <stop offset="1" stop-color="#c9f0fc"/>
+    </linearGradient>
+  </defs>
+  <circle cx="128" cy="128" r="120" fill="url(#metal)"/>
+  <circle cx="128" cy="128" r="104" fill="url(#face)" stroke="#143b87" stroke-width="8"/>
+  <circle cx="128" cy="128" r="82" fill="url(#ice)" stroke="#062b5d" stroke-width="7"/>
+  <path d="M104 168 L104 108 L128 70 L152 108 L152 168 Z" fill="#eefaff" stroke="#123056" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M128 82 L152 116 L128 160 Z" fill="#7ec4ee"/>
+  <path d="M72 132 L104 116 L104 162 L72 174 Z" fill="#f7ffff" stroke="#123056" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M152 116 L184 132 L184 174 L152 162 Z" fill="#2f8fd0" stroke="#123056" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M76 158 L180 158 L192 196 L64 196 Z" fill="#6eb8e6" stroke="#123056" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M128 108 L142 126 L128 144 L114 126 Z" fill="#e4d6ff" stroke="#172f81" stroke-width="6" stroke-linejoin="round"/>
+</svg>

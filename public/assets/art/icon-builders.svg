@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img">
+  <title>Builder’s Monument</title>
+  <desc>Stacked blocks of ice under a crystal cap, the Builder’s Monument.</desc>
+  <defs>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d7f6ff"/>
+      <stop offset="0.42" stop-color="#6eb6ee"/>
+      <stop offset="1" stop-color="#b7e4fb"/>
+    </linearGradient>
+    <radialGradient id="face" cx="46%" cy="38%" r="74%">
+      <stop offset="0" stop-color="#4b92e6"/>
+      <stop offset="0.58" stop-color="#2859c0"/>
+      <stop offset="1" stop-color="#6550d2"/>
+    </radialGradient>
+    <linearGradient id="ice" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7ffff"/>
+      <stop offset="1" stop-color="#c9f0fc"/>
+    </linearGradient>
+  </defs>
+  <circle cx="128" cy="128" r="120" fill="url(#metal)"/>
+  <circle cx="128" cy="128" r="104" fill="url(#face)" stroke="#143b87" stroke-width="8"/>
+  <circle cx="128" cy="128" r="82" fill="url(#ice)" stroke="#062b5d" stroke-width="7"/>
+  <path d="M64 196 L192 196 L180 168 L76 168 Z" fill="#6eb8e6" stroke="#123056" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M84 168 L172 168 L162 140 L94 140 Z" fill="#b7e6fb" stroke="#123056" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M104 140 L152 140 L142 114 L114 114 Z" fill="#f4fbff" stroke="#123056" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M128 62 L154 114 L128 132 L102 114 Z" fill="#d4c6f8" stroke="#172f81" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M128 74 L140 114 L128 124 L116 114 Z" fill="#f7ffff"/>
+</svg>

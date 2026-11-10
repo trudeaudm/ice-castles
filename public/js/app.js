@@ -81,11 +81,16 @@ function realmCharacter(realm) {
 function realmPad(realm) {
   return `${ART}/pad-${realm}.png`;
 }
+const STATION_ICON = {
+  threshold: `${ART}/icon-threshold.svg?v=1`,
+  monument: `${ART}/icon-builders.svg?v=1`,
+  heart: `${ART}/icon-throne.svg?v=1`,
+};
+
 function stationArt(station) {
   if (station.element && REALM_META[station.element]) return realmCharacter(station.element);
   if (station.imageUrl) return station.imageUrl;
-  if (station.type === 'heart' || station.type === 'monument') return `${ART}/landing-gate.webp`;
-  return '';
+  return STATION_ICON[station.type] || '';
 }
 
 /* Swirl that holds a character's frame until the painting has decoded.
@@ -1905,9 +1910,7 @@ function renderJourney() {
     const hint = tp.element ? `${REALM_META[tp.element]?.label || tp.element} · ${status}` : status;
     let token;
     if (tp.element) token = `<img src="${realmPfp(tp.element)}" alt="">`;
-    else if (tp.type === 'heart') token = `<img src="${ART}/seal-winter-keeper.png" alt="">`;
-    else if (tp.type === 'monument') token = `<img src="${ART}/pin-park.png" alt="">`;
-    else token = `<img src="${ART}/ui/icon-journey.svg" alt="">`;
+    else token = `<img src="${STATION_ICON[tp.type] || `${ART}/ui/icon-journey.svg`}" alt="">`;
     return `<li>
       <button class="stop${awake ? ' is-found' : ''}"${realm} data-kind="${escapeHtml(tp.type || '')}" data-go-station="${escapeHtml(tp.slug)}" type="button">
         <span class="stop__token">${token}</span>
@@ -3014,8 +3017,11 @@ function renderMap() {
   const completed = Store.completedGuardianPoiIds();
   const glowing = new Set([...guardians].filter((id) => !completed.has(id)));
   const realmByPoi = {};
+  const markByPoi = {};
   (Store.state.touchpoints || []).forEach((tp) => {
-    if (tp.poiId && tp.element) realmByPoi[tp.poiId] = tp.element;
+    if (!tp.poiId) return;
+    if (tp.element) realmByPoi[tp.poiId] = tp.element;
+    else if (STATION_ICON[tp.type]) markByPoi[tp.poiId] = tp.type;
   });
   ParkMap.render(Store.state.pois, {
     scanned: Store.scannedIds(),
@@ -3026,6 +3032,7 @@ function renderMap() {
     completed: Store.state.journeyMode ? completed : new Set(),
     glowing: Store.state.journeyMode ? glowing : new Set(),
     realmByPoi,
+    markByPoi,
   });
   if (dom.journeyButton) {
     dom.journeyButton.setAttribute('aria-pressed', Store.state.journeyMode ? 'true' : 'false');
