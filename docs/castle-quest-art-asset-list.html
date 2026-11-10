@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Castle Quest — Art asset list</title>
+<style>
+  @page { size: letter; margin: 0.7in 0.75in; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 11pt/1.45 "Segoe UI", Calibri, sans-serif;
+    color: #1e3a5f;
+  }
+  h1 {
+    font: 700 22pt/1.15 Georgia, "Times New Roman", serif;
+    margin: 0 0 6px;
+    color: #12345a;
+  }
+  .lede { margin: 0 0 18px; color: #3d5a7a; font-size: 11pt; }
+  h2 {
+    font: 700 13pt/1.2 Georgia, "Times New Roman", serif;
+    margin: 20px 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 1.5px solid #9ec4e0;
+    color: #12345a;
+    page-break-after: avoid;
+  }
+  p, li { font-size: 10.5pt; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 4px;
+    font-size: 9.5pt;
+    page-break-inside: auto;
+  }
+  th, td {
+    border: 1px solid #c9e4f5;
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: #e8f4fb;
+    font-weight: 700;
+    color: #1e3a5f;
+  }
+  tr { page-break-inside: avoid; }
+  .note { margin: 8px 0 0; color: #3d5a7a; font-size: 10pt; }
+  ul { margin: 6px 0 0; padding-left: 1.2em; }
+  .meta { font-size: 9pt; color: #4a7bb5; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 10px; }
+</style>
+</head>
+<body>
+<p class="meta">Ice Castles · Castle Quest · Guest app</p>
+<h1>Art asset list</h1>
+<p><img src="../public/assets/art/logo-mark.png" alt="Castle Quest logo mark" width="96" height="96"></p>
+<p class="lede">Stand-ins that most affect how cheap the app feels. One Realm set can cover most screens. Prefer SVG for icons; PNG with a transparent background if painted. Export 3× for raster (64 → 192 px). Keep a safe circle inside a square so landing pips, shrine gems, and Aurora pads can share one file. No type in the images except the Seal.</p>
+
+<h2>1. Make first — reuse everywhere</h2>
+<p>Same five symbols, two sizes. Use on the landing, header pips, Aurora tap buttons, award glyph, and Heart “remaining Realms.” Treat these as ice-carved seals, not generic weather emoji. Off state can be the same art, frost-etched / unlit.</p>
+<table>
+  <thead>
+    <tr><th>Asset</th><th>Size</th><th>Where it shows</th><th>Now</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Water icon</td><td>64×64 and 128×128 SVG/PNG</td><td>Landing, header, Aurora, award</td><td>Emoji / CSS blob</td></tr>
+    <tr><td>Earth icon</td><td>same</td><td>same</td><td>same</td></tr>
+    <tr><td>Fire icon</td><td>same</td><td>same</td><td>same</td></tr>
+    <tr><td>Air icon</td><td>same</td><td>same</td><td>same</td></tr>
+    <tr><td>Spirit icon</td><td>same</td><td>same</td><td>same</td></tr>
+    <tr><td>Realm icon <strong>on</strong> (awakened)</td><td>64×64</td><td>Header pips after a Realm is done</td><td>Opacity + glow on the emoji</td></tr>
+    <tr><td>Realm icon <strong>off</strong> (asleep)</td><td>64×64</td><td>Header pips, landing at 0/5</td><td>Dim emoji</td></tr>
+  </tbody>
+</table>
+<p class="note">Suggested names: <code>realm-water.svg</code>, <code>realm-earth.svg</code>, <code>realm-fire.svg</code>, <code>realm-air.svg</code>, <code>realm-spirit.svg</code> (plus <code>-on</code> / <code>-off</code> if you paint two states).</p>
+
+<h2>2. Landing</h2>
+<table>
+  <thead>
+    <tr><th>Asset</th><th>Size</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Landing crest</td><td>1024×1024 PNG</td><td>Compass mark: mountain in a crystal ring, no snow on the top point. Above “Castle Quest” on the welcome page, beside the name in the header, and on the loading screen. <code>logo-mark.png</code></td></tr>
+    <tr><td>Ice-gate hero</td><td>1080×1400 (or taller)</td><td>Replaces <code>landing-gate.svg</code>. Night corridor, lanterns, no baked-in text</td></tr>
+    <tr><td>Begin Quest button</td><td>1092×174 (3× a ~364×58 pill)</td><td>Icy capsule, optional carved edge. We can also keep CSS and only swap a left-side icon</td></tr>
+    <tr><td>How to Play icon</td><td>64×64</td><td>Book / tablet on the pill</td></tr>
+    <tr><td>Map icon</td><td>64×64</td><td>Pin / compass on the pill</td></tr>
+    <tr><td>How to Play + Map button plates</td><td>540×144 each</td><td>Optional if you want full illustrated pills instead of CSS</td></tr>
+  </tbody>
+</table>
+
+<h2>3. Chrome and shrine buttons</h2>
+<table>
+  <thead>
+    <tr><th>Asset</th><th>Size</th><th>Where</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Meet</td><td>128×128</td><td>Shrine gate (handshake stand-in)</td></tr>
+    <tr><td>Discover</td><td>128×128</td><td>Shrine gate (compass stand-in)</td></tr>
+    <tr><td>Play</td><td>128×128</td><td>Shrine gate (play-triangle stand-in)</td></tr>
+    <tr><td>Map chip</td><td>64×64 or full 108×36 pill</td><td>Header “Map”</td></tr>
+    <tr><td>Journey / progress ring center</td><td>64×64</td><td>Header ring (now a number)</td></tr>
+    <tr><td>Recenter</td><td>64×64</td><td>Map tool</td></tr>
+    <tr><td>Guardian-only (star)</td><td>64×64</td><td>Map tool</td></tr>
+    <tr><td>Filter</td><td>64×64</td><td>Map tool</td></tr>
+    <tr><td>Scan</td><td>128×128</td><td>Map scan FAB</td></tr>
+    <tr><td>Back to Quest</td><td>64×64 or pill</td><td>Map “Quest” FAB</td></tr>
+  </tbody>
+</table>
+<p class="note">Suggested names: <code>icon-meet.svg</code>, <code>icon-discover.svg</code>, <code>icon-play.svg</code>, <code>icon-map.svg</code>, <code>icon-scan.svg</code>.</p>
+
+<h2>4. Map pins</h2>
+<table>
+  <thead>
+    <tr><th>Asset</th><th>Size</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Guardian pin — available</td><td>128×128</td><td>Extra glow. One per Realm, or one base + 5 color overlays</td></tr>
+    <tr><td>Guardian pin — complete</td><td>128×128</td><td>Dimmer / check / seal</td></tr>
+    <tr><td>Park pin (default)</td><td>96×96</td><td>Amenities / landmarks</td></tr>
+    <tr><td>Pin check mark</td><td>64×64</td><td>Replaces the tiny SVG tick</td></tr>
+  </tbody>
+</table>
+
+<h2>5. Challenges (placeholders until real photos)</h2>
+<table>
+  <thead>
+    <tr><th>Asset</th><th>Size</th><th>Station</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>6 Cascade tiles</td><td>512×512</td><td>Hairline vein, lantern glow, pressed arch, silk wing, frozen ripple, carved rune</td></tr>
+    <tr><td>4 Ember lanterns</td><td>256×256</td><td>Ice, Amber, Rose, Violet</td></tr>
+    <tr><td>Aurora tap pads</td><td>256×256</td><td>Reuse the five Realm icons</td></tr>
+    <tr><td>Winter Keeper Seal</td><td>1024×1024</td><td>Finale reveal (now CSS rings). Type OK here: names, venue, season will sit on or under it</td></tr>
+    <tr><td>Award medallion</td><td>512×512</td><td>Realm-complete overlay; glyph sits on top</td></tr>
+  </tbody>
+</table>
+
+<h2>6. Nice later — not required for “buttons look better”</h2>
+<table>
+  <thead>
+    <tr><th>Asset</th><th>Size</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Guardian portraits</td><td>1080×1350</td><td>Cascade, Granite, Ember, Summit, Aurora shrine headers</td></tr>
+    <tr><td>Monument / Heart art</td><td>same</td><td>Station pages</td></tr>
+    <tr><td>App icon</td><td>1024×1024</td><td>Same compass mark, no snow on the top point, on a night-blue plate so the crystal tips stay inside the home-screen mask. <code>logo-mark-app.png</code></td></tr>
+  </tbody>
+</table>
+
+<h2>If you only make one batch</h2>
+<p>Five Realm seals + Meet / Discover / Play + landing gate + How to Play / Map icons. That covers the screens guests see first.</p>
+<ul>
+  <li>Begin Quest file: <code>btn-begin-quest.png</code></li>
+  <li>Landing gate: <code>landing-gate.webp</code></li>
+</ul>
+</body>
+</html>
