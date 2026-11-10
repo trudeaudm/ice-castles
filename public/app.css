@@ -894,12 +894,12 @@ body.landing-open .station { visibility: hidden; }
   pointer-events: none;
 }
 .landing__lantern--left {
-  --lantern-dur: 2.4s;
+  --lantern-dur: 1.35s;
   --lantern-delay: 0s;
 }
 .landing__lantern--right {
-  --lantern-dur: 3.1s;
-  --lantern-delay: -0.7s;
+  --lantern-dur: 1.7s;
+  --lantern-delay: -0.4s;
 }
 .landing__pane,
 .landing__bloom,
@@ -1009,54 +1009,48 @@ body.landing-open .station { visibility: hidden; }
     rgba(255, 180, 90, 0.48) 0%,
     transparent 70%);
 }
-/* Irregular candle flicker — quick dips and bright pops, not a smooth pulse. */
+/* Faster, lower-amplitude candle flicker — stays lit, with quick soft dips. */
 @keyframes landingCandlePane {
-  0%, 100% { opacity: 0.78; }
-  6% { opacity: 0.42; }
-  12% { opacity: 1; }
-  18% { opacity: 0.7; }
-  27% { opacity: 0.95; }
-  34% { opacity: 0.5; }
-  41% { opacity: 0.9; }
-  52% { opacity: 0.62; }
-  58% { opacity: 1; }
-  67% { opacity: 0.74; }
-  74% { opacity: 0.38; }
-  80% { opacity: 0.92; }
-  88% { opacity: 0.58; }
-  94% { opacity: 0.88; }
+  0%, 100% { opacity: 0.88; }
+  8% { opacity: 0.72; }
+  14% { opacity: 0.94; }
+  22% { opacity: 0.8; }
+  30% { opacity: 0.92; }
+  38% { opacity: 0.7; }
+  46% { opacity: 0.9; }
+  58% { opacity: 0.78; }
+  66% { opacity: 0.95; }
+  74% { opacity: 0.74; }
+  82% { opacity: 0.9; }
+  90% { opacity: 0.76; }
 }
 @keyframes landingCandleBloom {
-  0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(0.92); }
-  6% { opacity: 0.35; transform: translate(-50%, -50%) scale(0.78); }
-  12% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
-  18% { opacity: 0.62; transform: translate(-50%, -50%) scale(0.9); }
-  27% { opacity: 0.92; transform: translate(-50%, -50%) scale(1.02); }
-  34% { opacity: 0.4; transform: translate(-50%, -50%) scale(0.82); }
-  41% { opacity: 0.88; transform: translate(-50%, -50%) scale(1); }
-  52% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.86); }
-  58% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-  67% { opacity: 0.68; transform: translate(-50%, -50%) scale(0.94); }
-  74% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.76); }
-  80% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.04); }
-  88% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.84); }
-  94% { opacity: 0.85; transform: translate(-50%, -50%) scale(0.98); }
+  0%, 100% { opacity: 0.78; transform: translate(-50%, -50%) scale(0.98); }
+  8% { opacity: 0.62; transform: translate(-50%, -50%) scale(0.94); }
+  14% { opacity: 0.88; transform: translate(-50%, -50%) scale(1.02); }
+  22% { opacity: 0.7; transform: translate(-50%, -50%) scale(0.96); }
+  30% { opacity: 0.85; transform: translate(-50%, -50%) scale(1); }
+  38% { opacity: 0.58; transform: translate(-50%, -50%) scale(0.93); }
+  46% { opacity: 0.82; transform: translate(-50%, -50%) scale(0.99); }
+  58% { opacity: 0.68; transform: translate(-50%, -50%) scale(0.95); }
+  66% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.03); }
+  74% { opacity: 0.64; transform: translate(-50%, -50%) scale(0.94); }
+  82% { opacity: 0.84; transform: translate(-50%, -50%) scale(1); }
+  90% { opacity: 0.7; transform: translate(-50%, -50%) scale(0.96); }
 }
 @keyframes landingCandleReflect {
-  0%, 100% { opacity: 0.55; }
-  6% { opacity: 0.22; }
-  12% { opacity: 0.85; }
-  18% { opacity: 0.48; }
-  27% { opacity: 0.78; }
-  34% { opacity: 0.28; }
-  41% { opacity: 0.72; }
-  52% { opacity: 0.4; }
-  58% { opacity: 0.9; }
-  67% { opacity: 0.52; }
-  74% { opacity: 0.18; }
-  80% { opacity: 0.76; }
-  88% { opacity: 0.34; }
-  94% { opacity: 0.68; }
+  0%, 100% { opacity: 0.62; }
+  8% { opacity: 0.48; }
+  14% { opacity: 0.72; }
+  22% { opacity: 0.55; }
+  30% { opacity: 0.68; }
+  38% { opacity: 0.44; }
+  46% { opacity: 0.66; }
+  58% { opacity: 0.52; }
+  66% { opacity: 0.74; }
+  74% { opacity: 0.46; }
+  82% { opacity: 0.68; }
+  90% { opacity: 0.54; }
 }
 
 /* Pause decorative landing fx when the tab is hidden or the welcome is closed. */
@@ -3329,6 +3323,154 @@ body.award-open .guideFab { display: none; }
   font-weight: 800;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* Spirit station: physical buttons → lantern answer */
+.spiritPlay {
+  gap: 12px;
+}
+.spiritPlay__test {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, #ffb455 22%, var(--snow));
+  color: #6a3a10;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.spiritPlay__lead {
+  margin: 0;
+  color: var(--ink-text);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.spiritPlay__step {
+  display: grid;
+  gap: 12px;
+}
+.spiritPlay__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 20px;
+}
+.spiritSeq {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+@media (min-width: 420px) {
+  .spiritSeq { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.spiritChip {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-height: 88px;
+  padding: 12px 8px 10px;
+  border-radius: 18px;
+  border: 2px solid color-mix(in srgb, var(--tile) 55%, #1a2433);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,0.28), transparent 48%),
+    color-mix(in srgb, var(--tile) 78%, #061428);
+  color: var(--chip-ink, #f4fbff);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 6px 14px rgba(0,0,0,0.16);
+}
+.spiritChip__order {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(10, 18, 32, 0.55);
+  color: #f4fbff;
+  font-size: 12px;
+  font-weight: 800;
+}
+.spiritChip__mark {
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 800;
+}
+.spiritChip__num {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+.spiritChip__label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.spiritPads {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (min-width: 420px) {
+  .spiritPads { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.spiritPad {
+  min-height: 96px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
+  padding: 14px 8px;
+  border-radius: 20px;
+  border: 2px solid color-mix(in srgb, var(--tile) 55%, #1a2433);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,0.28), transparent 48%),
+    color-mix(in srgb, var(--tile) 78%, #061428);
+  color: var(--chip-ink, #f4fbff);
+  font: inherit;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 8px 18px rgba(0,0,0,0.2);
+  transition: transform 160ms var(--ease-spring), box-shadow 160ms;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.spiritPad:active {
+  transform: scale(0.97);
+  outline: 3px solid var(--play);
+}
+.spiritPad__mark {
+  font-size: 32px;
+  line-height: 1;
+  font-weight: 800;
+}
+.spiritPad__num {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.spiritPad__label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.spiritSlots .spiritChip {
+  min-height: 64px;
+  padding: 8px 4px;
+  width: 100%;
+}
+.spiritSlots .spiritChip__order { display: none; }
+.spiritSlots .spiritChip__mark { font-size: 20px; }
+.spiritSlots .spiritChip__label { font-size: 11px; }
+.spiritReadout {
+  font-size: 15px;
+}
+body[data-realm="spirit"] .spiritPlay__lead {
+  color: var(--realm-ink, var(--ink-text));
 }
 
 .quizQ {
