@@ -2808,6 +2808,11 @@ body.sheet-open .sheet { transform: none; }
   place-content: center;
   justify-items: center;
   gap: 22px;
+  /* Stay full-viewport; never join the phone-column left/transform shell. */
+  width: auto;
+  max-width: none;
+  margin: 0;
+  transform: none;
   background: linear-gradient(180deg, #62b4e0 0%, #8ecce8 100%);
   transition: opacity 500ms, visibility 500ms;
 }
@@ -2828,6 +2833,7 @@ body.sheet-open .sheet { transform: none; }
 }
 .bootSplash__compass {
   object-fit: contain;
+  transform-origin: 50% 50%;
   animation: bootCompassSpin 6s linear infinite;
 }
 .bootSplash__crest {
@@ -2844,8 +2850,11 @@ body.sheet-open .sheet { transform: none; }
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.26em;
+  /* letter-spacing adds trailing space; pad the start so the label stays centered */
+  padding-inline-start: 0.26em;
   text-transform: uppercase;
   color: var(--frost-500);
+  text-align: center;
 }
 
 /* Reduced-motion is gated by GUEST_REDUCED_MOTION (see .env.example).
@@ -2871,12 +2880,12 @@ body.sheet-open .sheet { transform: none; }
       radial-gradient(70% 55% at 50% -8%, rgba(255, 255, 255, 0.45), transparent 48%),
       linear-gradient(180deg, #62b4e0 0%, #8ecce8 50%, #c8e8f6 100%);
   }
-  .topbar, .nav, .sheet, .panel, .scanner, .award, .toast, .aurora,
-  .bootSplash {
+  .topbar, .nav, .sheet, .panel, .scanner, .award, .toast, .aurora {
     max-width: 460px;
     margin-inline: auto;
   }
-  .aurora, .panel, .scanner, .award, .bootSplash { left: 50%; right: auto; transform: translateX(-50%); width: 460px; }
+  .aurora, .panel, .scanner, .award { left: 50%; right: auto; transform: translateX(-50%); width: 460px; }
+  /* bootSplash stays full-bleed + grid-centered on every viewport */
   .panel { transform: translate(-50%, 100%); }
   .panel.is-open { transform: translateX(-50%); }
   .toast { left: 50%; }
