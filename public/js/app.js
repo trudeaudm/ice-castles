@@ -788,6 +788,26 @@ function setShrineScrollLock(on) {
   document.body.classList.toggle('shrine-fixed', Boolean(on));
 }
 
+let shrineScrollQuiet = false;
+let shrineScrollY = 0;
+let shrineTouchY = null;
+
+function quietShrineScroll(ms = 480) {
+  shrineScrollQuiet = true;
+  window.clearTimeout(quietShrineScroll.timer);
+  quietShrineScroll.timer = window.setTimeout(() => {
+    shrineScrollQuiet = false;
+    shrineScrollY = window.scrollY;
+  }, ms);
+}
+
+function closeShrineSectionByScroll() {
+  if (!shrineFocus || shrineScrollQuiet) return;
+  if (!document.body.classList.contains('shrine-fixed')) return;
+  quietShrineScroll(520);
+  setShrineFocus(shrineFocus, { spin: false, scroll: true });
+}
+
 function blockShrineUserScroll(event) {
   if (!document.body.classList.contains('shrine-fixed')) return;
   if (document.body.classList.contains('panel-open')) return;
@@ -802,14 +822,56 @@ function blockShrineUserScroll(event) {
   ) {
     return;
   }
+  // While Meet/Discover/Play is open, allow reading downward; upward scroll closes.
+  if (shrineFocus) {
+    if (event.type === 'wheel' && event.deltaY < 0) {
+      if (event.cancelable) event.preventDefault();
+      closeShrineSectionByScroll();
+      return;
+    }
+    if (event.type === 'touchmove' && shrineTouchY != null) {
+      const y = event.touches[0]?.clientY;
+      if (Number.isFinite(y) && y - shrineTouchY > 18) {
+        if (event.cancelable) event.preventDefault();
+        shrineTouchY = null;
+        closeShrineSectionByScroll();
+      }
+    }
+    return;
+  }
   if (event.cancelable) event.preventDefault();
 }
 
+function onShrineTouchStart(event) {
+  if (!shrineFocus || !document.body.classList.contains('shrine-fixed')) {
+    shrineTouchY = null;
+    return;
+  }
+  if (event.target.closest('.challenge, .runePiece, .runeAltar, input, textarea, select')) {
+    shrineTouchY = null;
+    return;
+  }
+  shrineTouchY = event.touches[0]?.clientY ?? null;
+}
+
+function onShrineWindowScroll() {
+  if (!shrineFocus || shrineScrollQuiet) return;
+  if (!document.body.classList.contains('shrine-fixed')) return;
+  const y = window.scrollY;
+  if (y < shrineScrollY - 10) {
+    closeShrineSectionByScroll();
+    return;
+  }
+  shrineScrollY = y;
+}
+
 function scrollShrineHome({ smooth = true } = {}) {
+  quietShrineScroll(smooth ? 520 : 120);
   window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
 }
 
 function scrollShrinePanel(panelKey, { smooth = true } = {}) {
+  quietShrineScroll(smooth ? 520 : 120);
   window.requestAnimationFrame(() => {
     const panel = document.querySelector(`.shrinePanel.is-open[data-panel="${panelKey}"]`);
     if (!panel) return;
@@ -3979,6 +4041,8 @@ function wire() {
   initLandingScene();
   document.addEventListener('wheel', blockShrineUserScroll, { passive: false });
   document.addEventListener('touchmove', blockShrineUserScroll, { passive: false });
+  document.addEventListener('touchstart', onShrineTouchStart, { passive: true });
+  window.addEventListener('scroll', onShrineWindowScroll, { passive: true });
   dom.progressButton.addEventListener('click', () => openPanel('journey'));
   dom.logoHome?.addEventListener('click', goStartHero);
   const toggleGuide = () => {
