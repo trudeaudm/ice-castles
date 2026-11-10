@@ -20,6 +20,9 @@ http.get('http://127.0.0.1:3000/nh', (res) => {
     if (!body.includes('window.__CQ_FLAGS__={"reducedMotion":false}')) {
       throw new Error(`live server missing default-off flags: ${body.slice(0, 200)}`);
     }
+    if (!body.includes('window.__CQ_BUILD__=')) {
+      throw new Error('live server missing __CQ_BUILD__ inject');
+    }
     console.log('motion flag checks passed (default off on :3000; on/off inject both ok)');
   });
 }).on('error', (err) => {

@@ -8,10 +8,17 @@ const { recordingFile } = require('./recordings');
 const publicRoutes = require('./routes/public');
 const { router: adminRoutes } = require('./routes/admin');
 const db = require('./db');
+const {
+  PUBLIC_DIR,
+  computeBuildId,
+  applyBuildToHtml,
+  applyBuildToServiceWorker,
+  readServiceWorkerSource,
+} = require('./buildId');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+const BUILD_ID = computeBuildId();
 const RESERVED = new Set(['api', 'admin', 'assets', 'vendor', 'js', 's', 'healthz', 'maps', 'recordings']);
 /* Public guest flag — not a secret. Default off until launch readiness.
    Set GUEST_REDUCED_MOTION=1 to honor prefers-reduced-motion in the guest app. */
@@ -25,10 +32,12 @@ function sendGuestApp(res) {
       return res.status(500).end();
     }
     const flags = JSON.stringify({ reducedMotion: GUEST_REDUCED_MOTION });
-    const inject = `<script>window.__CQ_FLAGS__=${flags};</script>`;
-    const body = html.includes('</head>')
-      ? html.replace('</head>', `${inject}\n</head>`)
-      : `${inject}${html}`;
+    const inject = `<script>window.__CQ_FLAGS__=${flags};window.__CQ_BUILD__=${JSON.stringify(BUILD_ID)};</script>`;
+    const versioned = applyBuildToHtml(html, BUILD_ID);
+    const body = versioned.includes('</head>')
+      ? versioned.replace('</head>', `${inject}\n</head>`)
+      : `${inject}${versioned}`;
+    res.set('Cache-Control', 'no-cache');
     res.type('html').send(body);
   });
 }
@@ -41,6 +50,23 @@ app.use((req, res, next) => {
     res.set('Cache-Control', 'no-cache');
   }
   next();
+});
+
+app.get('/api/version', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ build: BUILD_ID });
+});
+
+/* Fresh SW per deploy: new cache name + shell ?v= so phones drop the old shell. */
+app.get('/sw.js', (_req, res) => {
+  try {
+    const source = applyBuildToServiceWorker(readServiceWorkerSource(), BUILD_ID);
+    res.set('Cache-Control', 'no-cache');
+    res.type('application/javascript').send(source);
+  } catch (err) {
+    console.error('[sw]', err);
+    res.status(500).end();
+  }
 });
 
 app.use('/api', publicRoutes);
@@ -147,6 +173,7 @@ migrate()
   .then(() => installBundledMaps())
   .then(() => {
     app.listen(PORT, () => {
+      console.log(`[build] ${BUILD_ID}`);
       console.log(
         `Ice Castles guest app on http://localhost:${PORT}  (db: ${
           db.usingPostgres ? 'postgres' : 'sqlite'

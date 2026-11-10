@@ -4552,9 +4552,57 @@ async function boot() {
   dom.splash.classList.add('is-gone');
   setTimeout(() => { dom.splash.hidden = true; }, 520);
 
+  watchForAppUpdates();
+}
+
+async function clearAppCaches() {
+  if (!('caches' in window)) return;
+  const keys = await caches.keys();
+  await Promise.all(keys.map((key) => caches.delete(key)));
+}
+
+async function reloadForFreshBuild() {
+  if (window.__CQ_RELOADING__) return;
+  window.__CQ_RELOADING__ = true;
+  try { await clearAppCaches(); } catch { /* still reload */ }
+  location.reload();
+}
+
+function watchForAppUpdates() {
+  const build = window.__CQ_BUILD__;
+  const checkVersion = async () => {
+    if (!build || window.__CQ_RELOADING__) return;
+    try {
+      const res = await fetch(`/api/version?t=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.build && data.build !== build) await reloadForFreshBuild();
+    } catch { /* offline — keep the cached shell */ }
+  };
+
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      // First install claims the page; only reload when a *new* worker takes over.
+      if (!hadController) return;
+      reloadForFreshBuild();
+    });
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      const ping = () => { reg.update().catch(() => {}); };
+      ping();
+      setInterval(ping, 60_000);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') ping();
+      });
+    }).catch(() => {});
   }
+
+  checkVersion();
+  setInterval(checkVersion, 60_000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') checkVersion();
+  });
+  window.addEventListener('online', checkVersion);
 }
 
 boot();
