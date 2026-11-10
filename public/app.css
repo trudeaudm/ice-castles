@@ -105,6 +105,7 @@ body.quest.map-modal-open,
 body.quest.award-open,
 body.quest.scanner-open,
 body.quest.finale-open { overflow: hidden; }
+body.quest.shrine-fixed { overscroll-behavior: none; }
 
 button {
   font: inherit;
@@ -188,12 +189,24 @@ body.map-moving .aurora__band { animation-play-state: paused; }
   align-items: start;
 }
 .topbar__eyebrow { grid-column: 1 / -1; }
+.topbar__markBtn {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
 .topbar__mark {
   width: 44px;
   height: 44px;
   object-fit: contain;
   filter: drop-shadow(0 2px 8px rgba(7, 21, 38, 0.35));
+  transition: transform 220ms var(--ease-spring);
 }
+.topbar__markBtn:active .topbar__mark { transform: scale(0.94); }
 .topbar__copy { min-width: 0; }
 
 .topbar__eyebrow {
@@ -221,13 +234,18 @@ body.map-moving .aurora__band { animation-play-state: paused; }
 .progressRing {
   position: relative;
   flex: none;
-  width: 46px; height: 46px;
+  width: 112px;
+  height: 52px;
   pointer-events: auto;
   display: grid;
   place-items: center;
 }
 
-.progressRing svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.progressRing svg {
+  width: 52px;
+  height: 52px;
+  transform: rotate(-90deg);
+}
 .progressRing__track { stroke: #123056; stroke-width: 3.2; opacity: 0.55; }
 .progressRing__fill {
   stroke: #2f78b4;
@@ -241,18 +259,31 @@ body.map-moving .aurora__band { animation-play-state: paused; }
 
 .progressRing__gem {
   position: absolute;
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
-  opacity: 0.9;
+  opacity: 0.96;
   pointer-events: none;
+  filter: drop-shadow(0 2px 0 rgba(18, 48, 86, 0.16));
 }
 .progressRing__label {
   position: absolute;
+  left: calc(50% + 10px);
+  top: calc(50% + 8px);
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
   font-family: var(--mono);
   font-weight: 700;
-  font-size: 13px;
-  color: #123056;
+  font-size: 12px;
+  line-height: 1;
+  color: #f4fbff;
+  background: #123056;
+  border: 2px solid #f4fbff;
+  box-shadow: 0 2px 0 rgba(18, 48, 86, 0.22);
   text-shadow: none;
 }
 
@@ -2057,8 +2088,48 @@ body.sheet-open .sheet { transform: none; }
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+.journeyHead__crew {
+  display: flex;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.journeyHead__face {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex: none;
+  background: radial-gradient(circle at 50% 42%, #1a568f 0%, #0c335f 72%, #071526 100%);
+  opacity: 0.42;
+  filter: grayscale(0.28) drop-shadow(0 2px 6px rgba(4, 16, 31, 0.28));
+  animation: pfpBob 2.6s ease-in-out infinite;
+}
+.journeyHead__face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.journeyHead__face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2.5px rgba(186, 226, 248, 0.92);
+  pointer-events: none;
+}
+.journeyHead__face[data-realm="earth"] { animation-name: pfpSway; animation-duration: 2.9s; animation-delay: 0.15s; }
+.journeyHead__face[data-realm="fire"] { animation-delay: 0.35s; }
+.journeyHead__face[data-realm="air"] { animation-name: pfpSway; animation-duration: 2.4s; animation-delay: 0.5s; }
+.journeyHead__face[data-realm="spirit"] { animation-delay: 0.7s; }
+.journeyHead__face.is-on {
+  opacity: 1;
+  filter: drop-shadow(0 2px 6px rgba(4, 16, 31, 0.28));
+}
 .journeyHead__note {
-  margin: 8px 0 0;
+  margin: 10px 0 0;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.35;
@@ -2071,7 +2142,7 @@ body.sheet-open .sheet { transform: none; }
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 10px 16px 10px 10px;
+  padding: 10px 14px 10px 10px;
   border-radius: 22px;
   background: #f7fcff;
   border: 3px solid #123056;
@@ -2092,14 +2163,42 @@ body.sheet-open .sheet { transform: none; }
 }
 
 .stop__token { flex: none; display: grid; place-items: center; }
-.stop__token img {
+.stop__token > img {
   width: 72px;
   height: 72px;
   object-fit: contain;
   display: block;
   filter: drop-shadow(0 2px 0 rgba(18, 48, 86, 0.16));
 }
-.stop__copy { min-width: 0; }
+.stop__face {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 42%, #1a568f 0%, #0c335f 72%, #071526 100%);
+  filter: drop-shadow(0 3px 8px rgba(4, 16, 31, 0.28));
+  animation: pfpBob 2.6s ease-in-out infinite;
+}
+.stop__face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.stop__face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 3px rgba(186, 226, 248, 0.92);
+  pointer-events: none;
+}
+.stop[data-realm="earth"] .stop__face { animation-name: pfpSway; animation-duration: 2.9s; animation-delay: 0.15s; }
+.stop[data-realm="fire"] .stop__face { animation-delay: 0.35s; }
+.stop[data-realm="air"] .stop__face { animation-name: pfpSway; animation-duration: 2.4s; animation-delay: 0.5s; }
+.stop[data-realm="spirit"] .stop__face { animation-delay: 0.7s; }
+.stop__copy { min-width: 0; flex: 1; }
 .stop__name {
   font-family: var(--display);
   font-size: 20px;
@@ -2117,6 +2216,24 @@ body.sheet-open .sheet { transform: none; }
   text-transform: uppercase;
   color: #4a7fa3;
 }
+.stop__check {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--row, #2f7eb8) 22%, #fff);
+  border: 2.5px solid var(--row, #123056);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+.stop__check img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: block;
+}
+.stop:not(.is-found) .stop__check { display: none; }
 .remainList {
   list-style: none;
   display: flex;

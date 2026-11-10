@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap">
-<link rel="stylesheet" href="/app.css?v=107">
+<link rel="stylesheet" href="/app.css?v=108">
 </head>
 <body class="quest">
 
@@ -29,7 +29,9 @@
 <header class="topbar">
   <div class="topbar__id">
     <span class="topbar__eyebrow" id="parkLocation">Loading</span>
-    <img class="topbar__mark" src="/assets/art/logo-mark.svg?v=4" alt="">
+    <button class="topbar__markBtn" id="logoHome" type="button" aria-label="Back to Castle Quest start">
+      <img class="topbar__mark" src="/assets/art/logo-mark.svg?v=4" alt="">
+    </button>
     <div class="topbar__copy">
       <h1 class="topbar__name" id="parkName">Castle Quest</h1>
       <p class="questProgress" id="questProgress">0 / 5</p>
@@ -42,7 +44,7 @@
         <circle class="progressRing__track" cx="22" cy="22" r="18"></circle>
         <circle class="progressRing__fill" cx="22" cy="22" r="18" id="progressFill"></circle>
       </svg>
-      <img class="progressRing__gem" src="/assets/art/ui/icon-journey.svg" alt="">
+      <img class="progressRing__gem" src="/assets/art/ui/icon-discover.svg" alt="">
       <span class="progressRing__label" id="progressLabel">0</span>
     </button>
     <button class="mapChip" id="headerMap" type="button" aria-label="Open map">
@@ -354,6 +356,6 @@
 <script src="/js/map.js?v=31"></script>
 <script src="/js/scanner.js?v=20"></script>
 <script src="/js/wind-wisps.js?v=9"></script>
-<script src="/js/app.js?v=120"></script>
+<script src="/js/app.js?v=121"></script>
 </body>
 </html>

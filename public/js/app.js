@@ -647,7 +647,7 @@ const escapeHtml = (value) =>
 const dom = {
   parkName: el('parkName'), parkLocation: el('parkLocation'),
   progressFill: el('progressFill'), progressLabel: el('progressLabel'),
-  progressButton: el('progressButton'),
+  progressButton: el('progressButton'), logoHome: el('logoHome'),
   questProgress: el('questProgress'), realmPips: el('realmPips'),
   landingProgressLine: el('landingProgressLine'),
   stationView: el('stationView'),
@@ -784,6 +784,47 @@ const ICON_PLAY = `<svg class="realmBtn" viewBox="0 0 64 64" aria-hidden="true">
   <path class="playStar" d="M46 15.5 47.3 18.6 50.4 19.9 47.3 21.2 46 24.3 44.7 21.2 41.6 19.9 44.7 18.6Z"/>
 </svg>`;
 
+function setShrineScrollLock(on) {
+  document.body.classList.toggle('shrine-fixed', Boolean(on));
+}
+
+function blockShrineUserScroll(event) {
+  if (!document.body.classList.contains('shrine-fixed')) return;
+  if (document.body.classList.contains('panel-open')) return;
+  if (document.body.classList.contains('guide-open')) return;
+  if (document.body.classList.contains('map-modal-open')) return;
+  if (document.body.classList.contains('award-open')) return;
+  if (document.body.classList.contains('scanner-open')) return;
+  if (document.body.classList.contains('finale-open')) return;
+  if (
+    event.type === 'touchmove'
+    && event.target.closest('.challenge, .runePiece, .runeAltar, input, textarea, select')
+  ) {
+    return;
+  }
+  if (event.cancelable) event.preventDefault();
+}
+
+function scrollShrineHome({ smooth = true } = {}) {
+  window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
+}
+
+function scrollShrinePanel(panelKey, { smooth = true } = {}) {
+  window.requestAnimationFrame(() => {
+    const panel = document.querySelector(`.shrinePanel.is-open[data-panel="${panelKey}"]`);
+    if (!panel) return;
+    const target = panelKey === 'play'
+      ? (panel.querySelector('.challenge') || panel)
+      : panel;
+    target.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+    const heading = panel.querySelector('h3');
+    if (heading) {
+      heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+    }
+  });
+}
+
 function setShrineFocus(key, { spin = true, scroll = true, restore = false } = {}) {
   stopStoryAudio();
   const gate = document.querySelector('.shrineGate');
@@ -821,19 +862,14 @@ function setShrineFocus(key, { spin = true, scroll = true, restore = false } = {
     const pending = document.querySelector('[data-challenge-type="button_lantern"][data-spirit-pending]');
     if (pending) ensureSpiritAssignment({ forceRender: true });
   }
-  if (!closing && shrineFocus === 'play' && scroll) {
-    window.requestAnimationFrame(() => {
-      const panel = document.querySelector('.shrinePanel.is-open[data-panel="play"]');
-      if (!panel) return;
-      const target = panel.querySelector('.challenge') || panel;
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      const heading = panel.querySelector('h3');
-      if (heading) {
-        heading.setAttribute('tabindex', '-1');
-        heading.focus({ preventScroll: true });
-      }
-    });
-  }
+  if (!scroll) return;
+  if (closing || !shrineFocus) scrollShrineHome({ smooth: !restore });
+  else scrollShrinePanel(shrineFocus, { smooth: !restore });
+}
+
+function goStartHero() {
+  const welcome = Store.touchByType('threshold')[0];
+  goStation(welcome?.slug || 'threshold');
 }
 
 function toast(message, { warm = false, ms = 3200 } = {}) {
@@ -1789,6 +1825,7 @@ function renderStation(slug) {
   const station = Store.touchBySlug(slug) || Store.touchByType('threshold')[0];
   if (!station) {
     delete document.body.dataset.realm;
+    setShrineScrollLock(false);
     dom.stationView.innerHTML = `<div class="empty"><p class="empty__title">This station isn’t on tonight’s quest.</p></div>`;
     return;
   }
@@ -1817,6 +1854,7 @@ function renderStation(slug) {
   const artHtml = art ? summonHtml(art, 'shrine__art', station.element, { hero: Boolean(waveRealm) }) : '';
 
   if (!gated) {
+    setShrineScrollLock(false);
     const intro = station.type === 'heart'
       ? heartIntroHtml(Store.state.session)
       : storyHtml(station.body);
@@ -1840,6 +1878,7 @@ function renderStation(slug) {
     return;
   }
 
+  setShrineScrollLock(true);
   dom.stationView.innerHTML = `
     <article class="shrine" data-realm="${escapeHtml(station.element || '')}">
       ${sky}
@@ -1885,7 +1924,8 @@ function renderStation(slug) {
   selectedImages = new Set();
   sequenceBuffer = [];
   document.querySelector('.shrine')?.classList.toggle('is-play-open', shrineFocus === 'play');
-  if (shrineFocus) setShrineFocus(shrineFocus, { spin: false, scroll: false, restore: true });
+  if (shrineFocus) setShrineFocus(shrineFocus, { spin: false, scroll: true, restore: true });
+  else scrollShrineHome({ smooth: false });
   armSummons(dom.stationView);
   if (waveRealm && !document.body.classList.contains('landing-open')) armShrineWaves(waveRealm);
   if (station.element === 'fire') startHearth();
@@ -2135,6 +2175,7 @@ function hideFinale() {
 function renderJourney() {
   const stations = Store.state.touchpoints || [];
   const session = Store.state.session;
+  const realms = session?.realms || [];
   const rows = stations.map((tp) => {
     let status = 'Visit';
     if (tp.type === 'heart') status = session?.winterKeeper ? 'Complete' : session?.realmsComplete ? 'Ready to scan' : 'Final destination';
@@ -2145,8 +2186,14 @@ function renderJourney() {
     const realm = tp.element ? ` data-realm="${escapeHtml(tp.element)}"` : '';
     const hint = tp.element ? `${REALM_META[tp.element]?.label || tp.element} · ${status}` : status;
     let token;
-    if (tp.element) token = `<img src="${realmPfp(tp.element)}" alt="">`;
-    else token = `<img src="${STATION_ICON[tp.type] || `${ART}/ui/icon-journey.svg`}" alt="">`;
+    if (tp.element) {
+      token = `<span class="stop__face"><img src="${realmPfp(tp.element)}" alt=""></span>`;
+    } else {
+      token = `<img src="${STATION_ICON[tp.type] || `${ART}/ui/icon-journey.svg`}" alt="">`;
+    }
+    const check = awake
+      ? `<span class="stop__check" aria-hidden="true"><img src="${ART}/icon-check.png" alt=""></span>`
+      : `<span class="stop__check" aria-hidden="true"></span>`;
     return `<li>
       <button class="stop${awake ? ' is-found' : ''}"${realm} data-kind="${escapeHtml(tp.type || '')}" data-go-station="${escapeHtml(tp.slug)}" type="button">
         <span class="stop__token">${token}</span>
@@ -2154,14 +2201,22 @@ function renderJourney() {
           <p class="stop__name">${escapeHtml(tp.title)}</p>
           <p class="stop__hint">${escapeHtml(hint)}</p>
         </span>
+        ${check}
       </button>
     </li>`;
   }).join('');
 
   const awakened = Store.realmsAwakened();
+  const crew = REALM_ORDER.map((realm) => {
+    const on = realms.some((r) => r.realm === realm && r.complete);
+    return `<span class="journeyHead__face${on ? ' is-on' : ''}" data-realm="${escapeHtml(realm)}">
+      <img src="${realmPfp(realm)}" alt="${escapeHtml(REALM_META[realm].label)}">
+    </span>`;
+  }).join('');
   dom.journeyBody.innerHTML = `
     <div class="journeyHead">
       <p class="journeyHead__count"><b>${awakened}</b><span>/ 5</span></p>
+      <div class="journeyHead__crew" aria-hidden="true">${crew}</div>
       <p class="journeyHead__note">${escapeHtml(ELEMENT_LINES[awakened] || ELEMENT_LINES[0])} Builder’s Monument is optional.</p>
     </div>
     <ul class="stopList">${rows}</ul>`;
@@ -2974,6 +3029,7 @@ function showThreshold() {
   if (dom.landingPartySize && known && !String(dom.landingPartySize.value || '').trim()) {
     dom.landingPartySize.value = String(known);
   }
+  setShrineScrollLock(false);
   document.body.classList.add('landing-open');
   dom.threshold.hidden = false;
   dom.threshold.inert = false;
@@ -3787,7 +3843,10 @@ function paintSequence(root) {
 function wire() {
   bindFunButtons();
   initLandingScene();
+  document.addEventListener('wheel', blockShrineUserScroll, { passive: false });
+  document.addEventListener('touchmove', blockShrineUserScroll, { passive: false });
   dom.progressButton.addEventListener('click', () => openPanel('journey'));
+  dom.logoHome?.addEventListener('click', goStartHero);
   const toggleGuide = () => {
     if (mapModalMode === 'choice') return;
     if (document.body.classList.contains('guide-open')) closeGuide();
@@ -3909,6 +3968,15 @@ function wire() {
     const shrineBtn = event.target.closest('[data-shrine-focus]');
     if (shrineBtn) {
       setShrineFocus(shrineBtn.dataset.shrineFocus);
+      return;
+    }
+    if (
+      shrineFocus
+      && document.body.classList.contains('shrine-fixed')
+      && event.target.closest('.shrine')
+      && !event.target.closest('.shrinePanel, .shrineGate, .topbar, button, a, input, textarea, select, label')
+    ) {
+      setShrineFocus(shrineFocus);
       return;
     }
     const go = event.target.closest('[data-go-station]');
