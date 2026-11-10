@@ -2629,12 +2629,15 @@ function fitLandingScene() {
   scene.style.width = `${w}px`;
   scene.style.height = `${h}px`;
   scene.style.transform = `translate(${left}px, ${top}px)`;
-  /* Keep fx + debug locked to the same image-space box as the photo. */
+  /* Keep fx + debug locked to the same image-space box as the photo.
+     Fx uses left/top (not transform) so Spirit-style screen-blend veils work. */
   [dom.landingFx, dom.landingFxDebug].forEach((layer) => {
     if (!layer) return;
     layer.style.width = `${w}px`;
     layer.style.height = `${h}px`;
-    layer.style.transform = `translate(${left}px, ${top}px)`;
+    layer.style.left = `${left}px`;
+    layer.style.top = `${top}px`;
+    layer.style.transform = 'none';
   });
 }
 
