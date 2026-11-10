@@ -947,7 +947,10 @@ function goStation(slug) {
     showThreshold();
     return;
   }
-  markHistoryView(slug, 'shrine', shrineFocus);
+  // Switching guardians always opens with Meet/Discover/Play closed.
+  const nextFocus = shrineSlug === slug ? shrineFocus : null;
+  if (shrineSlug !== slug) shrineFocus = null;
+  markHistoryView(slug, 'shrine', nextFocus);
   Store.state.path = Store.pathContext();
   openStation(slug);
 }
@@ -1910,9 +1913,13 @@ function renderStation(slug) {
   else delete document.body.dataset.realm;
 
   if (shrineSlug !== station.slug) {
+    const prevSlug = shrineSlug;
     shrineSlug = station.slug;
-    // Keep Meet/Discover/Play when history restore asked for this station's section.
-    if (history.state?.station === station.slug && history.state?.view === 'shrine' && history.state?.focus) {
+    if (prevSlug) {
+      // Coming from another station: never carry Meet/Discover/Play across.
+      shrineFocus = null;
+    } else if (history.state?.station === station.slug && history.state?.view === 'shrine' && history.state?.focus) {
+      // First shrine paint (reload / direct restore) may reopen the saved section.
       shrineFocus = history.state.focus;
     } else {
       shrineFocus = null;
@@ -2022,6 +2029,7 @@ async function openStation(slug, { recordVisit = true } = {}) {
   closePanels();
   closeGuide({ force: true });
   Store.setIntendedStation(slug);
+  if (shrineSlug && shrineSlug !== slug) shrineFocus = null;
   markHistoryView(slug, 'shrine', shrineFocus);
   Store.state.path = Store.pathContext();
   renderStation(slug);
