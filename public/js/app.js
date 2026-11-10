@@ -1,6 +1,20 @@
 /* global window, document, Store, ParkMap, Scanner */
 
+(function applyGuestMotionFlag() {
+  const on = Boolean(window.__CQ_FLAGS__?.reducedMotion);
+  document.documentElement.classList.toggle('cq-motion-flag', on);
+})();
+
 const ART = '/assets/art';
+const CATEGORY_LABELS = {
+  landmark: 'Landmarks',
+  sculpture: 'Sculptures',
+  lantern: 'Lanterns',
+  'photo-op': 'Photo spots',
+  ride: 'Rides',
+  amenity: 'Amenities',
+};
+const SHRINE_VIEW_KEY = 'ic.shrineView.v1';
 const REALM_META = {
   water: { label: 'Water', glyph: '💧', character: `${ART}/char-cascade.png?v=1600`, pfp: `${ART}/pfp-cascade.png`, wave: `${ART}/wave-cascade.mp4?v=2` },
   earth: { label: 'Earth', glyph: '🪨', character: `${ART}/char-granite.png?v=1600`, pfp: `${ART}/pfp-granite.png`, wave: `${ART}/wave-granite.mp4?v=2` },
@@ -639,6 +653,7 @@ const dom = {
   toast: el('toast'), splash: el('bootSplash'),
   scanFab: el('scanFab'), recenter: el('recenterButton'),
   filterButton: el('filterButton'), legend: el('legend'), legendRows: el('legendRows'),
+  legendHint: el('legendHint'),
   journeyButton: el('journeyButton'),
   threshold: el('threshold'), thresholdStart: el('thresholdStart'),
   landingPlace: el('landingPlace'), landingProgress: el('landingProgress'),
@@ -663,6 +678,7 @@ const dom = {
 };
 
 let currentPanel = null;
+let panelTrigger = null;
 let awardQueue = [];
 let awardShowing = false;
 let mapReady = false;
@@ -672,6 +688,47 @@ let shrineFocus = null;
 let shrineSlug = null;
 let mapModalMode = null;
 let mapModalStation = null;
+
+function rememberShrineView(slug, focus) {
+  if (!slug) return;
+  try {
+    sessionStorage.setItem(SHRINE_VIEW_KEY, JSON.stringify({
+      slug,
+      focus: focus || null,
+      at: Date.now(),
+    }));
+  } catch { /* private mode */ }
+}
+
+function rememberedShrineFocus(slug) {
+  try {
+    const data = JSON.parse(sessionStorage.getItem(SHRINE_VIEW_KEY) || 'null');
+    if (!data || data.slug !== slug) return null;
+    return data.focus || null;
+  } catch {
+    return null;
+  }
+}
+
+function markHistoryView(slug, view, focus = null) {
+  const path = Store.stationPath(slug);
+  const state = { station: slug, view, focus: focus || null };
+  if (`${location.pathname}` !== path) history.pushState(state, '', path);
+  else history.replaceState(state, '', `${path}${location.search || ''}`);
+  if (view === 'shrine') rememberShrineView(slug, focus);
+}
+
+function syncShrineHistoryFocus() {
+  if (!shrineSlug) return;
+  rememberShrineView(shrineSlug, shrineFocus);
+  if (history.state?.view === 'shrine' && history.state?.station === shrineSlug) {
+    history.replaceState(
+      { station: shrineSlug, view: 'shrine', focus: shrineFocus || null },
+      '',
+      `${location.pathname}${location.search || ''}`
+    );
+  }
+}
 
 const ICON_BADGE = `
   <circle class="bOut" cx="32" cy="32" r="26"/>
@@ -714,13 +771,15 @@ const ICON_PLAY = `<svg class="realmBtn" viewBox="0 0 64 64" aria-hidden="true">
   <path class="playStar" d="M46 15.5 47.3 18.6 50.4 19.9 47.3 21.2 46 24.3 44.7 21.2 41.6 19.9 44.7 18.6Z"/>
 </svg>`;
 
-function setShrineFocus(key, { spin = true } = {}) {
+function setShrineFocus(key, { spin = true, scroll = true, restore = false } = {}) {
   stopStoryAudio();
   const gate = document.querySelector('.shrineGate');
   if (!gate) return;
-  const closing = shrineFocus === key;
+  // restore=true re-applies a remembered section after reload; do not toggle closed.
+  const closing = !restore && shrineFocus === key;
   shrineFocus = closing ? null : key;
   gate.classList.toggle('is-focus', !closing);
+  document.querySelector('.shrine')?.classList.toggle('is-play-open', shrineFocus === 'play');
   if (closing) {
     gate.dataset.focus = '';
     gate.classList.remove('is-spinning');
@@ -744,6 +803,20 @@ function setShrineFocus(key, { spin = true } = {}) {
   document.querySelectorAll('.shrinePanel').forEach((panel) => {
     panel.classList.toggle('is-open', panel.dataset.panel === shrineFocus);
   });
+  syncShrineHistoryFocus();
+  if (!closing && shrineFocus === 'play' && scroll) {
+    window.requestAnimationFrame(() => {
+      const panel = document.querySelector('.shrinePanel.is-open[data-panel="play"]');
+      if (!panel) return;
+      const target = panel.querySelector('.challenge') || panel;
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const heading = panel.querySelector('h3');
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        heading.focus({ preventScroll: true });
+      }
+    });
+  }
 }
 
 function toast(message, { warm = false, ms = 3200 } = {}) {
@@ -755,16 +828,18 @@ function toast(message, { warm = false, ms = 3200 } = {}) {
 }
 
 function goStation(slug) {
-  const path = Store.stationPath(slug);
-  if (`${location.pathname}` !== path) history.pushState({ station: slug }, '', path);
   Store.state.path = Store.pathContext();
   hideMapModal();
   if (slug === 'threshold' || Store.touchBySlug(slug)?.type === 'threshold') {
+    markHistoryView(slug, 'threshold');
+    Store.state.path = Store.pathContext();
     closePanels();
     closeGuide({ force: true });
     showThreshold();
     return;
   }
+  markHistoryView(slug, 'shrine', shrineFocus);
+  Store.state.path = Store.pathContext();
   openStation(slug);
 }
 
@@ -836,16 +911,19 @@ function challengeHtml(station) {
   }
 
   if (type === 'image_select') {
+    const need = Number(challenge.selectCount) || 3;
     const tiles = (challenge.images || []).map((img) => {
       const url = img.url || TILE_ART[img.id] || '';
-      return `<button class="pickTile${url ? ' pickTile--art' : ''}" data-image-id="${escapeHtml(img.id)}" type="button" style="--tile:${escapeHtml(img.color || '#5df0cf')}">
+      return `<button class="pickTile${url ? ' pickTile--art' : ''}" data-image-id="${escapeHtml(img.id)}" type="button" aria-pressed="false" style="--tile:${escapeHtml(img.color || '#5df0cf')}">
         ${url ? `<img src="${escapeHtml(url)}" alt="">` : ''}
         <span>${escapeHtml(img.label || img.id)}</span>
       </button>`;
     }).join('');
-    return `<div class="challenge" data-station="${escapeHtml(station.slug)}">
+    return `<div class="challenge" data-station="${escapeHtml(station.slug)}" data-select-count="${need}">
       <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
       ${challenge.hint ? `<p class="challenge__hint">${escapeHtml(challenge.hint)}</p>` : ''}
+      <p class="challenge__count" data-pick-count role="status" aria-live="polite">0 of ${need} selected</p>
+      <p class="challenge__error" data-pick-error hidden role="alert">Choose three images</p>
       <div class="pickGrid">${tiles}</div>
       <button class="textButton textButton--play" data-image-submit type="button">Check my three</button>
     </div>`;
@@ -919,6 +997,43 @@ function shrineMeetTitle(station) {
   if (station.type === 'monument') return 'Meet the First Builder';
   if (station.type === 'heart') return 'The Winter Keeper Throne';
   return `Meet ${station.title}`;
+}
+
+function formatRealmList(realms) {
+  const names = (realms || []).map((r) => REALM_META[r]?.label || r).filter(Boolean);
+  if (!names.length) return '';
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`;
+}
+
+function heartRemainingRealms(heartResult) {
+  if (Array.isArray(heartResult?.remaining) && heartResult.remaining.length) {
+    return heartResult.remaining;
+  }
+  return (Store.state.session?.realms || []).filter((r) => !r.complete).map((r) => r.realm);
+}
+
+function heartIntroHtml(session, heartResult) {
+  if (session?.winterKeeper) {
+    return storyHtml('Your quest is complete. Show this screen at the Gift Shop for your Winter Keeper medallion.');
+  }
+  const remaining = heartRemainingRealms(heartResult);
+  if (remaining.length) {
+    const list = formatRealmList(remaining);
+    const count = remaining.length;
+    const sleeping = count === 5
+      ? 'None of the five elements are awake yet'
+      : count === 1
+        ? `One element is still sleeping (${list})`
+        : `${count} elements are still sleeping (${list})`;
+    return storyHtml(
+      `The Winter Keeper Throne is the final scan — not a shortcut. ${sleeping}. Return here after you awaken ${count === 1 ? 'it' : 'them'} to confirm your quest and earn the Winter Keeper title.`
+    );
+  }
+  return storyHtml(
+    'All five elements are awake. Scan the Winter Keeper Throne now to confirm your quest is complete. You will be named Winter Keeper, Protector of Winter Magic. An optional group photo here is welcome. Then show the completion screen at the Gift Shop for your medallion.'
+  );
 }
 
 function shrineDiscoverTitle(station) {
@@ -1506,7 +1621,12 @@ function renderStation(slug) {
 
   if (shrineSlug !== station.slug) {
     shrineSlug = station.slug;
-    shrineFocus = null;
+    // Keep Meet/Discover/Play when history restore asked for this station's section.
+    if (history.state?.station === station.slug && history.state?.view === 'shrine' && history.state?.focus) {
+      shrineFocus = history.state.focus;
+    } else {
+      shrineFocus = null;
+    }
   }
 
   const gated = station.type === 'guardian' || station.type === 'monument';
@@ -1521,6 +1641,9 @@ function renderStation(slug) {
   const artHtml = art ? summonHtml(art, 'shrine__art', station.element, { hero: Boolean(waveRealm) }) : '';
 
   if (!gated) {
+    const intro = station.type === 'heart'
+      ? heartIntroHtml(Store.state.session)
+      : storyHtml(station.body);
     dom.stationView.innerHTML = `
       <article class="shrine" data-realm="${escapeHtml(station.element || '')}">
         <p class="shrine__kicker">${escapeHtml(station.subtitle || station.type)}</p>
@@ -1528,9 +1651,9 @@ function renderStation(slug) {
         ${artHtml}
         <section class="shrine__block">
           <h3>${escapeHtml(shrineMeetTitle(station))}</h3>
-          ${storyHtml(station.body)}
+          ${intro}
         </section>
-        ${station.discoverBody ? `<section class="shrine__block">
+        ${station.type !== 'heart' && station.discoverBody ? `<section class="shrine__block">
           <h3>${escapeHtml(shrineDiscoverTitle(station))}</h3>
           ${storyHtml(station.discoverBody)}
         </section>` : ''}
@@ -1585,7 +1708,8 @@ function renderStation(slug) {
 
   selectedImages = new Set();
   sequenceBuffer = [];
-  if (shrineFocus) setShrineFocus(shrineFocus, { spin: false });
+  document.querySelector('.shrine')?.classList.toggle('is-play-open', shrineFocus === 'play');
+  if (shrineFocus) setShrineFocus(shrineFocus, { spin: false, scroll: false, restore: true });
   armSummons(dom.stationView);
   if (waveRealm && !document.body.classList.contains('landing-open')) armShrineWaves(waveRealm);
   if (station.element === 'fire') startHearth();
@@ -1599,12 +1723,21 @@ async function openStation(slug, { recordVisit = true } = {}) {
   closePanels();
   closeGuide({ force: true });
   Store.setIntendedStation(slug);
+  markHistoryView(slug, 'shrine', shrineFocus);
+  Store.state.path = Store.pathContext();
   renderStation(slug);
   if (recordVisit && Store.hasLiveSession() && slug) {
     try { await Store.visitStation(slug); renderProgress(); } catch { /* offline */ }
     if (slug === 'heart' || Store.touchBySlug(slug)?.type === 'heart') {
       const result = await Store.scanHeart();
-      renderStation(slug);
+      const station = Store.touchBySlug(slug);
+      if (station) {
+        const block = dom.stationView.querySelector('.shrine__block');
+        if (block) {
+          const title = block.querySelector('h3');
+          block.innerHTML = `${title ? title.outerHTML : `<h3>${escapeHtml(shrineMeetTitle(station))}</h3>`}${heartIntroHtml(Store.state.session, result)}`;
+        }
+      }
       renderHeartSlot(result);
     }
   }
@@ -1621,15 +1754,15 @@ function renderHeartSlot(heartResult) {
     return;
   }
 
-  const remaining = (heartResult?.remaining)
-    || (session.realms || []).filter((r) => !r.complete).map((r) => r.realm);
+  const remaining = heartRemainingRealms(heartResult);
 
   if (remaining.length) {
     const icons = remaining.map((r) =>
       `<li><img src="${realmPfp(r)}" alt=""><span>${escapeHtml(REALM_META[r]?.label || r)}</span></li>`
     ).join('');
+    const list = formatRealmList(remaining);
     slot.innerHTML = `<div class="challenge">
-      <p class="challenge__prompt">The Throne is waiting, but one or more elements are still sleeping. Return to the missing Guardian challenges, then scan here again to confirm your completion.</p>
+      <p class="challenge__prompt">Still needed: ${escapeHtml(list)}. Finish ${remaining.length === 1 ? 'that Guardian challenge' : 'those Guardian challenges'}, then return here to scan and confirm.</p>
       <ul class="remainList">${icons}</ul>
       <button class="textButton" data-open-journey type="button">View my journey</button>
     </div>`;
@@ -1795,10 +1928,12 @@ function renderJourney() {
 
 function openPanel(name) {
   closeGuide();
+  panelTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   ['journeyPanel', 'passportPanel'].forEach((key) => {
     if (!dom[key]) return;
-    dom[key].hidden = true;
     dom[key].classList.remove('is-open');
+    dom[key].hidden = true;
+    dom[key].inert = true;
   });
   if (name === 'journey') { renderJourney(); showPanel(dom.journeyPanel); }
   else if (name === 'passport') { renderPassport(); showPanel(dom.passportPanel); }
@@ -1807,18 +1942,29 @@ function openPanel(name) {
 }
 
 function showPanel(panel) {
+  panel.inert = false;
   panel.hidden = false;
-  requestAnimationFrame(() => panel.classList.add('is-open'));
+  requestAnimationFrame(() => {
+    panel.classList.add('is-open');
+    panel.querySelector('.panel__close')?.focus();
+  });
 }
 
 function closePanels() {
+  const trigger = panelTrigger;
   ['journeyPanel', 'passportPanel'].forEach((key) => {
     if (!dom[key]) return;
     dom[key].classList.remove('is-open');
-    setTimeout(() => { dom[key].hidden = true; }, 440);
+    dom[key].inert = true;
+    // Hide immediately so closed panels leave the a11y tree / tab order.
+    dom[key].hidden = true;
   });
   currentPanel = null;
+  panelTrigger = null;
   document.body.classList.remove('panel-open');
+  if (trigger && document.contains(trigger) && typeof trigger.focus === 'function') {
+    requestAnimationFrame(() => trigger.focus());
+  }
 }
 
 function renderPassport() {
@@ -2440,17 +2586,25 @@ function clearPartyReminder() {
   dom.landingPartyHint?.classList.remove('is-on');
   dom.landingParty?.classList.remove('is-nudge');
   dom.landingPartySize?.removeAttribute('aria-invalid');
+  dom.landingPartySize?.removeAttribute('aria-errormessage');
+  if (dom.landingPartyHint) {
+    dom.landingPartyHint.setAttribute('role', 'status');
+    dom.landingPartyHint.textContent = 'Enter your party size to continue.';
+  }
 }
 
 function remindPartySize() {
   const raw = String(dom.landingPartySize?.value || '').trim();
+  const message = raw
+    ? 'Enter a party size from 1 to 20.'
+    : 'Enter your party size to continue.';
   if (dom.landingPartyHint) {
-    dom.landingPartyHint.textContent = raw
-      ? 'Enter a party size from 1 to 20.'
-      : 'Enter your party size to continue.';
+    dom.landingPartyHint.textContent = message;
+    dom.landingPartyHint.setAttribute('role', 'alert');
     dom.landingPartyHint.classList.add('is-on');
   }
   dom.landingPartySize?.setAttribute('aria-invalid', 'true');
+  dom.landingPartySize?.setAttribute('aria-errormessage', 'landingPartyHint');
   if (dom.landingParty) {
     dom.landingParty.classList.remove('is-nudge');
     void dom.landingParty.offsetWidth;
@@ -2683,6 +2837,8 @@ function openMapHome({ showChoice = false, fit = 'park' } = {}) {
 
 function showGuardianQrLanding(station) {
   hideThreshold();
+  markHistoryView(station.slug, 'map-begin');
+  Store.state.path = Store.pathContext();
   const welcome = Store.touchByType('threshold')[0];
   renderStation(welcome?.slug || 'threshold');
   openGuide();
@@ -2780,17 +2936,67 @@ function openPoiSheet(poi) {
   document.body.classList.add('sheet-open');
 }
 
+function categoryLabel(category) {
+  return CATEGORY_LABELS[category] || String(category || '')
+    .split('-')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function syncFilterChrome() {
+  const hidden = Store.state.hiddenCategories?.size || 0;
+  const filtering = hidden > 0;
+  if (dom.filterButton) {
+    dom.filterButton.classList.toggle('is-filtered', filtering);
+    dom.filterButton.setAttribute(
+      'aria-label',
+      filtering ? `Filter map (${hidden} hidden)` : 'Filter what the map shows'
+    );
+  }
+  if (dom.legendHint) {
+    dom.legendHint.textContent = filtering
+      ? `${hidden} categor${hidden === 1 ? 'y' : 'ies'} hidden`
+      : 'All categories on';
+    dom.legendHint.classList.toggle('is-filtered', filtering);
+  }
+}
+
 function renderLegend() {
   const counts = {};
   Store.state.pois.forEach((poi) => {
     counts[poi.category] = (counts[poi.category] || 0) + 1;
   });
-  dom.legendRows.innerHTML = Object.entries(counts).map(([category, count]) => {
+  const rows = Object.entries(counts).sort((a, b) => categoryLabel(a[0]).localeCompare(categoryLabel(b[0])));
+  dom.legendRows.innerHTML = rows.map(([category, count]) => {
     const on = !Store.state.hiddenCategories.has(category);
-    return `<button class="legend__row" data-category="${escapeHtml(category)}" aria-pressed="${on}" type="button">
-      <span>${escapeHtml(category)}</span><span class="legend__count">${count}</span>
+    const label = categoryLabel(category);
+    return `<button class="legend__row legend__row--${escapeHtml(category)}" data-category="${escapeHtml(category)}" aria-pressed="${on}" type="button">
+      <span class="legend__gem" aria-hidden="true"></span>
+      <span>${escapeHtml(label)}</span><span class="legend__count">${count}</span>
     </button>`;
   }).join('');
+  syncFilterChrome();
+}
+
+function paintImagePick(root, { clearError = false } = {}) {
+  if (!root) return;
+  const need = Number(root.dataset.selectCount || 3);
+  const count = selectedImages.size;
+  root.querySelectorAll('[data-image-id]').forEach((btn) => {
+    const on = selectedImages.has(btn.dataset.imageId);
+    btn.classList.toggle('is-on', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  const readout = root.querySelector('[data-pick-count]');
+  if (readout) {
+    readout.textContent = `${count} of ${need} selected`;
+    readout.classList.toggle('is-ready', count === need);
+  }
+  if (clearError) {
+    const err = root.querySelector('[data-pick-error]');
+    if (err) err.hidden = true;
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -2908,6 +3114,13 @@ async function route() {
 
   const station = Store.touchBySlug(slug);
   if (station?.type === 'guardian' && !station.complete) {
+    // Direct QR / fresh station URL → begin modal. History/reload after Begin
+    // restores the shrine (and last Meet/Discover/Play section when known).
+    if (history.state?.view === 'shrine' && history.state?.station === slug) {
+      shrineFocus = history.state.focus || rememberedShrineFocus(slug) || shrineFocus;
+      await openStation(slug);
+      return;
+    }
     showGuardianQrLanding(station);
     return;
   }
@@ -3062,10 +3275,24 @@ function wire() {
     renderMap();
     toast(on ? 'Guardian stops only' : 'Full park map');
   });
+  const closeLegend = () => {
+    if (!dom.legend) return;
+    dom.legend.hidden = true;
+    dom.filterButton?.setAttribute('aria-expanded', 'false');
+  };
+  const openLegend = () => {
+    if (!dom.legend) return;
+    renderLegend();
+    dom.legend.hidden = false;
+    dom.filterButton?.setAttribute('aria-expanded', 'true');
+  };
   dom.filterButton.addEventListener('click', () => {
-    const showing = !dom.legend.hidden;
-    dom.legend.hidden = showing;
-    if (!showing) renderLegend();
+    if (dom.legend.hidden) openLegend();
+    else closeLegend();
+  });
+  el('legendClose')?.addEventListener('click', () => {
+    closeLegend();
+    dom.filterButton?.focus();
   });
   dom.legendRows.addEventListener('click', (event) => {
     const button = event.target.closest('[data-category]');
@@ -3108,19 +3335,40 @@ function wire() {
 
     const image = event.target.closest('[data-image-id]');
     if (image) {
+      const root = image.closest('[data-station]');
+      const need = Number(root?.dataset.selectCount || 3);
       const id = image.dataset.imageId;
-      if (selectedImages.has(id)) selectedImages.delete(id);
-      else {
-        if (selectedImages.size >= 3) selectedImages.clear();
+      if (selectedImages.has(id)) {
+        selectedImages.delete(id);
+        paintImagePick(root, { clearError: true });
+      } else if (selectedImages.size >= need) {
+        const err = root?.querySelector('[data-pick-error]');
+        if (err) {
+          err.textContent = 'You already chose three. Deselect one to change.';
+          err.hidden = false;
+        }
+        toast('Choose three images');
+        paintImagePick(root);
+      } else {
         selectedImages.add(id);
+        paintImagePick(root, { clearError: true });
       }
-      image.closest('.pickGrid').querySelectorAll('[data-image-id]').forEach((btn) => {
-        btn.classList.toggle('is-on', selectedImages.has(btn.dataset.imageId));
-      });
       return;
     }
     if (event.target.closest('[data-image-submit]')) {
       const root = event.target.closest('[data-station]');
+      const need = Number(root?.dataset.selectCount || 3);
+      if (selectedImages.size !== need) {
+        const err = root?.querySelector('[data-pick-error]');
+        if (err) {
+          err.textContent = need === 3 ? 'Choose three images' : `Choose ${need} images`;
+          err.hidden = false;
+        }
+        toast(need === 3 ? 'Choose three images' : `Choose ${need} images`);
+        paintImagePick(root);
+        return;
+      }
+      paintImagePick(root, { clearError: true });
       handleStationChallenge(root.dataset.station, { ids: [...selectedImages] });
       return;
     }
@@ -3270,6 +3518,11 @@ function wire() {
     else if (mapModalMode === 'choice') return;
     else if (mapModalMode === 'begin' || mapModalMode === 'beginGuide') hideMapModal();
     else if (currentPanel) closePanels();
+    else if (dom.legend && !dom.legend.hidden) {
+      dom.legend.hidden = true;
+      dom.filterButton?.setAttribute('aria-expanded', 'false');
+      dom.filterButton?.focus();
+    }
     else if (document.body.classList.contains('guide-open')) closeGuide();
   });
 }

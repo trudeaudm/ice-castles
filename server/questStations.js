@@ -380,7 +380,7 @@ const QUEST_STATIONS = [
     title: 'Winter Keeper Throne',
     subtitle: 'Final scan and the medallion',
     body:
-      'All five elements are awake. Now gather your party at the Winter Keeper Throne and scan its QR code to confirm that you completed every Guardian challenge. The Throne welcomes you as a Winter Keeper, a Protector of Winter Magic.\n\nIf you like, take a group photo here. Then show the completion screen at the Gift Shop to receive your Winter Keeper medallion. If an element is still sleeping, the screen will show which Guardian challenge remains.',
+      'The Winter Keeper Throne is the final scan. Awaken all five elements first, then scan here to confirm your quest and become a Winter Keeper. If an element is still sleeping, this page lists what remains. When you are ready, an optional group photo here is welcome, and the Gift Shop redeems your medallion from the completion screen.',
     discover_body:
       'Scanning the Throne confirms the quest. Completing the last Guardian is not enough on its own.',
     sort_order: 7,

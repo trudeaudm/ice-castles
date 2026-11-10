@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const { migrate } = require('./schema');
@@ -12,6 +13,25 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const RESERVED = new Set(['api', 'admin', 'assets', 'vendor', 'js', 's', 'healthz', 'maps', 'recordings']);
+/* Public guest flag — not a secret. Default off until launch readiness.
+   Set GUEST_REDUCED_MOTION=1 to honor prefers-reduced-motion in the guest app. */
+const GUEST_REDUCED_MOTION = /^(1|true|yes|on)$/i.test(String(process.env.GUEST_REDUCED_MOTION || ''));
+
+function sendGuestApp(res) {
+  const filePath = path.join(PUBLIC_DIR, 'index.html');
+  fs.readFile(filePath, 'utf8', (err, html) => {
+    if (err) {
+      console.error('[guest-app]', err);
+      return res.status(500).end();
+    }
+    const flags = JSON.stringify({ reducedMotion: GUEST_REDUCED_MOTION });
+    const inject = `<script>window.__CQ_FLAGS__=${flags};</script>`;
+    const body = html.includes('</head>')
+      ? html.replace('</head>', `${inject}\n</head>`)
+      : `${inject}${html}`;
+    res.type('html').send(body);
+  });
+}
 
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '256kb' }));
@@ -113,7 +133,7 @@ app.get(['/', '/:venue', '/:venue/:station'], async (req, res, next) => {
     }
   }
 
-  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+  sendGuestApp(res);
 });
 
 app.use((err, _req, res, _next) => {

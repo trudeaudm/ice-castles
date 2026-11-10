@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ice Castles — Castle Quest</title>
 <meta name="description" content="Explore the castle, awaken five elements, and become a Winter Keeper.">
 <meta name="theme-color" content="#62B4E0">
@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap">
-<link rel="stylesheet" href="/app.css?v=94">
+<link rel="stylesheet" href="/app.css?v=96">
 </head>
 <body class="quest">
 
@@ -61,12 +61,16 @@
     <button class="mapTool" id="journeyButton" type="button" aria-pressed="false" aria-label="Show Guardian stops only">
       <img src="/assets/art/ui/icon-guardians.svg" alt="">
     </button>
-    <button class="mapTool" id="filterButton" type="button" aria-label="Filter what the map shows">
+    <button class="mapTool" id="filterButton" type="button" aria-label="Filter what the map shows" aria-expanded="false" aria-controls="legend">
       <img src="/assets/art/ui/icon-filter.svg" alt="">
     </button>
   </div>
   <div class="legend" id="legend" hidden>
-    <p class="legend__title">Show on map</p>
+    <header class="legend__head">
+      <p class="legend__title">Filter map</p>
+      <button class="legend__close" id="legendClose" type="button" aria-label="Close filters">Done</button>
+    </header>
+    <p class="legend__hint" id="legendHint">All categories on</p>
     <div class="legend__rows" id="legendRows"></div>
   </div>
   <section class="sheet" id="sheet" aria-live="polite" aria-label="Marker details">
@@ -83,18 +87,18 @@
   </button>
 </div>
 
-<section class="panel" id="journeyPanel" aria-label="My journey" hidden>
+<section class="panel" id="journeyPanel" role="dialog" aria-modal="true" aria-labelledby="journeyTitle" hidden inert>
   <header class="panel__head">
-    <h2 class="panel__title">My Journey</h2>
-    <button class="panel__close" data-close-panel type="button" aria-label="Close">Done</button>
+    <h2 class="panel__title" id="journeyTitle">My Journey</h2>
+    <button class="panel__close" data-close-panel type="button" aria-label="Close My Journey">Done</button>
   </header>
   <div class="panel__scroll" id="journeyBody"></div>
 </section>
 
-<section class="panel" id="passportPanel" aria-label="Passport" hidden>
+<section class="panel" id="passportPanel" role="dialog" aria-modal="true" aria-labelledby="passportTitle" hidden inert>
   <header class="panel__head">
-    <h2 class="panel__title">Passport</h2>
-    <button class="panel__close" data-close-panel type="button" aria-label="Close">Done</button>
+    <h2 class="panel__title" id="passportTitle">Passport</h2>
+    <button class="panel__close" data-close-panel type="button" aria-label="Close Passport">Done</button>
   </header>
   <div class="panel__scroll" id="passportBody"></div>
 </section>
@@ -149,9 +153,9 @@
   <p class="landing__lead">Find the Guardians. Complete their trials. Gather at the Winter Keeper Throne.</p>
   <label class="landing__party" id="landingParty" for="landingPartySize">
     <span>Party size</span>
-    <input id="landingPartySize" name="partySize" type="number" inputmode="numeric" min="1" max="20" step="1" placeholder="How many?" autocomplete="off" enterkeyhint="done">
+    <input id="landingPartySize" name="partySize" type="number" inputmode="numeric" min="1" max="20" step="1" placeholder="How many?" autocomplete="off" enterkeyhint="done" aria-describedby="landingPartyHint">
   </label>
-  <p class="landing__partyHint" id="landingPartyHint" role="status">Enter your party size to continue.</p>
+  <p class="landing__partyHint" id="landingPartyHint" role="status" aria-live="polite">Enter your party size to continue.</p>
   <button class="landing__begin" id="thresholdStart" type="button">
     <svg class="beginCompass" viewBox="0 0 32 32" aria-hidden="true">
       <circle class="beginCompass__ring" cx="16" cy="16" r="13"/>
@@ -179,15 +183,14 @@
         </button>
       </header>
       <div class="beginBrief__scroll">
-        <p>Welcome, travelers. Beyond this gateway, five Guardians are waiting among the ice. Follow their clues, awaken Water, Earth, Fire, Air, and Spirit in any order, then gather your party at the Winter Keeper Throne. Complete all five challenges and scan there to earn the title of Winter Keeper.</p>
-        <p>Found another monument first? Your quest has already begun. Look around: the castle itself holds the story of water, weather, light, craft, and the memories made here.</p>
+        <p>Five Guardians wait among the ice. Awaken Water, Earth, Fire, Air, and Spirit in any order, then scan the Winter Keeper Throne to become a Winter Keeper.</p>
         <button class="beginStory" id="beginStoryOpen" type="button">The Story of Castle Quest</button>
         <section class="beginSteps" id="beginSteps">
-          <p class="beginBrief__kicker">How Castle Quest works</p>
-          <h3>Choose your own path.</h3>
+          <p class="beginBrief__kicker">How it works</p>
+          <h3>Any order. Unlimited tries.</h3>
           <ol>
-            <li><span>01</span> Find the five Guardian monuments and complete their challenges in any order.</li>
-            <li><span>02</span> Scan the Winter Keeper Throne after all five elements are awake.</li>
+            <li><span>01</span> Find each Guardian and complete their challenge.</li>
+            <li><span>02</span> After all five elements are awake, scan the Winter Keeper Throne.</li>
             <li><span>03</span> Show your completion screen at the Gift Shop for your medallion.</li>
           </ol>
         </section>
@@ -287,9 +290,9 @@
 
 <script src="/vendor/leaflet.js"></script>
 <script src="/js/api.js?v=23"></script>
-<script src="/js/map.js?v=29"></script>
+<script src="/js/map.js?v=30"></script>
 <script src="/js/scanner.js?v=19"></script>
 <script src="/js/wind-wisps.js?v=9"></script>
-<script src="/js/app.js?v=108"></script>
+<script src="/js/app.js?v=112"></script>
 </body>
 </html>

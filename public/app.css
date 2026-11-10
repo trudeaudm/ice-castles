@@ -430,10 +430,31 @@ body.map-moving .aurora__band { animation-play-state: paused; }
 }
 .challenge__prompt {
   margin: 0;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.45;
+  font-weight: 700;
   color: var(--ink-text);
 }
+.challenge__count {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #1a4f73;
+}
+.challenge__count.is-ready { color: var(--play-deep); }
+.challenge__error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff1d6;
+  border: 1.5px solid #e0a93a;
+  color: #5c3d00;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+.challenge__error[hidden] { display: none !important; }
 .challenge__hint {
   margin: 12px 0 0;
   padding: 10px 14px;
@@ -553,11 +574,12 @@ body.landing-open .station { visibility: hidden; }
 .landing__kicker {
   margin: 10px 0 0;
   max-width: 100%;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(210, 236, 255, 0.78);
+  color: #e8f6ff;
+  text-shadow: 0 1px 8px rgba(7, 21, 38, 0.75);
 }
 .landing__crew {
   position: relative;
@@ -646,11 +668,12 @@ body.landing-open .station { visibility: hidden; }
   gap: 6px;
   width: 100%;
   padding: 0;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(220, 240, 255, 0.8);
+  color: #eef8ff;
+  text-shadow: 0 1px 6px rgba(7, 21, 38, 0.85);
 }
 .landing__face {
   position: relative;
@@ -707,25 +730,27 @@ body.landing-open .station { visibility: hidden; }
   opacity: 0;
   pointer-events: none;
 }
-.landing__realm--water { color: #7ecbff; }
-.landing__realm--earth { color: #8fd07a; }
-.landing__realm--fire { color: #ffb068; }
-.landing__realm--air { color: #c9dce8; }
-.landing__realm--spirit { color: #d7b4ff; }
+.landing__realm--water { color: #b7e4ff; }
+.landing__realm--earth { color: #b6ef9a; }
+.landing__realm--fire { color: #ffc48a; }
+.landing__realm--air { color: #f2f8fc; }
+.landing__realm--spirit { color: #e6ccff; }
 .landing__progress {
   margin: 12px 0 0;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(198, 230, 255, 0.7);
+  color: #dceffc;
+  text-shadow: 0 1px 6px rgba(7, 21, 38, 0.8);
 }
 .landing__progressLine {
   margin: 6px auto 0;
   max-width: 280px;
-  font-size: 13px;
-  line-height: 1.35;
-  color: rgba(232, 246, 255, 0.86);
+  font-size: 14px;
+  line-height: 1.4;
+  color: #f2f9ff;
+  text-shadow: 0 1px 8px rgba(7, 21, 38, 0.8);
 }
 .landing__gate {
   position: fixed;
@@ -757,15 +782,15 @@ body.landing-open .station { visibility: hidden; }
   z-index: 1;
   margin: auto 0 0;
   max-width: 340px;
-  padding: 8px 14px;
+  padding: 10px 14px;
   border-radius: 14px;
   text-align: center;
   font-size: 16px;
   font-weight: 800;
   line-height: 1.4;
-  color: #f7fcff;
-  background: rgba(7, 21, 38, 0.48);
-  text-shadow: 0 1px 2px rgba(7, 21, 38, 0.95), 0 0 12px rgba(7, 21, 38, 0.75);
+  color: #ffffff;
+  background: rgba(7, 21, 38, 0.72);
+  text-shadow: 0 1px 2px rgba(7, 21, 38, 0.95);
 }
 .landing__party {
   position: relative;
@@ -1320,60 +1345,98 @@ body.panel-open .mapTools { opacity: 0; transform: translateY(10px); pointer-eve
 
 .legend {
   position: fixed;
-  right: 14px;
-  bottom: calc(var(--nav-h) + var(--safe-b) + 76px);
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--nav-h) + var(--safe-b) + 18px);
   z-index: 31;
-  width: 186px;
-  padding: 12px;
-  border-radius: var(--r-md);
+  width: auto;
+  max-width: 360px;
+  margin-inline: auto;
+  padding: 14px 14px 12px;
+  border-radius: 18px;
   background: var(--ice-pale);
   color: var(--ink-text);
   border: 2px solid var(--ice-card);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 16px 36px rgba(20, 70, 110, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   animation: popIn 260ms var(--ease-spring);
 }
+.legend[hidden] { display: none !important; }
 
 @keyframes popIn {
   from { opacity: 0; transform: translateY(10px) scale(0.96); }
   to   { opacity: 1; transform: none; }
 }
 
-.legend__title {
-  margin: 0 0 9px;
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--frost-500);
+.legend__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
 }
+.legend__title {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #1a4f73;
+}
+.legend__close {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1a4f73;
+  min-height: 36px;
+  padding: 4px 6px;
+}
+.legend__hint {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #3d6f90;
+}
+.legend__hint.is-filtered { color: #0f5f3a; }
 
-.legend__rows { display: grid; gap: 2px; }
+.legend__rows { display: grid; gap: 4px; }
 
 .legend__row {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 6px 5px;
-  border-radius: 8px;
-  font-size: 12.5px;
+  gap: 10px;
+  padding: 10px 8px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--ink-text);
   text-align: left;
   width: 100%;
+  min-height: 44px;
 }
-.legend__row[aria-pressed="true"] { color: var(--ink-text); background: rgba(93, 240, 207, 0.16); }
-.legend__row[aria-pressed="false"] { opacity: 0.44; }
+.legend__row[aria-pressed="true"] { color: var(--ink-text); background: rgba(93, 240, 207, 0.18); }
+.legend__row[aria-pressed="false"] { opacity: 0.5; }
 
 .legend__gem {
-  width: 11px; height: 11px;
+  width: 14px; height: 14px;
   flex: none;
   transform: rotate(45deg);
-  border-radius: 2px;
-  border: 1.5px solid var(--pin-color);
-  background: rgba(255, 255, 255, 0.18); /* fallback */
-  background: color-mix(in srgb, var(--pin-color) 40%, transparent);
+  border-radius: 3px;
+  border: 1.5px solid var(--pin-color, var(--cat-landmark));
+  background: color-mix(in srgb, var(--pin-color, var(--cat-landmark)) 55%, #fff);
+  box-shadow: 0 0 0 1px rgba(18, 48, 86, 0.12);
 }
+.legend__row--landmark { --pin-color: var(--cat-landmark); }
+.legend__row--sculpture { --pin-color: var(--cat-sculpture); }
+.legend__row--lantern { --pin-color: var(--cat-lantern); }
+.legend__row--photo-op { --pin-color: var(--cat-photo-op); }
+.legend__row--ride { --pin-color: var(--cat-ride); }
+.legend__row--amenity { --pin-color: var(--cat-amenity); }
 
-.legend__count { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--frost-500); }
+.legend__count { margin-left: auto; font-family: var(--mono); font-size: 11px; color: #3d6f90; }
+.mapTool.is-filtered {
+  color: var(--play-deep);
+  border-color: rgba(46, 125, 50, 0.45);
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.18);
+}
 
 /* ---------------------------------- sheet --------------------------------- */
 
@@ -1518,6 +1581,9 @@ body.sheet-open .sheet { transform: none; }
   transform: translateY(100%);
   transition: transform 440ms var(--ease-out);
 }
+/* Author display:flex would otherwise override the UA [hidden] rule and leave
+   closed panels in the accessibility / tab tree while off-screen. */
+.panel[hidden] { display: none !important; }
 .panel.is-open { transform: none; }
 
 .panel__head {
@@ -2238,8 +2304,20 @@ body.sheet-open .sheet { transform: none; }
   color: var(--frost-500);
 }
 
-/* Motion stays on. Windows “Animation effects” and similar OS flags
-   set prefers-reduced-motion, which used to zero every keyframe. */
+/* Reduced-motion is gated by GUEST_REDUCED_MOTION (see .env.example).
+   Default off: OS prefers-reduced-motion alone does not change guest motion.
+   When the server injects __CQ_FLAGS__.reducedMotion=true, html.cq-motion-flag
+   is set and the media query below honors the guest’s preference. */
+@media (prefers-reduced-motion: reduce) {
+  html.cq-motion-flag *,
+  html.cq-motion-flag *::before,
+  html.cq-motion-flag *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 /* Wider screens: keep the app phone-shaped and centre it, rather than
    stretching a thumb-reach layout across a desktop monitor. */
@@ -2472,19 +2550,33 @@ body.quest .topbar {
   object-fit: contain;
   filter: drop-shadow(0 8px 16px rgba(20, 70, 110, 0.22));
 }
-.shrine__block { margin-top: 22px; }
+.shrine__block {
+  margin-top: 22px;
+  padding: 16px 16px 18px;
+  border-radius: 18px;
+  background: var(--ice-pale);
+  border: 2.5px solid var(--ice-card);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
 .shrine__block h3,
 .shrinePanel h3 {
   margin: 0 0 8px;
   font-size: 13px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #e8f6ff;
-  text-shadow: 0 1px 8px rgba(20, 70, 110, 0.3);
+  color: var(--ice-mid);
+  text-shadow: none;
 }
-.shrine__block p { margin: 0; color: #f4fbff; line-height: 1.5; font-size: 16px; text-shadow: 0 1px 8px rgba(20, 70, 110, 0.35); }
+.shrine__block p {
+  margin: 0;
+  color: var(--ink-text);
+  line-height: 1.5;
+  font-size: 16px;
+  font-weight: 700;
+  text-shadow: none;
+}
 .shrine__block p + p { margin-top: 12px; }
-.shrinePanel p { margin: 0; color: var(--ink-text); line-height: 1.5; font-size: 16px; }
+.shrinePanel p { margin: 0; color: var(--ink-text); line-height: 1.5; font-size: 16px; font-weight: 600; }
 .shrinePanel p + p { margin-top: 12px; }
 .shrinePanel h3 { color: var(--ice-mid); }
 
@@ -2583,11 +2675,12 @@ body.quest .topbar {
   pointer-events: none;
 }
 .shrineIcon__label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--frost-300);
+  color: #f4fbff;
+  text-shadow: 0 1px 6px rgba(20, 70, 110, 0.55);
 }
 .shrineGate.is-focus .shrineIcon:not(.is-on) {
   transform: scale(0.72);
@@ -2635,6 +2728,42 @@ body.quest .topbar {
   display: block;
   animation: shrineReveal 480ms var(--ease-out) both !important;
   animation-play-state: running !important;
+}
+.shrinePanel h3:focus { outline: none; }
+.shrinePanel h3:focus-visible {
+  outline: 2px solid var(--aurora);
+  outline-offset: 3px;
+}
+
+/* Short phones: after PLAY, shrink the hero so the challenge is reachable. */
+@media (max-height: 740px) {
+  .shrine.is-play-open .shrine__art {
+    max-height: 132px;
+  }
+  .shrine.is-play-open .shrine__hero {
+    margin-block: 4px;
+  }
+  .shrine.is-play-open .shrineGate {
+    min-height: 118px;
+    margin: 10px 0 4px;
+    gap: 10px;
+  }
+  .shrine.is-play-open .shrineIcon__gem,
+  .shrine.is-play-open .shrineIcon__gem .realmBtn,
+  .shrine.is-play-open .shrineIcon__gem img {
+    width: 60px;
+    height: 60px;
+  }
+  .shrine.is-play-open .shrineIcon__orbit {
+    width: 74px;
+    height: 74px;
+    top: -6px;
+  }
+}
+@media (max-height: 640px) {
+  .shrine.is-play-open .shrine__art { max-height: 96px; }
+  .shrine.is-play-open .shrine__kicker { font-size: 9px; }
+  .shrine.is-play-open .shrine__title { font-size: 26px; margin-bottom: 4px; }
 }
 @keyframes shrineReveal {
   from { opacity: 0; transform: scale(0.88) translateY(16px); }
@@ -2730,7 +2859,10 @@ body.award-open .guideFab { display: none; }
 .guide .legend {
   left: 12px;
   right: 12px;
-  top: calc(var(--safe-t) + 148px);
+  top: auto;
+  bottom: calc(72px + var(--safe-b));
+  max-width: 360px;
+  margin-inline: auto;
 }
 .guide .sheet {
   left: 0;
