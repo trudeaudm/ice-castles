@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap">
-<link rel="stylesheet" href="/app.css?v=96">
+<link rel="stylesheet" href="/app.css?v=99">
 </head>
 <body class="quest">
 
@@ -148,8 +148,45 @@
     <p class="landing__progress" id="landingProgress">0 / 5</p>
     <p class="landing__progressLine" id="landingProgressLine">Your quest has begun. Five elements await.</p>
   </div>
-  <div class="landing__gate" aria-hidden="true">
-    <img src="/assets/art/landing-gate.webp" alt="">
+  <div class="landing__gate" id="landingGate" aria-hidden="true">
+    <div class="landing__scene" id="landingScene">
+      <img class="landing__sceneImg" src="/assets/art/winterkeeper-background-lit-base.png" width="941" height="1672" alt="">
+      <div class="landing__fx" id="landingFx">
+        <div class="landing__aurora">
+          <span class="landing__ribbon landing__ribbon--1"></span>
+          <span class="landing__ribbon landing__ribbon--2"></span>
+          <span class="landing__ribbon landing__ribbon--3"></span>
+        </div>
+        <div class="landing__lantern landing__lantern--left">
+          <span class="landing__pane"></span>
+          <span class="landing__bloom"></span>
+          <span class="landing__reflect landing__reflect--snow"></span>
+          <span class="landing__reflect landing__reflect--cap"></span>
+          <span class="landing__reflect landing__reflect--ledge"></span>
+        </div>
+        <div class="landing__lantern landing__lantern--right">
+          <span class="landing__pane"></span>
+          <span class="landing__bloom"></span>
+          <span class="landing__reflect landing__reflect--snow"></span>
+          <span class="landing__reflect landing__reflect--cap"></span>
+          <span class="landing__reflect landing__reflect--ledge"></span>
+        </div>
+      </div>
+    </div>
+    <div class="landing__scrim"></div>
+    <div class="landing__fxDebug" id="landingFxDebug" hidden>
+      <i class="landing__dbgDot landing__dbgDot--left"></i>
+      <i class="landing__dbgDot landing__dbgDot--right"></i>
+      <i class="landing__dbgPane landing__dbgPane--left"></i>
+      <i class="landing__dbgPane landing__dbgPane--right"></i>
+      <i class="landing__dbgReflect landing__dbgReflect--leftSnow"></i>
+      <i class="landing__dbgReflect landing__dbgReflect--rightSnow"></i>
+      <i class="landing__dbgReflect landing__dbgReflect--leftCap"></i>
+      <i class="landing__dbgReflect landing__dbgReflect--rightCap"></i>
+      <i class="landing__dbgReflect landing__dbgReflect--leftLedge"></i>
+      <i class="landing__dbgReflect landing__dbgReflect--rightLedge"></i>
+      <i class="landing__dbgAurora"></i>
+    </div>
   </div>
   <p class="landing__lead">Find the Guardians. Complete their trials. Gather at the Winter Keeper Throne.</p>
   <label class="landing__party" id="landingParty" for="landingPartySize">
@@ -284,7 +321,28 @@
 
 <div class="bootSplash" id="bootSplash">
   <div class="bootSplash__mark" aria-hidden="true">
-    <img src="/assets/art/logo-mark.svg?v=4" alt="">
+    <img class="bootSplash__compass" src="/assets/art/logo-mark.svg?v=4" alt="">
+    <svg class="bootSplash__crest" viewBox="0 0 1200 1200" focusable="false">
+      <defs>
+        <linearGradient id="bootMedallion" x1="0" y1="0" x2="0.9" y2="1">
+          <stop offset="0" stop-color="#f3ffff"/>
+          <stop offset="0.6" stop-color="#d5f4ff"/>
+          <stop offset="1" stop-color="#bceafa"/>
+        </linearGradient>
+        <linearGradient id="bootMountain" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#0a2f62"/>
+          <stop offset="1" stop-color="#062354"/>
+        </linearGradient>
+        <clipPath id="bootMountainClip"><circle cx="600" cy="600" r="180"/></clipPath>
+      </defs>
+      <circle cx="600" cy="600" r="231" fill="#69d5fa" stroke="#0e397f" stroke-width="7"/>
+      <circle cx="600" cy="600" r="219" fill="#a1efff" stroke="#3c93d7" stroke-width="9"/>
+      <circle cx="600" cy="600" r="205" fill="url(#bootMedallion)" stroke="#c7faff" stroke-width="8"/>
+      <circle cx="600" cy="600" r="189" fill="url(#bootMedallion)" stroke="#062b5d" stroke-width="17"/>
+      <g clip-path="url(#bootMountainClip)">
+        <path d="M358 910 L497 572 L530 635 L600 442 L670 635 L704 572 L842 910 Z" fill="url(#bootMountain)"/>
+      </g>
+    </svg>
   </div>
   <p class="bootSplash__text">Growing the ice…</p>
 </div>
@@ -294,6 +352,6 @@
 <script src="/js/map.js?v=30"></script>
 <script src="/js/scanner.js?v=19"></script>
 <script src="/js/wind-wisps.js?v=9"></script>
-<script src="/js/app.js?v=113"></script>
+<script src="/js/app.js?v=115"></script>
 </body>
 </html>

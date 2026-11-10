@@ -757,25 +757,384 @@ body.landing-open .station { visibility: hidden; }
   inset: 0;
   z-index: 0;
   margin: 0;
+  overflow: hidden;
   pointer-events: none;
 }
 .landing {
   overflow-x: hidden;
   overflow-y: auto;
 }
-.landing__gate img {
+/* Image + decorative fx share one 941×1672 scene, cover-scaled and centered. */
+.landing__scene {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 941px;
+  height: 1672px;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.landing__sceneImg {
+  display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center 42%;
-  display: block;
+  max-width: none;
+  object-fit: fill;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
-.landing__gate::after {
-  content: '';
+.landing__fx {
   position: absolute;
   inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.landing__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   background:
-    linear-gradient(180deg, rgba(7, 21, 38, 0.78) 0%, rgba(7, 21, 38, 0.28) 36%, rgba(7, 21, 38, 0.18) 55%, rgba(7, 21, 38, 0.82) 100%);
+    linear-gradient(180deg,
+      rgba(7, 21, 38, 0.7) 0%,
+      rgba(7, 21, 38, 0.2) 26%,
+      rgba(7, 21, 38, 0.05) 46%,
+      rgba(7, 21, 38, 0.04) 58%,
+      rgba(7, 21, 38, 0.12) 68%,
+      rgba(7, 21, 38, 0.76) 100%);
+  pointer-events: none;
+}
+
+/* ---- Landing aurora (image-space, open sky) ---- */
+.landing__aurora {
+  position: absolute;
+  left: 6%;
+  top: 2%;
+  width: 88%;
+  height: 24%;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image:
+    linear-gradient(to bottom, #000 0%, #000 42%, rgba(0, 0, 0, 0.55) 68%, transparent 100%),
+    linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to bottom, #000 0%, #000 42%, rgba(0, 0, 0, 0.55) 68%, transparent 100%),
+    linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%);
+  mask-composite: intersect;
+}
+.landing__ribbon {
+  position: absolute;
+  left: -8%;
+  width: 118%;
+  height: 42%;
+  border-radius: 48% 52% 50% 50%;
+  opacity: 0.16;
+  will-change: transform, opacity;
+  /* Static soft edge only — do not animate blur. */
+  filter: blur(10px);
+  transform: translate3d(0, 0, 0) skewX(-6deg);
+}
+.landing__ribbon--1 {
+  top: 6%;
+  height: 38%;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(86, 210, 190, 0.55) 22%,
+    rgba(120, 170, 255, 0.4) 48%,
+    rgba(168, 120, 255, 0.45) 72%,
+    transparent 100%);
+  animation: landingAuroraDriftA 22s ease-in-out infinite;
+}
+.landing__ribbon--2 {
+  top: 28%;
+  height: 34%;
+  opacity: 0.13;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(140, 110, 255, 0.5) 18%,
+    rgba(90, 200, 210, 0.42) 52%,
+    rgba(110, 150, 255, 0.35) 78%,
+    transparent 100%);
+  animation: landingAuroraDriftB 27s ease-in-out -6s infinite;
+}
+.landing__ribbon--3 {
+  top: 48%;
+  height: 30%;
+  opacity: 0.11;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(70, 190, 200, 0.4) 28%,
+    rgba(150, 120, 255, 0.38) 58%,
+    rgba(80, 160, 220, 0.3) 82%,
+    transparent 100%);
+  animation: landingAuroraDriftC 30s ease-in-out -12s infinite;
+}
+@keyframes landingAuroraDriftA {
+  0%, 100% { transform: translate3d(-3%, 0, 0) skewX(-7deg) scaleY(1); opacity: 0.14; }
+  50% { transform: translate3d(4%, 6%, 0) skewX(-3deg) scaleY(1.12); opacity: 0.2; }
+}
+@keyframes landingAuroraDriftB {
+  0%, 100% { transform: translate3d(3%, 2%, 0) skewX(5deg) scaleY(1.05); opacity: 0.1; }
+  50% { transform: translate3d(-4%, -3%, 0) skewX(2deg) scaleY(0.95); opacity: 0.16; }
+}
+@keyframes landingAuroraDriftC {
+  0%, 100% { transform: translate3d(-2%, 4%, 0) skewX(-4deg) scaleY(0.98); opacity: 0.09; }
+  50% { transform: translate3d(5%, -2%, 0) skewX(-1deg) scaleY(1.08); opacity: 0.14; }
+}
+
+/* ---- Lantern glows (image % coordinates; panes masked so frames stay dark) ---- */
+.landing__lantern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.landing__lantern--left {
+  --lantern-dur: 4.2s;
+  --lantern-delay: 0s;
+}
+.landing__lantern--right {
+  --lantern-dur: 5.3s;
+  --lantern-delay: 1.1s;
+}
+.landing__pane,
+.landing__bloom,
+.landing__reflect {
+  position: absolute;
+  pointer-events: none;
+  will-change: opacity;
+  animation-duration: var(--lantern-dur);
+  animation-delay: var(--lantern-delay);
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+.landing__lantern--left .landing__pane {
+  left: 5.9%;
+  top: 66.45%;
+  width: 7.1%;
+  height: 3.35%;
+  background:
+    linear-gradient(180deg, rgba(255, 236, 180, 0.42), rgba(255, 186, 90, 0.28) 55%, rgba(255, 160, 70, 0.2));
+  /* Three glass panes; dark mullions stay clear so the painted frames read. */
+  -webkit-mask-image: linear-gradient(90deg,
+    #000 0%, #000 29%,
+    transparent 29%, transparent 35.5%,
+    #000 35.5%, #000 64.5%,
+    transparent 64.5%, transparent 71%,
+    #000 71%, #000 100%);
+  mask-image: linear-gradient(90deg,
+    #000 0%, #000 29%,
+    transparent 29%, transparent 35.5%,
+    #000 35.5%, #000 64.5%,
+    transparent 64.5%, transparent 71%,
+    #000 71%, #000 100%);
+  animation-name: landingPaneShimmer;
+}
+.landing__lantern--right .landing__pane {
+  left: 86.5%;
+  top: 66.45%;
+  width: 7.1%;
+  height: 3.35%;
+  background:
+    linear-gradient(180deg, rgba(255, 236, 180, 0.42), rgba(255, 186, 90, 0.28) 55%, rgba(255, 160, 70, 0.2));
+  -webkit-mask-image: linear-gradient(90deg,
+    #000 0%, #000 29%,
+    transparent 29%, transparent 35.5%,
+    #000 35.5%, #000 64.5%,
+    transparent 64.5%, transparent 71%,
+    #000 71%, #000 100%);
+  mask-image: linear-gradient(90deg,
+    #000 0%, #000 29%,
+    transparent 29%, transparent 35.5%,
+    #000 35.5%, #000 64.5%,
+    transparent 64.5%, transparent 71%,
+    #000 71%, #000 100%);
+  animation-name: landingPaneShimmer;
+}
+.landing__lantern--left .landing__bloom {
+  left: 9.6%;
+  top: 68.2%;
+  width: 7.2%;
+  height: 4.2%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+    rgba(255, 200, 110, 0.38) 0%,
+    rgba(255, 170, 70, 0.14) 42%,
+    transparent 72%);
+  animation-name: landingBloomPulse;
+}
+.landing__lantern--right .landing__bloom {
+  left: 90.3%;
+  top: 68.2%;
+  width: 7.2%;
+  height: 4.2%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+    rgba(255, 200, 110, 0.38) 0%,
+    rgba(255, 170, 70, 0.14) 42%,
+    transparent 72%);
+  animation-name: landingBloomPulse;
+}
+.landing__reflect {
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at center,
+    rgba(255, 178, 88, 0.3) 0%,
+    rgba(255, 150, 60, 0.12) 45%,
+    transparent 72%);
+  animation-name: landingReflectPulse;
+}
+.landing__lantern--left .landing__reflect--snow {
+  left: 10%;
+  top: 77.2%;
+  width: 22%;
+  height: 5%;
+}
+.landing__lantern--right .landing__reflect--snow {
+  left: 90%;
+  top: 77.2%;
+  width: 22%;
+  height: 5%;
+}
+.landing__lantern--left .landing__reflect--cap {
+  left: 9.6%;
+  top: 65.6%;
+  width: 12%;
+  height: 2.4%;
+  opacity: 0.55;
+  background: radial-gradient(ellipse at center,
+    rgba(255, 200, 120, 0.22) 0%,
+    transparent 70%);
+}
+.landing__lantern--right .landing__reflect--cap {
+  left: 90.3%;
+  top: 65.6%;
+  width: 12%;
+  height: 2.4%;
+  opacity: 0.55;
+  background: radial-gradient(ellipse at center,
+    rgba(255, 200, 120, 0.22) 0%,
+    transparent 70%);
+}
+.landing__lantern--left .landing__reflect--ledge {
+  left: 10.2%;
+  top: 70.4%;
+  width: 14%;
+  height: 2.2%;
+  opacity: 0.5;
+  background: radial-gradient(ellipse at center,
+    rgba(255, 180, 90, 0.2) 0%,
+    transparent 70%);
+}
+.landing__lantern--right .landing__reflect--ledge {
+  left: 89.8%;
+  top: 70.4%;
+  width: 14%;
+  height: 2.2%;
+  opacity: 0.5;
+  background: radial-gradient(ellipse at center,
+    rgba(255, 180, 90, 0.2) 0%,
+    transparent 70%);
+}
+@keyframes landingPaneShimmer {
+  0%, 100% { opacity: 0.28; }
+  45% { opacity: 0.72; }
+  60% { opacity: 0.58; }
+}
+@keyframes landingBloomPulse {
+  0%, 100% { opacity: 0.32; }
+  50% { opacity: 0.78; }
+}
+@keyframes landingReflectPulse {
+  0%, 100% { opacity: 0.22; }
+  50% { opacity: 0.62; }
+}
+.landing__lantern--left .landing__reflect--cap,
+.landing__lantern--left .landing__reflect--ledge,
+.landing__lantern--right .landing__reflect--cap,
+.landing__lantern--right .landing__reflect--ledge {
+  animation-name: landingReflectSoft;
+}
+@keyframes landingReflectSoft {
+  0%, 100% { opacity: 0.18; }
+  50% { opacity: 0.42; }
+}
+
+/* Pause decorative landing fx when the tab is hidden or the welcome is closed. */
+.landing__gate.is-fx-paused .landing__ribbon,
+.landing__gate.is-fx-paused .landing__pane,
+.landing__gate.is-fx-paused .landing__bloom,
+.landing__gate.is-fx-paused .landing__reflect {
+  animation-play-state: paused;
+}
+
+/* Temporary alignment debug: ?fxdebug=1 (layer tracks the scene transform). */
+.landing__fxDebug {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  width: 941px;
+  height: 1672px;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+.landing__fxDebug[hidden] { display: none !important; }
+.landing__dbgDot,
+.landing__dbgPane,
+.landing__dbgReflect,
+.landing__dbgAurora {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+.landing__dbgDot {
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  border: 2px solid #ff4d6d;
+  background: rgba(255, 77, 109, 0.35);
+}
+.landing__dbgDot--left { left: 9.6%; top: 68.2%; }
+.landing__dbgDot--right { left: 90.3%; top: 68.2%; }
+.landing__dbgPane {
+  border: 1px solid #ffe566;
+  background: rgba(255, 229, 102, 0.12);
+}
+.landing__dbgPane--left {
+  left: 5.9%;
+  top: 66.45%;
+  width: 7.1%;
+  height: 3.35%;
+}
+.landing__dbgPane--right {
+  left: 86.5%;
+  top: 66.45%;
+  width: 7.1%;
+  height: 3.35%;
+}
+.landing__dbgReflect {
+  border: 1px dashed #7cf0ff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(124, 240, 255, 0.08);
+}
+.landing__dbgReflect--leftSnow { left: 10%; top: 77.2%; width: 22%; height: 5%; }
+.landing__dbgReflect--rightSnow { left: 90%; top: 77.2%; width: 22%; height: 5%; }
+.landing__dbgReflect--leftCap { left: 9.6%; top: 65.6%; width: 12%; height: 2.4%; }
+.landing__dbgReflect--rightCap { left: 90.3%; top: 65.6%; width: 12%; height: 2.4%; }
+.landing__dbgReflect--leftLedge { left: 10.2%; top: 70.4%; width: 14%; height: 2.2%; }
+.landing__dbgReflect--rightLedge { left: 89.8%; top: 70.4%; width: 14%; height: 2.2%; }
+.landing__dbgAurora {
+  left: 6%;
+  top: 2%;
+  width: 88%;
+  height: 24%;
+  border: 1px solid rgba(180, 140, 255, 0.85);
+  background: rgba(140, 110, 255, 0.08);
 }
 .landing__lead {
   position: relative;
@@ -2287,12 +2646,30 @@ body.sheet-open .sheet { transform: none; }
 }
 .bootSplash.is-gone { opacity: 0; visibility: hidden; }
 
-.bootSplash__mark { width: 120px; height: 120px; }
-.bootSplash__mark img {
+.bootSplash__mark {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  filter: drop-shadow(0 10px 18px rgba(7, 40, 72, 0.28));
+}
+.bootSplash__compass,
+.bootSplash__crest {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
+}
+.bootSplash__compass {
   object-fit: contain;
-  filter: drop-shadow(0 10px 18px rgba(7, 40, 72, 0.28));
+  animation: bootCompassSpin 6s linear infinite;
+}
+.bootSplash__crest {
+  z-index: 1;
+  pointer-events: none;
+  overflow: visible;
+}
+@keyframes bootCompassSpin {
+  to { transform: rotate(360deg); }
 }
 
 .bootSplash__text {

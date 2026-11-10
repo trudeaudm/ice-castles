@@ -658,6 +658,8 @@ const dom = {
   threshold: el('threshold'), thresholdStart: el('thresholdStart'),
   landingPlace: el('landingPlace'), landingProgress: el('landingProgress'),
   landingMap: el('landingMap'),
+  landingGate: el('landingGate'), landingScene: el('landingScene'),
+  landingFxDebug: el('landingFxDebug'),
   landingParty: el('landingParty'), landingPartySize: el('landingPartySize'),
   landingPartyHint: el('landingPartyHint'),
   beginBrief: el('beginBrief'), beginBriefClose: el('beginBriefClose'),
@@ -2551,6 +2553,110 @@ function stopLandTalk() {
   hideLandTalk();
 }
 
+/* Landing hero: one shared 941×1672 image-coordinate scene (photo + fx).
+   Cover scale = max(cw/941, ch/1672), then center; bias framing to keep
+   lanterns in view when cover allows. Effects stay glued to the scene. */
+const LANDING_SCENE_W = 941;
+const LANDING_SCENE_H = 1672;
+const LANDING_LANTERN = {
+  left: { x: 0.096, y: 0.682 },
+  right: { x: 0.903, y: 0.682 },
+};
+let landingSceneObserver = null;
+let landingSceneRaf = 0;
+
+function landingFxDebugEnabled() {
+  try {
+    if (new URLSearchParams(window.location.search).get('fxdebug') === '1') return true;
+    if (window.localStorage?.getItem('cqLandingFxDebug') === '1') return true;
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
+function syncLandingFxPause() {
+  const gate = dom.landingGate;
+  if (!gate) return;
+  const pause = document.hidden || !document.body.classList.contains('landing-open');
+  gate.classList.toggle('is-fx-paused', pause);
+}
+
+function fitLandingScene() {
+  const gate = dom.landingGate;
+  const scene = dom.landingScene;
+  if (!gate || !scene) return;
+  const cw = gate.clientWidth;
+  const ch = gate.clientHeight;
+  if (cw < 2 || ch < 2) return;
+
+  const scale = Math.max(cw / LANDING_SCENE_W, ch / LANDING_SCENE_H);
+  const w = LANDING_SCENE_W * scale;
+  const h = LANDING_SCENE_H * scale;
+  let left = (cw - w) / 2;
+  let top = (ch - h) / 2;
+
+  /* When the cover crop has slack on an axis, nudge framing so lantern
+     centers stay inside the viewport instead of sliding off with the art. */
+  const minLeft = Math.min(0, cw - w);
+  const minTop = Math.min(0, ch - h);
+  const pad = Math.min(18, Math.max(8, Math.min(cw, ch) * 0.03));
+
+  if (w > cw + 0.5) {
+    const lx = left + LANDING_LANTERN.left.x * w;
+    const rx = left + LANDING_LANTERN.right.x * w;
+    const leftOut = lx < pad;
+    const rightOut = rx > cw - pad;
+    /* Only nudge when one lantern is clipped and the other still has room.
+       If both are clipped (very narrow cover), centered remains best. */
+    if (leftOut && !rightOut) left += pad - lx;
+    else if (rightOut && !leftOut) left -= rx - (cw - pad);
+    left = Math.min(0, Math.max(minLeft, left));
+  }
+  if (h > ch + 0.5) {
+    /* Prefer a mid-low focus so sky aurora and lanterns share the frame. */
+    const focusY = 0.56;
+    top = ch * 0.5 - h * focusY;
+    const ly = top + LANDING_LANTERN.left.y * h;
+    if (ly < pad) top += pad - ly;
+    else if (ly > ch - pad) top -= ly - (ch - pad);
+    top = Math.min(0, Math.max(minTop, top));
+  }
+
+  scene.style.width = `${w}px`;
+  scene.style.height = `${h}px`;
+  scene.style.transform = `translate(${left}px, ${top}px)`;
+  if (dom.landingFxDebug) {
+    dom.landingFxDebug.style.width = `${w}px`;
+    dom.landingFxDebug.style.height = `${h}px`;
+    dom.landingFxDebug.style.transform = `translate(${left}px, ${top}px)`;
+  }
+}
+
+function scheduleLandingSceneFit() {
+  if (landingSceneRaf) return;
+  landingSceneRaf = window.requestAnimationFrame(() => {
+    landingSceneRaf = 0;
+    fitLandingScene();
+  });
+}
+
+function initLandingScene() {
+  const gate = dom.landingGate;
+  if (!gate || !dom.landingScene) return;
+  const debugOn = landingFxDebugEnabled();
+  gate.classList.toggle('is-fx-debug', debugOn);
+  if (dom.landingFxDebug) dom.landingFxDebug.hidden = !debugOn;
+  fitLandingScene();
+  syncLandingFxPause();
+  if (!landingSceneObserver && typeof ResizeObserver === 'function') {
+    landingSceneObserver = new ResizeObserver(() => scheduleLandingSceneFit());
+    landingSceneObserver.observe(gate);
+  }
+  window.addEventListener('orientationchange', scheduleLandingSceneFit);
+  document.addEventListener('visibilitychange', syncLandingFxPause);
+}
+
 function showThreshold() {
   const park = Store.state.park || {};
   if (dom.landingPlace) {
@@ -2571,6 +2677,8 @@ function showThreshold() {
   dom.threshold.hidden = false;
   dom.threshold.inert = false;
   dom.threshold.classList.add('is-open');
+  scheduleLandingSceneFit();
+  syncLandingFxPause();
   startLandTalk();
 }
 
@@ -2648,6 +2756,7 @@ function hideThreshold() {
   haltWaves();
   hideBeginBrief();
   document.body.classList.remove('landing-open');
+  syncLandingFxPause();
   dom.threshold.classList.remove('is-open');
   dom.threshold.inert = true;
   setTimeout(() => { dom.threshold.hidden = true; }, 320);
@@ -3213,6 +3322,7 @@ function paintSequence(root) {
 
 function wire() {
   bindFunButtons();
+  initLandingScene();
   dom.progressButton.addEventListener('click', () => openPanel('journey'));
   const toggleGuide = () => {
     if (mapModalMode === 'choice') return;
