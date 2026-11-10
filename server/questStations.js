@@ -610,7 +610,10 @@ async function ensureQuestStations(adventureId) {
         (img) => typeof img?.url === 'string' && img.url.endsWith('.png')
       );
       const oldAuroraSpirit = tp.slug === 'aurora' && (
-        row.challenge_type === PREVIOUS_AURORA_CHALLENGE.type
+        row.challenge_type !== 'button_lantern'
+        || !cfg?.pressPrompt
+        || !cfg?.enterPrompt
+        || row.challenge_type === PREVIOUS_AURORA_CHALLENGE.type
         || PREVIOUS_AURORA_CHALLENGE.prompts.includes(cfg?.prompt)
         || (Array.isArray(cfg?.accepted) && cfg.kind === 'symbol')
       );
@@ -625,6 +628,12 @@ async function ensureQuestStations(adventureId) {
           [tp.challenge.type, JSON.stringify(next), ts, row.id]
         );
       }
+    } else if (tp.slug === 'aurora' && tp.challenge && row.challenge_type !== 'button_lantern') {
+      // No parseable config — still force the Spirit station onto button_lantern.
+      await db.run(
+        'UPDATE touchpoints SET challenge_type = ?, config = ?, updated_at = ? WHERE id = ?',
+        [tp.challenge.type, JSON.stringify(tp.challenge.config), ts, row.id]
+      );
     }
   }
 

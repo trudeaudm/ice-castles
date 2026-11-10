@@ -120,9 +120,14 @@ function publicSession(row, realms = []) {
     realmsComplete: REALMS.every((realm) => done.has(realm)),
     winterKeeper: Boolean(row.quest_complete_at),
     spiritChallengeId: row.spirit_challenge_id || null,
-    spiritChallenge: row.spirit_challenge_id
-      ? publicAssignment(row.spirit_challenge_id)
-      : null,
+    spiritChallenge: (() => {
+      if (!row.spirit_challenge_id) return null;
+      try {
+        return publicAssignment(row.spirit_challenge_id);
+      } catch {
+        return null;
+      }
+    })(),
   };
 }
 

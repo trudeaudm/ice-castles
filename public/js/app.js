@@ -952,7 +952,7 @@ function spiritChallengeHtml(station) {
   }
 
   const buttons = assignment.buttons.map((id, index) =>
-    spiritChipHtml(spiritColorMeta(challenge, id), { index })
+    `<li>${spiritChipHtml(spiritColorMeta(challenge, id), { index })}</li>`
   ).join('');
   const testNote = assignment.test
     ? '<p class="spiritPlay__test">Test mapping — replace when the physical station uses the production table.</p>'
@@ -961,9 +961,9 @@ function spiritChallengeHtml(station) {
   return `<div class="challenge spiritPlay" data-station="${escapeHtml(station.slug)}"
       data-challenge-type="button_lantern"
       data-seq-len="${len}"
-      data-spirit-id="${escapeHtml(assignment.challengeId)}"
+      data-spirit-id="${escapeHtml(assignment.challengeId || '')}"
       data-spirit-step="press">
-    <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
+    <p class="challenge__prompt">${escapeHtml(challenge.prompt || 'Press the buttons, watch the lanterns, then enter what you saw.')}</p>
     ${challenge.partyNote ? `<p class="challenge__hint">${escapeHtml(challenge.partyNote)}</p>` : ''}
     ${testNote}
     <div class="spiritPlay__step" data-spirit-panel="press">
@@ -1139,7 +1139,11 @@ function challengeHtml(station) {
     </div>`;
   }
 
-  return '';
+  // Never leave Play blank for an unknown challenge type after a deploy/cache miss.
+  return `<div class="challenge" data-station="${escapeHtml(station.slug)}">
+    <p class="challenge__prompt">${escapeHtml(challenge.prompt || 'This challenge could not load. Refresh the page and try again.')}</p>
+    <button class="textButton textButton--play" type="button" onclick="location.reload()">Refresh</button>
+  </div>`;
 }
 
 function shrineMeetTitle(station) {
@@ -1865,6 +1869,14 @@ function renderStation(slug) {
   if (station.element === 'fire') startHearth();
   if (station.element === 'air') startWind();
   if (station.element === 'earth') startLeaves();
+  if (
+    station.challengeType === 'button_lantern'
+    && !station.complete
+    && Store.hasLiveSession()
+    && !Store.state.session?.spiritChallenge?.buttons?.length
+  ) {
+    ensureSpiritAssignment({ forceRender: true });
+  }
 }
 
 async function openStation(slug, { recordVisit = true } = {}) {

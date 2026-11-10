@@ -3363,6 +3363,12 @@ body.award-open .guideFab { display: none; }
   margin: 0;
   padding: 0;
 }
+.spiritSeq > li {
+  display: block;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
 @media (min-width: 420px) {
   .spiritSeq { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
