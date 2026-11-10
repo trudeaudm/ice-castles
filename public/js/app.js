@@ -55,12 +55,12 @@ function runeShapeSvg(id, which = "tray") {
 }
 
 const TILE_ART = {
-  'ice-vein': `${ART}/cascade-ice-vein.png`,
-  'lantern-glow': `${ART}/cascade-lantern-glow.png`,
-  'ice-arch': `${ART}/cascade-ice-arch.png`,
-  'silk-wing': `${ART}/cascade-silk-wing.png`,
-  'ice-ripple': `${ART}/cascade-ice-ripple.png`,
-  'rune-cut': `${ART}/cascade-rune-cut.png`,
+  'ice-vein': `${ART}/cascade-ice-vein.svg`,
+  'lantern-glow': `${ART}/cascade-lantern-glow.svg`,
+  'ice-arch': `${ART}/cascade-ice-arch.svg`,
+  'silk-wing': `${ART}/cascade-silk-wing.svg`,
+  'ice-ripple': `${ART}/cascade-ice-ripple.svg`,
+  'rune-cut': `${ART}/cascade-rune-cut.svg`,
 };
 const LANTERN_ART = {
   ice: `${ART}/lantern-ice.png`,

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="1200" viewBox="0 0 1200 1200" role="img" aria-labelledby="logo-title logo-desc">
+  <title id="logo-title">Castle Quest crystal compass logo</title>
+  <desc id="logo-desc">A blue and violet jeweled compass rose with a simple navy three-peaked mountain symbol at its center.</desc>
+  <defs>
+    <linearGradient id="outer-metal" x1="0" y1="0" x2="0.93" y2="1">
+      <stop offset="0" stop-color="#b2e9ff"/>
+      <stop offset="0.32" stop-color="#65b3ee"/>
+      <stop offset="0.66" stop-color="#4f95d7"/>
+      <stop offset="1" stop-color="#9bddfa"/>
+    </linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#91ddff"/>
+      <stop offset="0.53" stop-color="#4f99d6"/>
+      <stop offset="1" stop-color="#3581c8"/>
+    </linearGradient>
+    <radialGradient id="violet" cx="50%" cy="47%" r="70%">
+      <stop offset="0" stop-color="#2875d9"/>
+      <stop offset="0.57" stop-color="#2859c0"/>
+      <stop offset="1" stop-color="#6550d2"/>
+    </radialGradient>
+    <linearGradient id="medallion" x1="0" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#f3ffff"/>
+      <stop offset="0.6" stop-color="#d5f4ff"/>
+      <stop offset="1" stop-color="#bceafa"/>
+    </linearGradient>
+    <linearGradient id="mountain" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a2f62"/>
+      <stop offset="1" stop-color="#062354"/>
+    </linearGradient>
+    <clipPath id="mountain-clip"><circle cx="600" cy="600" r="180"/></clipPath>
+
+    <!-- One compass point, reused at quarter turns. All facets are editable SVG polygons. -->
+    <g id="cardinal-point" stroke="#172f81" stroke-linejoin="round">
+      <path d="M600 10 L691 190 L600 358 L509 190 Z" fill="#8c81de" stroke-width="5"/>
+      <path d="M600 14 L600 190 L509 190 Z" fill="#e6d9fc" stroke="none"/>
+      <path d="M600 14 L691 190 L600 190 Z" fill="#c4b4f3" stroke="none"/>
+      <path d="M509 190 L600 190 L600 355 Z" fill="#aebefc" stroke="none"/>
+      <path d="M691 190 L600 190 L600 355 Z" fill="#9474dd" stroke="none"/>
+      <path d="M600 25 L600 185 L555 185 Z" fill="#ffffff" opacity="0.87" stroke="none"/>
+      <path d="M600 190 L663 190 L600 333 Z" fill="#06afea" stroke="none"/>
+      <path d="M600 190 L541 190 L600 333 Z" fill="#73e3ff" stroke="none"/>
+      <path d="M600 190 L691 190 L600 355 Z" fill="none" stroke="#162f83" stroke-width="3"/>
+      <path d="M600 10 L691 190 L600 358 L509 190 Z" fill="none" stroke="#17367f" stroke-width="5"/>
+    </g>
+
+    <g id="small-crystal" stroke="#123c84" stroke-width="5" stroke-linejoin="round">
+      <path d="M0 -26 L26 -19 L26 25 L-26 25 L-26 -19 Z" fill="#80dfff"/>
+      <path d="M-21 -16 L0 -21 L0 23 L-21 20 Z" fill="#d9ffff" stroke="none"/>
+      <path d="M0 -21 L21 -16 L21 20 L0 23 Z" fill="#39bfed" stroke="none"/>
+      <path d="M-20 -16 L0 -21 L20 -16 L0 11 Z" fill="#d5fbff" stroke="none"/>
+      <path d="M-20 20 L0 11 L20 20 Z" fill="#1687cf" stroke="none"/>
+      <path d="M0 -26 L26 -19 L26 25 L-26 25 L-26 -19 Z" fill="none"/>
+    </g>
+
+    <g id="filigree" fill="none" stroke="#f4fbff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M464 295 C447 287 449 267 463 261 C475 256 483 267 475 274 C471 278 465 275 465 270"/>
+      <path d="M736 295 C753 287 751 267 737 261 C725 256 717 267 725 274 C729 278 735 275 735 270"/>
+    </g>
+  </defs>
+
+  <!-- Circular dial and the cool, slightly violet inner face. -->
+  <circle cx="600" cy="600" r="417" fill="url(#outer-metal)" stroke="#143b87" stroke-width="7"/>
+  <circle cx="600" cy="600" r="402" fill="#8bdeff" stroke="#236ac1" stroke-width="6"/>
+  <circle cx="600" cy="600" r="383" fill="url(#steel)" stroke="#123e91" stroke-width="8"/>
+  <circle cx="600" cy="600" r="346" fill="url(#violet)" stroke="#18378b" stroke-width="6"/>
+
+  <!-- Secondary four-point rose, visible behind the central mountain medallion. -->
+  <g stroke="#093b87" stroke-width="4" stroke-linejoin="round">
+    <path d="M600 257 L629 394 L600 456 L571 394 Z" fill="#c3f9ff" transform="rotate(45 600 600)"/>
+    <path d="M600 257 L629 394 L600 456 L571 394 Z" fill="#c3f9ff" transform="rotate(135 600 600)"/>
+    <path d="M600 257 L629 394 L600 456 L571 394 Z" fill="#c3f9ff" transform="rotate(225 600 600)"/>
+    <path d="M600 257 L629 394 L600 456 L571 394 Z" fill="#c3f9ff" transform="rotate(315 600 600)"/>
+    <path d="M600 308 L638 408 L600 465 L562 408 Z" fill="#54d7f4" transform="rotate(0 600 600)"/>
+    <path d="M600 308 L638 408 L600 465 L562 408 Z" fill="#54d7f4" transform="rotate(90 600 600)"/>
+    <path d="M600 308 L638 408 L600 465 L562 408 Z" fill="#54d7f4" transform="rotate(180 600 600)"/>
+    <path d="M600 308 L638 408 L600 465 L562 408 Z" fill="#54d7f4" transform="rotate(270 600 600)"/>
+  </g>
+
+  <!-- Clean dial decorations: no snow caps or scatter particles. -->
+  <use xlink:href="#filigree"/>
+  <use xlink:href="#filigree" transform="rotate(90 600 600)"/>
+  <use xlink:href="#filigree" transform="rotate(180 600 600)"/>
+  <use xlink:href="#filigree" transform="rotate(270 600 600)"/>
+
+  <use xlink:href="#small-crystal" transform="translate(341 341)"/>
+  <use xlink:href="#small-crystal" transform="translate(859 341)"/>
+  <use xlink:href="#small-crystal" transform="translate(859 859)"/>
+  <use xlink:href="#small-crystal" transform="translate(341 859)"/>
+
+  <!-- The four long crystalline compass directions. -->
+  <use xlink:href="#cardinal-point"/>
+  <use xlink:href="#cardinal-point" transform="rotate(90 600 600)"/>
+  <use xlink:href="#cardinal-point" transform="rotate(180 600 600)"/>
+  <use xlink:href="#cardinal-point" transform="rotate(270 600 600)"/>
+
+  <!-- Layered icy bezel and the supplied three-peak mountain emblem. -->
+  <circle cx="600" cy="600" r="231" fill="#69d5fa" stroke="#0e397f" stroke-width="7"/>
+  <circle cx="600" cy="600" r="219" fill="#a1efff" stroke="#3c93d7" stroke-width="9"/>
+  <circle cx="600" cy="600" r="205" fill="url(#medallion)" stroke="#c7faff" stroke-width="8"/>
+  <circle cx="600" cy="600" r="189" fill="url(#medallion)" stroke="#062b5d" stroke-width="17"/>
+  <g clip-path="url(#mountain-clip)">
+    <path d="M358 910 L497 572 L530 635 L600 442 L670 635 L704 572 L842 910 Z" fill="url(#mountain)"/>
+  </g>
+</svg>

@@ -9,7 +9,7 @@
   "background_color": "#04101f",
   "theme_color": "#04101f",
   "icons": [
-    { "src": "/assets/art/logo-mark-app.png?v=2", "sizes": "1024x1024", "type": "image/png", "purpose": "any" },
-    { "src": "/assets/art/logo-mark-app.png?v=2", "sizes": "1024x1024", "type": "image/png", "purpose": "maskable" }
+    { "src": "/assets/art/logo-mark.svg?v=4", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/assets/art/logo-mark-app.png?v=4", "sizes": "1024x1024", "type": "image/png", "purpose": "maskable" }
   ]
 }

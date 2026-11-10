@@ -72,12 +72,12 @@ const CHALLENGES = {
       selectCount: 3,
       correctIds: ['ice-vein', 'ice-arch', 'ice-ripple'],
       images: [
-        { id: 'ice-vein', label: 'Hairline vein', color: '#8ec9e8', url: '/assets/art/cascade-ice-vein.png' },
-        { id: 'lantern-glow', label: 'Lantern glow', color: '#ffb455', url: '/assets/art/cascade-lantern-glow.png' },
-        { id: 'ice-arch', label: 'Pressed arch', color: '#c5e8f6', url: '/assets/art/cascade-ice-arch.png' },
-        { id: 'silk-wing', label: 'Silk wing', color: '#ff8fb8', url: '/assets/art/cascade-silk-wing.png' },
-        { id: 'ice-ripple', label: 'Frozen ripple', color: '#5df0cf', url: '/assets/art/cascade-ice-ripple.png' },
-        { id: 'rune-cut', label: 'Carved rune', color: '#c4a574', url: '/assets/art/cascade-rune-cut.png' },
+        { id: 'ice-vein', label: 'Hairline vein', color: '#8ec9e8', url: '/assets/art/cascade-ice-vein.svg' },
+        { id: 'lantern-glow', label: 'Lantern glow', color: '#ffb455', url: '/assets/art/cascade-lantern-glow.svg' },
+        { id: 'ice-arch', label: 'Pressed arch', color: '#c5e8f6', url: '/assets/art/cascade-ice-arch.svg' },
+        { id: 'silk-wing', label: 'Silk wing', color: '#ff8fb8', url: '/assets/art/cascade-silk-wing.svg' },
+        { id: 'ice-ripple', label: 'Frozen ripple', color: '#5df0cf', url: '/assets/art/cascade-ice-ripple.svg' },
+        { id: 'rune-cut', label: 'Carved rune', color: '#c4a574', url: '/assets/art/cascade-rune-cut.svg' },
       ],
     },
   },
@@ -590,10 +590,15 @@ async function ensureQuestStations(adventureId) {
         (cfg.correctIds || []).map(String).sort().join('|') === 'barb|drift|gust|hush'
         || (cfg.pieces || []).some((piece) => piece.id === 'gust' || piece.id === 'block')
       );
-      if (cfg && (oldPrompt || needsLines || oldSummitPieces)) {
+      const oldCascadeArt = tp.slug === 'cascade' && cfg && Array.isArray(cfg.images) && cfg.images.some(
+        (img) => typeof img?.url === 'string' && img.url.endsWith('.png')
+      );
+      if (cfg && (oldPrompt || needsLines || oldSummitPieces || oldCascadeArt)) {
         const next = (oldPrompt || oldSummitPieces)
           ? tp.challenge.config
-          : { ...cfg, retry: tp.challenge.config.retry, success: tp.challenge.config.success };
+          : oldCascadeArt
+            ? { ...cfg, images: tp.challenge.config.images }
+            : { ...cfg, retry: tp.challenge.config.retry, success: tp.challenge.config.success };
         await db.run(
           'UPDATE touchpoints SET challenge_type = ?, config = ?, updated_at = ? WHERE id = ?',
           [tp.challenge.type, JSON.stringify(next), ts, row.id]
