@@ -117,17 +117,16 @@ const CHALLENGES = {
   summit: {
     type: 'shape_match',
     config: {
-      prompt: 'Summit scattered the pieces of an air rune nearby. Find the shapes that match, then drag them together until they form the rune.',
+      prompt: 'Summit scattered an air rune into five pieces. Drag every piece onto the altar until the triple spiral is whole again.',
       retry: 'These shapes have not found each other yet. Look for the pieces that belong together, then try once more.',
       success: 'Air awakens. You joined the shapes into the rune, and Summit’s mark joins your quest. When all five elements are awake, the Winter Keeper Throne will confirm your completion.',
-      correctIds: ['gust', 'barb', 'drift', 'hush'],
+      correctIds: ['vortex', 'draft', 'gale', 'zephyr', 'squall'],
       pieces: [
-        { id: 'gust', label: 'Gust', fits: true },
-        { id: 'block', label: 'Block', fits: false },
-        { id: 'barb', label: 'Barb', fits: true },
-        { id: 'loop', label: 'Loop', fits: false },
-        { id: 'drift', label: 'Drift', fits: true },
-        { id: 'hush', label: 'Hush', fits: true },
+        { id: 'vortex', label: 'Vortex', fits: true },
+        { id: 'draft', label: 'Draft', fits: true },
+        { id: 'gale', label: 'Gale', fits: true },
+        { id: 'zephyr', label: 'Zephyr', fits: true },
+        { id: 'squall', label: 'Squall', fits: true },
       ],
     },
   },
@@ -587,8 +586,14 @@ async function ensureQuestStations(adventureId) {
         || cfg.questions?.[0]?.question === 'What is an Ice Castle grown from?'
       );
       const needsLines = cfg && tp.challenge.config.retry && cfg.prompt === tp.challenge.config.prompt && !cfg.retry;
-      if (cfg && (oldPrompt || needsLines)) {
-        const next = oldPrompt ? tp.challenge.config : { ...cfg, retry: tp.challenge.config.retry, success: tp.challenge.config.success };
+      const oldSummitPieces = tp.slug === 'summit' && cfg && (
+        (cfg.correctIds || []).map(String).sort().join('|') === 'barb|drift|gust|hush'
+        || (cfg.pieces || []).some((piece) => piece.id === 'gust' || piece.id === 'block')
+      );
+      if (cfg && (oldPrompt || needsLines || oldSummitPieces)) {
+        const next = (oldPrompt || oldSummitPieces)
+          ? tp.challenge.config
+          : { ...cfg, retry: tp.challenge.config.retry, success: tp.challenge.config.success };
         await db.run(
           'UPDATE touchpoints SET challenge_type = ?, config = ?, updated_at = ? WHERE id = ?',
           [tp.challenge.type, JSON.stringify(next), ts, row.id]
