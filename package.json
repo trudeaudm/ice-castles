@@ -10,7 +10,7 @@
     "dev": "node --watch server/index.js",
     "seed": "node server/seed.js",
     "reset": "node server/seed.js --force",
-    "test": "node scripts/test-guest-ux.js && node scripts/test-spirit-station.js && node scripts/test-spirit-persistence.js && node scripts/test-spirit-migrate.js"
+    "test": "node scripts/test-guest-ux.js && node scripts/test-guest-winterkeeper-fixes.js && node scripts/test-spirit-station.js && node scripts/test-spirit-persistence.js && node scripts/test-spirit-migrate.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.10.0",

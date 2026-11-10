@@ -99,7 +99,12 @@ body {
 }
 body.quest { overflow: auto; }
 body.quest.guide-open,
-body.quest.panel-open { overflow: hidden; }
+body.quest.panel-open,
+body.quest.landing-open,
+body.quest.map-modal-open,
+body.quest.award-open,
+body.quest.scanner-open,
+body.quest.finale-open { overflow: hidden; }
 
 button {
   font: inherit;
@@ -515,6 +520,7 @@ body.map-moving .aurora__band { animation-play-state: paused; }
   transition: opacity 0.35s ease;
   pointer-events: none;
 }
+.threshold[hidden] { display: none !important; }
 .threshold.is-open { opacity: 1; pointer-events: auto; }
 
 .landing {
@@ -1320,7 +1326,7 @@ body.landing-open .station { visibility: hidden; }
   padding: calc(16px + var(--safe-t)) 16px calc(16px + var(--safe-b));
   background: rgba(7, 22, 38, 0.42);
 }
-.beginBrief[hidden] { display: none; }
+.beginBrief[hidden] { display: none !important; }
 .beginBrief:has(.storyModal:not([hidden])) .beginBrief__card { visibility: hidden; }
 .beginBrief__card,
 .storyModal__card {
@@ -1529,6 +1535,7 @@ body.landing-open .station { visibility: hidden; }
   opacity: 0;
   pointer-events: none;
 }
+.mapModal[hidden] { display: none !important; }
 .mapModal.is-open { opacity: 1; pointer-events: auto; }
 .mapModal--hint {
   align-items: end;
@@ -2303,6 +2310,7 @@ body.sheet-open .sheet { transform: none; }
   pointer-events: none;
   transition: opacity 260ms, visibility 260ms;
 }
+.scanner[hidden] { display: none !important; }
 .scanner.is-open { opacity: 1; visibility: visible; pointer-events: auto; }
 
 #scannerVideo {
@@ -2427,6 +2435,7 @@ body.sheet-open .sheet { transform: none; }
   pointer-events: none;
   transition: opacity 320ms, visibility 320ms;
 }
+.award[hidden] { display: none !important; }
 .award.is-open { opacity: 1; visibility: visible; pointer-events: auto; }
 
 /* Frost cracking outward from the medallion as it ignites. */
@@ -3350,6 +3359,9 @@ body.award-open .guideFab { display: none; }
   display: grid;
   gap: 12px;
 }
+/* Author display:grid would otherwise override the UA [hidden] rule and leave
+   the answer stage visible beside the press stage. */
+.spiritPlay__step[hidden] { display: none !important; }
 .spiritPlay__tools {
   display: flex;
   flex-wrap: wrap;
@@ -3505,6 +3517,7 @@ body[data-realm="spirit"] .spiritPlay__lead {
   pointer-events: none;
   transition: opacity 0.35s ease;
 }
+.finale[hidden] { display: none !important; }
 .finale.is-open { opacity: 1; pointer-events: auto; }
 .finale__card { width: min(400px, 100%); }
 
@@ -4282,8 +4295,22 @@ body[data-realm="spirit"] .realmSky i {
 .quizReveal__answer { margin: 0 0 8px; font-weight: 800; color: #123056; }
 .quizReveal__fact { margin: 0 0 12px; color: var(--ink-text); }
 
-.runeAltar {
-  position: relative;
+.runeStatus {
+  margin: 0;
+  color: var(--ink-muted, #4a5d73);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.runePiece[aria-pressed="true"] {
+  outline: 2px solid var(--ice-600, #2f7fb8);
+  outline-offset: 2px;
+}
+.runeAltar:focus-visible {
+  outline: 2px solid var(--ice-600, #2f7fb8);
+  outline-offset: 3px;
+}
+.runeAltar {  position: relative;
   min-height: 220px;
   margin: 8px 0 14px;
   border-radius: 24px;

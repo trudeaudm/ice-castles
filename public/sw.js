@@ -1,10 +1,15 @@
 /* Service worker: keeps the park usable where cell service isn't.
    Artwork and vendor stay cache-first. HTML/CSS/JS are network-first so
-   a new deploy is what guests see, with the last good copy as fallback. */
-const CACHE = 'icecastles-v133';
+   a new deploy is what guests see, with the last good copy as fallback.
+
+   Private /api responses (bootstrap with session tokens, names, email) are
+   never stored in this shared URL-keyed cache. Guest progress offline uses
+   the guest-scoped localStorage snapshot in api.js instead. */
+const CACHE = 'icecastles-v135';
 const SHELL = [
-  '/', '/app.css?v=105', '/manifest.webmanifest',
-  '/js/api.js?v=24', '/js/map.js?v=31', '/js/scanner.js?v=19', '/js/wind-wisps.js?v=9', '/js/app.js?v=119',
+  '/', '/app.css?v=107', '/manifest.webmanifest',
+  '/js/guest-support.js?v=1', '/js/api.js?v=25', '/js/map.js?v=31',
+  '/js/scanner.js?v=20', '/js/wind-wisps.js?v=9', '/js/app.js?v=120',
   '/vendor/leaflet.js', '/vendor/leaflet.css', '/vendor/jsqr.js',
   '/assets/park-map.webp', '/assets/art/logo-mark.svg?v=4', '/assets/art/logo-mark.png?v=4', '/assets/art/logo-mark-app.png?v=4',
   '/assets/art/icon-threshold.svg?v=1', '/assets/art/icon-builders.svg?v=1', '/assets/art/icon-throne.svg?v=1',
@@ -31,7 +36,12 @@ function isFreshPath(pathname) {
     || pathname.endsWith('.html')
     || pathname.endsWith('.css')
     || pathname.endsWith('.js')
-    || pathname.startsWith('/nh');
+    || pathname.startsWith('/nh')
+    || pathname.startsWith('/mtl');
+}
+
+function isPrivateApi(pathname) {
+  return pathname.startsWith('/api/');
 }
 
 self.addEventListener('fetch', (event) => {
@@ -42,7 +52,18 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/admin')) return;
 
-  if (url.pathname.startsWith('/api/') || isFreshPath(url.pathname)) {
+  // Never put guest/session API bodies into the shared Cache Storage.
+  if (isPrivateApi(url.pathname)) {
+    event.respondWith(
+      fetch(request).catch(() => new Response(JSON.stringify({ error: 'offline' }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' },
+      }))
+    );
+    return;
+  }
+
+  if (isFreshPath(url.pathname)) {
     event.respondWith(
       fetch(request)
         .then((response) => {

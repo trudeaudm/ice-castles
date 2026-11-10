@@ -696,6 +696,11 @@ let shrineFocus = null;
 let shrineSlug = null;
 let mapModalMode = null;
 let mapModalStation = null;
+/** Bumps on every route / station paint so late async work cannot repaint a stale screen. */
+let viewGeneration = 0;
+let modalTrigger = null;
+let keepersSubmitting = false;
+let runeSelectedPiece = null;
 
 function rememberShrineView(slug, focus) {
   if (!slug) return;
@@ -954,9 +959,6 @@ function spiritChallengeHtml(station) {
   const buttons = assignment.buttons.map((id, index) =>
     `<li>${spiritChipHtml(spiritColorMeta(challenge, id), { index })}</li>`
   ).join('');
-  const testNote = assignment.test
-    ? '<p class="spiritPlay__test">Test mapping — replace when the physical station uses the production table.</p>'
-    : '';
 
   return `<div class="challenge spiritPlay" data-station="${escapeHtml(station.slug)}"
       data-challenge-type="button_lantern"
@@ -965,7 +967,6 @@ function spiritChallengeHtml(station) {
       data-spirit-step="press">
     <p class="challenge__prompt">${escapeHtml(challenge.prompt || 'Press the buttons, watch the lanterns, then enter what you saw.')}</p>
     ${challenge.partyNote ? `<p class="challenge__hint">${escapeHtml(challenge.partyNote)}</p>` : ''}
-    ${testNote}
     <div class="spiritPlay__step" data-spirit-panel="press">
       <p class="spiritPlay__lead">${escapeHtml(challenge.pressPrompt || 'Wait for Ready, then press these buttons in order.')}</p>
       <ol class="spiritSeq" aria-label="Buttons to press">${buttons}</ol>
@@ -994,18 +995,27 @@ async function ensureSpiritAssignment({ forceRender = false } = {}) {
     return Store.state.session.spiritChallenge;
   }
   if (spiritAssigning) return null;
+  const gen = viewGeneration;
+  const expectedSlug = Store.state.path?.station
+    || document.querySelector('[data-challenge-type="button_lantern"]')?.dataset.station
+    || null;
   spiritAssigning = true;
   try {
     const result = await Store.assignSpiritChallenge();
+    if (gen !== viewGeneration) return result.spiritChallenge || null;
     if (result.status === 'error') {
       toast(result.error === 'unknown_spirit_challenge'
         ? 'Your Spirit challenge could not be loaded. Ask a cast member for help.'
-        : 'Could not load your Spirit challenge. Try again.');
+        : result.connection
+          ? 'Could not reach the park. Check your signal and try again.'
+          : 'Could not load your Spirit challenge. Try again.');
       return null;
     }
-    if (forceRender || document.querySelector('[data-challenge-type="button_lantern"]')) {
+    const stillOnSpirit = !expectedSlug || Store.state.path?.station === expectedSlug
+      || document.querySelector(`[data-challenge-type="button_lantern"][data-station="${expectedSlug}"]`);
+    if (stillOnSpirit && (forceRender || document.querySelector('[data-challenge-type="button_lantern"]'))) {
       const slug = document.querySelector('[data-challenge-type="button_lantern"]')?.dataset.station
-        || Store.state.path?.station
+        || expectedSlug
         || 'aurora';
       renderStation(slug);
     }
@@ -1116,18 +1126,23 @@ function challengeHtml(station) {
       [trayPieces[i], trayPieces[j]] = [trayPieces[j], trayPieces[i]];
     }
     const pieces = trayPieces.map((piece) => `
-      <button class="runePiece" type="button" data-piece="${escapeHtml(piece.id)}" data-fits="${piece.fits ? '1' : '0'}">
+      <button class="runePiece" type="button" data-piece="${escapeHtml(piece.id)}" data-fits="${piece.fits ? '1' : '0'}"
+          aria-pressed="false" aria-grabbed="false">
         ${runeShapeSvg(piece.id, 'tray')}
         <span>${escapeHtml(piece.label || '')}</span>
       </button>`).join('');
     return `<div class="challenge runePlay" data-station="${escapeHtml(station.slug)}">
       <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
-      <div class="runeAltar" data-rune-altar>
+      <p class="challenge__hint">Drag a piece onto the rune, or tap to select it and tap the rune to place it. Keyboard: select a piece, then press Enter or Space on the rune.</p>
+      <p class="runeStatus" data-rune-status role="status" aria-live="polite">No piece selected.</p>
+      <p class="challenge__error" data-rune-error hidden role="alert"></p>
+      <div class="runeAltar" data-rune-altar tabindex="0" role="button" aria-label="Air rune drop target. Activate to place the selected piece.">
         <div class="runeAltar__mark" aria-hidden="true">${RUNE_FULL}</div>
         <div class="runeAltar__set" data-rune-set></div>
-        <p class="runeAltar__hint">Drag the five pieces here</p>
+        <p class="runeAltar__hint">Drag or tap the five pieces here</p>
       </div>
       <div class="runeTray">${pieces}</div>
+      <button class="textButton textButton--play" data-rune-retry type="button" hidden>Try again</button>
     </div>`;
   }
 
@@ -1758,7 +1773,14 @@ function startHearth() {
   else primary.addEventListener('loadeddata', boot, { once: true });
 }
 
+function bumpViewGeneration() {
+  viewGeneration += 1;
+  runeSelectedPiece = null;
+  return viewGeneration;
+}
+
 function renderStation(slug) {
+  bumpViewGeneration();
   stopStoryAudio();
   stopHearth();
   stopWind();
@@ -1888,10 +1910,16 @@ async function openStation(slug, { recordVisit = true } = {}) {
   markHistoryView(slug, 'shrine', shrineFocus);
   Store.state.path = Store.pathContext();
   renderStation(slug);
+  const gen = viewGeneration;
   if (recordVisit && Store.hasLiveSession() && slug) {
-    try { await Store.visitStation(slug); renderProgress(); } catch { /* offline */ }
+    try {
+      await Store.visitStation(slug);
+      if (gen === viewGeneration) renderProgress();
+    } catch { /* offline — snapshot still holds prior progress */ }
+    if (gen !== viewGeneration) return;
     if (slug === 'heart' || Store.touchBySlug(slug)?.type === 'heart') {
       const result = await Store.scanHeart();
+      if (gen !== viewGeneration) return;
       const station = Store.touchBySlug(slug);
       if (station) {
         const block = dom.stationView.querySelector('.shrine__block');
@@ -1938,22 +1966,24 @@ function renderHeartSlot(heartResult) {
   slot.innerHTML = keepersFormHtml();
 }
 
-function keepersFormHtml() {
+function keepersFormHtml(values = {}) {
   const known = Store.state.session?.partySize;
+  const namesValue = escapeHtml(values.names || '');
+  const sizeValue = escapeHtml(String(values.partySize || known || '1'));
   const sizeField = known
     ? `<p class="fineprint">Party of ${known}.</p>`
     : `<label>How many adventurers?
-      <input class="challenge__input" name="partySize" type="number" min="1" max="20" value="1" required>
+      <input class="challenge__input" name="partySize" type="number" min="1" max="20" value="${sizeValue}" required>
     </label>`;
+  // Delivery of a digital copy is not live yet (Keep hook is deferred). Do not
+  // collect an address solely for an undelivered email.
   return `<form class="challenge keepers" id="keepersForm">
     <p class="challenge__prompt">Water, Earth, Fire, Air, and Spirit are awake. You completed all five Guardian challenges, and the Throne confirms your quest is complete. You are Winter Keepers, Protectors of Winter Magic. Enter your first names for your recognition.</p>
     ${sizeField}
     <label>First names
-      <input class="challenge__input" name="names" placeholder="Ada, Sam, Juniper" required>
+      <input class="challenge__input" name="names" placeholder="Ada, Sam, Juniper" value="${namesValue}" required>
     </label>
-    <label>Email for a digital copy of your Winter Keeper recognition (optional)
-      <input class="challenge__input" name="email" type="email" autocomplete="email">
-    </label>
+    <p class="challenge__error" data-keepers-error hidden role="alert"></p>
     <button class="threshold__primary threshold__primary--earned" type="submit">Become Winter Keepers</button>
   </form>`;
 }
@@ -1984,20 +2014,65 @@ function sealHtml(session) {
 }
 
 async function submitKeepers(form) {
-  const names = String(form.names.value || '').split(/[,;/]+/).map((n) => n.trim()).filter(Boolean);
+  if (keepersSubmitting) return;
+  const namesRaw = String(form.names?.value || '');
+  const names = namesRaw.split(/[,;/]+/).map((n) => n.trim()).filter(Boolean);
   const partySize = Store.state.session?.partySize || Number(form.partySize?.value || names.length || 1);
-  await Store.finishQuest({
-    names,
-    partySize,
-    email: form.email.value || null,
-    marketingOptIn: false,
-  });
-  renderProgress();
-  renderHeartSlot();
-  showFinale();
+  const err = form.querySelector('[data-keepers-error]');
+  const submitBtn = form.querySelector('[type="submit"]');
+  if (err) { err.hidden = true; err.textContent = ''; }
+  keepersSubmitting = true;
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.setAttribute('aria-busy', 'true');
+  }
+  try {
+    await Store.finishQuest({
+      names,
+      partySize,
+      email: null,
+      marketingOptIn: false,
+    });
+    renderProgress();
+    renderHeartSlot();
+    showFinale();
+  } catch {
+    if (err) {
+      err.textContent = navigator.onLine
+        ? 'Could not finish just now. Your names are still here — try again.'
+        : 'You appear offline. Your names are still here — reconnect and try again.';
+      err.hidden = false;
+    } else {
+      toast('Could not finish just now. Try again.');
+    }
+    // Preserve entered values if the slot was re-rendered elsewhere.
+    if (!form.isConnected) {
+      const slot = el('heartSlot');
+      if (slot && !Store.state.session?.winterKeeper) {
+        slot.innerHTML = keepersFormHtml({ names: namesRaw, partySize });
+      }
+    }
+  } finally {
+    keepersSubmitting = false;
+    if (submitBtn && submitBtn.isConnected) {
+      submitBtn.disabled = false;
+      submitBtn.removeAttribute('aria-busy');
+    }
+  }
 }
 
 let throneRevealPlayed = false;
+
+function openFinaleOverlay() {
+  rememberModalTrigger();
+  document.body.classList.add('finale-open');
+  setChromeInert(true);
+  dom.finale.hidden = false;
+  requestAnimationFrame(() => {
+    dom.finale.classList.add('is-open');
+    focusables(dom.finale)[0]?.focus();
+  });
+}
 
 function openThroneReveal() {
   const pieces = REALM_ORDER.map((id, index) =>
@@ -2016,8 +2091,7 @@ function openThroneReveal() {
       <p class="combine__photo">If you like, take a group photo here at the Throne. That part is entirely optional.</p>
       <button class="threshold__primary threshold__primary--earned finaleStage__btn" data-close-finale type="button">Continue</button>
     </div>`;
-  dom.finale.hidden = false;
-  requestAnimationFrame(() => dom.finale.classList.add('is-open'));
+  openFinaleOverlay();
 }
 
 function showFinale() {
@@ -2028,8 +2102,7 @@ function showFinale() {
       ${staffScreenHtml(session)}
       <button class="textButton finaleStage__btn" data-close-finale type="button">Done</button>
     </div>`;
-  dom.finale.hidden = false;
-  requestAnimationFrame(() => dom.finale.classList.add('is-open'));
+  openFinaleOverlay();
 }
 
 function showReward() {
@@ -2043,6 +2116,14 @@ function showReward() {
 
 function hideFinale() {
   dom.finale.classList.remove('is-open');
+  document.body.classList.remove('finale-open');
+  if (!currentPanel
+    && !document.body.classList.contains('map-modal-open')
+    && !document.body.classList.contains('award-open')
+    && !document.body.classList.contains('scanner-open')) {
+    setChromeInert(false);
+  }
+  restoreModalTrigger();
   setTimeout(() => { dom.finale.hidden = true; }, 320);
   if (Store.state.session?.winterKeeper) renderHeartSlot();
 }
@@ -2086,6 +2167,56 @@ function renderJourney() {
     <ul class="stopList">${rows}</ul>`;
 }
 
+function backgroundChrome() {
+  return [
+    document.querySelector('.topbar'),
+    dom.stationView,
+    dom.guide,
+    dom.threshold,
+  ].filter(Boolean);
+}
+
+function setChromeInert(on) {
+  backgroundChrome().forEach((node) => {
+    if (on) node.setAttribute('inert', '');
+    else node.removeAttribute('inert');
+  });
+}
+
+function focusables(root) {
+  if (!root) return [];
+  return [...root.querySelectorAll(
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )].filter((node) => !node.hasAttribute('disabled') && node.getAttribute('aria-hidden') !== 'true');
+}
+
+function trapModalFocus(event, root) {
+  if (event.key !== 'Tab' || !root || root.hidden) return;
+  const nodes = focusables(root);
+  if (!nodes.length) return;
+  const first = nodes[0];
+  const last = nodes[nodes.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function rememberModalTrigger() {
+  modalTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+}
+
+function restoreModalTrigger() {
+  const trigger = modalTrigger;
+  modalTrigger = null;
+  if (trigger && document.contains(trigger) && typeof trigger.focus === 'function') {
+    requestAnimationFrame(() => trigger.focus());
+  }
+}
+
 function openPanel(name) {
   closeGuide();
   panelTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -2099,6 +2230,7 @@ function openPanel(name) {
   else if (name === 'passport') { renderPassport(); showPanel(dom.passportPanel); }
   currentPanel = name;
   document.body.classList.add('panel-open');
+  setChromeInert(true);
 }
 
 function showPanel(panel) {
@@ -2122,6 +2254,12 @@ function closePanels() {
   currentPanel = null;
   panelTrigger = null;
   document.body.classList.remove('panel-open');
+  if (!document.body.classList.contains('map-modal-open')
+    && !document.body.classList.contains('award-open')
+    && !document.body.classList.contains('scanner-open')
+    && !document.body.classList.contains('finale-open')) {
+    setChromeInert(false);
+  }
   if (trigger && document.contains(trigger) && typeof trigger.focus === 'function') {
     requestAnimationFrame(() => trigger.focus());
   }
@@ -2898,6 +3036,7 @@ function hideBeginBrief() {
   hideStoryModal();
   if (!dom.beginBrief) return;
   dom.beginBrief.hidden = true;
+  restoreModalTrigger();
 }
 
 function openBeginBrief() {
@@ -2909,8 +3048,12 @@ function openBeginBrief() {
   hideLandTalk();
   hideStoryModal();
   if (dom.beginBrief) {
+    rememberModalTrigger();
     dom.beginBrief.hidden = false;
     dom.beginBrief.querySelector('.beginBrief__scroll')?.scrollTo(0, 0);
+    requestAnimationFrame(() => {
+      (dom.beginContinue || dom.beginBriefClose || focusables(dom.beginBrief)[0])?.focus();
+    });
   }
 }
 
@@ -2959,9 +3102,16 @@ function hideMapModal() {
   dom.mapModal.classList.remove('is-open', 'mapModal--hint');
   dom.mapModal.inert = true;
   document.body.classList.remove('map-modal-open');
+  if (!currentPanel
+    && !document.body.classList.contains('award-open')
+    && !document.body.classList.contains('scanner-open')
+    && !document.body.classList.contains('finale-open')) {
+    setChromeInert(false);
+  }
   setTimeout(() => {
     if (!dom.mapModal.classList.contains('is-open')) dom.mapModal.hidden = true;
   }, 280);
+  restoreModalTrigger();
 }
 
 function renderBeginGuideGuardians() {
@@ -2988,6 +3138,7 @@ function renderBeginGuideGuardians() {
 }
 
 function showMapModal({ mode, eyebrow, title, body, primary, ghost, placement }) {
+  rememberModalTrigger();
   mapModalMode = mode;
   dom.mapModalEyebrow.textContent = eyebrow;
   dom.mapModalTitle.textContent = title;
@@ -3004,7 +3155,11 @@ function showMapModal({ mode, eyebrow, title, body, primary, ghost, placement })
   dom.mapModal.inert = false;
   dom.mapModal.classList.toggle('mapModal--hint', placement === 'hint');
   document.body.classList.add('map-modal-open');
+  setChromeInert(true);
   dom.mapModal.classList.add('is-open');
+  requestAnimationFrame(() => {
+    (dom.mapModalPrimary || focusables(dom.mapModal)[0])?.focus();
+  });
 }
 
 function showChoiceModal() {
@@ -3288,7 +3443,9 @@ function showNextAward() {
   const next = awardQueue.shift();
   if (!next) { awardShowing = false; return; }
   awardShowing = true;
+  rememberModalTrigger();
   document.body.classList.add('award-open');
+  setChromeInert(true);
   dom.award.classList.toggle('is-final', Boolean(next.final));
   if (next.glyphUrl) {
     dom.awardGlyph.innerHTML = `<img src="${escapeHtml(next.glyphUrl)}" alt="">`;
@@ -3303,32 +3460,104 @@ function showNextAward() {
   dom.awardPips.innerHTML = Array.from({ length: 5 }, (_, i) =>
     `<span class="award__pip ${i < awakened ? 'is-on' : ''}"></span>`).join('');
   dom.award.hidden = false;
-  requestAnimationFrame(() => dom.award.classList.add('is-open'));
+  requestAnimationFrame(() => {
+    dom.award.classList.add('is-open');
+    dom.awardDone?.focus();
+  });
   if (navigator.vibrate) navigator.vibrate(45);
 }
 
 function dismissAward() {
   dom.award.classList.remove('is-open');
   document.body.classList.remove('award-open');
+  if (!currentPanel
+    && !document.body.classList.contains('map-modal-open')
+    && !document.body.classList.contains('scanner-open')
+    && !document.body.classList.contains('finale-open')) {
+    setChromeInert(false);
+  }
+  restoreModalTrigger();
   setTimeout(() => { dom.award.hidden = true; showNextAward(); }, 340);
 }
 
-async function handleStationChallenge(slug, answer) {
-  const result = await Store.completeStation(slug, answer);
+function announceRune(root, message) {
+  const status = root?.querySelector('[data-rune-status]');
+  if (status) status.textContent = message;
+}
+
+function showRuneError(root, message, { retry = false } = {}) {
+  const err = root?.querySelector('[data-rune-error]');
+  const retryBtn = root?.querySelector('[data-rune-retry]');
+  if (err) {
+    err.textContent = message;
+    err.hidden = !message;
+  }
+  if (retryBtn) retryBtn.hidden = !retry;
+}
+
+function placeRunePiece(piece, root) {
+  if (!piece || !root || piece.classList.contains('is-placed')) return false;
+  const altar = root.querySelector('[data-rune-altar]');
+  if (!altar || altar.classList.contains('is-forged') || altar.classList.contains('is-submitting')) return false;
+  if (piece.dataset.fits !== '1') {
+    const station = Store.touchBySlug(root.dataset.station);
+    toast(station?.challenge?.retry || 'These shapes have not found each other yet.');
+    piece.classList.add('is-rejected');
+    setTimeout(() => piece.classList.remove('is-rejected'), 450);
+    announceRune(root, `${piece.querySelector('span')?.textContent || 'Piece'} does not fit.`);
+    return false;
+  }
+  const label = piece.querySelector('span');
+  piece.innerHTML = `${runeShapeSvg(piece.dataset.piece, 'full')}${label ? label.outerHTML : ''}`;
+  piece.classList.add('is-placed');
+  piece.setAttribute('aria-pressed', 'false');
+  piece.setAttribute('aria-grabbed', 'false');
+  altar.querySelector('[data-rune-set]').appendChild(piece);
+  if (runeSelectedPiece === piece) runeSelectedPiece = null;
+  const need = root.querySelectorAll('.runePiece[data-fits="1"]').length;
+  const placed = [...altar.querySelectorAll('.runePiece.is-placed')];
+  announceRune(root, `${placed.length} of ${need} pieces placed.`);
+  showRuneError(root, '');
+  if (placed.length < need) return true;
+  submitRuneArrangement(root);
+  return true;
+}
+
+async function submitRuneArrangement(root) {
+  const altar = root?.querySelector('[data-rune-altar]');
+  if (!altar || altar.classList.contains('is-submitting')) return;
+  const placed = [...altar.querySelectorAll('.runePiece.is-placed')];
+  const need = root.querySelectorAll('.runePiece[data-fits="1"]').length;
+  if (placed.length < need) return;
+  altar.classList.add('is-forged', 'is-submitting');
+  showRuneError(root, '');
+  const ids = placed.map((node) => node.dataset.piece);
+  const slug = root.dataset.station;
+  const gen = viewGeneration;
+  const result = await Store.completeStation(slug, { ids });
+  if (gen !== viewGeneration) return;
+  altar.classList.remove('is-submitting');
   if (result.status === 'error') {
-    const station = Store.touchBySlug(slug);
-    const messages = {
-      bad_code: 'That word isn’t right. Try again.',
-      bad_images: 'Not those three — look again at the ice.',
-      bad_sequence: 'Not that order. Watch once more.',
-      bad_shapes: 'These shapes have not found each other yet.',
-      no_spirit_challenge: 'Get your button sequence first, then try again.',
-    };
-    toast(station?.challenge?.retry || messages[result.error] || 'Not quite — try again.');
+    // Keep the solved arrangement for retry; do not treat UI forge as completion.
+    altar.classList.remove('is-forged');
+    const message = result.connection
+      ? 'Could not reach the park. Your rune is still assembled — try again when you have signal.'
+      : (Store.touchBySlug(slug)?.challenge?.retry
+        || (result.error === 'bad_shapes'
+          ? 'These shapes have not found each other yet.'
+          : 'Not quite — try again.'));
+    showRuneError(root, message, { retry: true });
+    toast(message);
     return;
   }
+  await applyChallengeSuccess(slug, result);
+}
+
+async function applyChallengeSuccess(slug, result) {
   renderProgress();
-  renderStation(slug);
+  if (Store.state.path?.station === slug || document.querySelector(`[data-station="${slug}"]`)) {
+    renderStation(slug);
+  }
   renderMap();
   if (result.realmAwakened) {
     const meta = REALM_META[result.realmAwakened] || { label: result.realmAwakened, glyph: '✦' };
@@ -3346,9 +3575,57 @@ async function handleStationChallenge(slug, answer) {
   }
 }
 
-async function handleCode(code) {
-  const result = await Store.scan(code);
+async function handleStationChallenge(slug, answer) {
+  const gen = viewGeneration;
+  const pathSlug = Store.state.path?.station;
+  const result = await Store.completeStation(slug, answer);
+  // Always keep server progress in memory/snapshot; only repaint if still on this station.
+  if (gen !== viewGeneration && pathSlug !== slug) return result;
+  if (result.status === 'error') {
+    if (gen !== viewGeneration) return result;
+    const station = Store.touchBySlug(slug);
+    const messages = {
+      bad_code: 'That word isn’t right. Try again.',
+      bad_images: 'Not those three — look again at the ice.',
+      bad_sequence: 'Not that order. Watch once more.',
+      bad_shapes: 'These shapes have not found each other yet.',
+      no_spirit_challenge: 'Get your button sequence first, then try again.',
+    };
+    const message = result.connection
+      ? 'Could not reach the park. Check your signal and try again.'
+      : (station?.challenge?.retry || messages[result.error] || 'Not quite — try again.');
+    toast(message);
+    return result;
+  }
+  if (gen !== viewGeneration && Store.state.path?.station !== slug) {
+    renderProgress();
+    return result;
+  }
+  await applyChallengeSuccess(slug, result);
+  return result;
+}
+
+function normalizeScanInput(raw) {
+  if (raw && typeof raw === 'object' && raw.kind) return raw;
+  if (window.GuestSupport?.parseScanPayload) return window.GuestSupport.parseScanPayload(raw);
+  if (window.Scanner?.parsePayload) return window.Scanner.parsePayload(raw);
+  return { kind: 'amenity', code: String(raw || '').trim().toUpperCase() };
+}
+
+async function handleCode(raw) {
+  const payload = normalizeScanInput(raw);
   Scanner.close();
+  if (payload.kind === 'invalid') return toast('Enter a station link or the printed code.');
+  if (payload.kind === 'station') {
+    const venue = Store.state.adventure?.venueCode || Store.state.path.venueCode;
+    if (venue && payload.venue && payload.venue !== venue) {
+      toast(`That code is for ${payload.venue.toUpperCase()}, not this park.`);
+      return;
+    }
+    goStation(payload.slug);
+    return;
+  }
+  const result = await Store.scan(payload.code);
   if (result.status === 'unknown') return toast('That code isn’t one of ours.');
   if (result.status === 'invalid') return toast('Enter the printed code.');
   if (result.status === 'queued') return toast('Saved until you have signal.', { warm: true });
@@ -3361,11 +3638,23 @@ async function handleCode(code) {
   }
 }
 
+async function reportQueueFlush(result) {
+  if (!result) return;
+  const synced = result.synced?.length || 0;
+  const failed = result.failed?.length || 0;
+  const pending = result.pending?.length || 0;
+  if (!synced && !failed && !pending) return;
+  if (synced && !pending && !failed) toast(synced === 1 ? 'Saved scan synced.' : `${synced} saved scans synced.`, { warm: true });
+  else if (failed && !pending) toast(failed === 1 ? 'One saved code was not recognized.' : `${failed} saved codes were not recognized.`);
+  else if (pending) toast('Still saving scans until signal returns.', { warm: true });
+}
+
 /* -------------------------------------------------------------------------- */
 /* routing                                                                    */
 /* -------------------------------------------------------------------------- */
 
 async function route() {
+  bumpViewGeneration();
   Store.state.path = Store.pathContext();
   const slug = Store.state.path.station;
   const live = Store.hasLiveSession();
@@ -3586,7 +3875,22 @@ function wire() {
     renderLegend();
     renderMap();
   });
-  dom.scanFab.addEventListener('click', () => Scanner.open(handleCode));
+  dom.scanFab.addEventListener('click', () => {
+    rememberModalTrigger();
+    document.body.classList.add('scanner-open');
+    setChromeInert(true);
+    Scanner.open(async (payload) => {
+      document.body.classList.remove('scanner-open');
+      if (!currentPanel
+        && !document.body.classList.contains('map-modal-open')
+        && !document.body.classList.contains('award-open')
+        && !document.body.classList.contains('finale-open')) {
+        setChromeInert(false);
+      }
+      restoreModalTrigger();
+      await handleCode(payload);
+    });
+  });
   dom.awardDone.addEventListener('click', () => {
     const goJourney = !dom.award.classList.contains('is-final');
     dismissAward();
@@ -3762,7 +4066,31 @@ function wire() {
       toast('The quiz is optional. It does not change your quest.');
       return;
     }
+    if (event.target.closest('[data-rune-retry]')) {
+      const root = event.target.closest('[data-station]');
+      submitRuneArrangement(root);
+      return;
+    }
   });
+
+  function clearRuneSelection(root) {
+    root?.querySelectorAll('.runePiece[aria-pressed="true"]').forEach((node) => {
+      node.setAttribute('aria-pressed', 'false');
+      node.setAttribute('aria-grabbed', 'false');
+    });
+    runeSelectedPiece = null;
+  }
+
+  function selectRunePiece(piece, root) {
+    if (!piece || piece.classList.contains('is-placed')) return;
+    if (piece.closest('.runeAltar.is-forged, .runeAltar.is-submitting')) return;
+    clearRuneSelection(root);
+    runeSelectedPiece = piece;
+    piece.setAttribute('aria-pressed', 'true');
+    piece.setAttribute('aria-grabbed', 'true');
+    const label = piece.querySelector('span')?.textContent || 'Piece';
+    announceRune(root, `${label} selected. Activate the rune to place it.`);
+  }
 
   let runeDrag = null;
   const releaseRunePiece = (piece) => {
@@ -3773,7 +4101,11 @@ function wire() {
   document.addEventListener('pointerdown', (event) => {
     const piece = event.target.closest('.runePiece');
     if (!piece || piece.classList.contains('is-placed')) return;
-    if (piece.closest('.runeAltar.is-forged')) return;
+    if (piece.closest('.runeAltar.is-forged, .runeAltar.is-submitting')) return;
+    // Keyboard / switch users get click-to-select; pointer drag remains for touch.
+    if (event.pointerType === 'mouse' && !event.shiftKey) {
+      // Still allow drag for mouse; selection is also updated for click-without-move.
+    }
     event.preventDefault();
     try { piece.setPointerCapture?.(event.pointerId); } catch { /* synthetic drags have no capture */ }
     runeDrag = {
@@ -3782,6 +4114,7 @@ function wire() {
       root: piece.closest('[data-station]'),
       cx: event.clientX,
       cy: event.clientY,
+      moved: false,
     };
     piece.classList.add('is-dragging');
     piece.style.zIndex = '40';
@@ -3791,40 +4124,61 @@ function wire() {
     event.preventDefault();
     const dx = event.clientX - runeDrag.cx;
     const dy = event.clientY - runeDrag.cy;
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) runeDrag.moved = true;
     runeDrag.piece.style.transform = `translate(${dx}px, ${dy}px)`;
   });
   const finishRuneDrag = (event) => {
     if (!runeDrag || event.pointerId !== runeDrag.pointerId) return;
-    const { piece, root } = runeDrag;
+    const { piece, root, moved } = runeDrag;
     runeDrag = null;
     releaseRunePiece(piece);
     if (event.type === 'pointercancel') return;
     const altar = root?.querySelector('[data-rune-altar]');
-    if (!altar || altar.classList.contains('is-forged')) return;
+    if (!altar || altar.classList.contains('is-forged') || altar.classList.contains('is-submitting')) return;
+    if (!moved) {
+      // Tap / click without drag → select for keyboard or second-tap place.
+      selectRunePiece(piece, root);
+      return;
+    }
     const rect = altar.getBoundingClientRect();
     const inside = event.clientX >= rect.left && event.clientX <= rect.right
       && event.clientY >= rect.top && event.clientY <= rect.bottom;
     if (!inside) return;
-    if (piece.dataset.fits !== '1') {
-      const station = Store.touchBySlug(root.dataset.station);
-      toast(station?.challenge?.retry || 'These shapes have not found each other yet.');
-      piece.classList.add('is-rejected');
-      setTimeout(() => piece.classList.remove('is-rejected'), 450);
-      return;
-    }
-    const label = piece.querySelector('span');
-    piece.innerHTML = `${runeShapeSvg(piece.dataset.piece, 'full')}${label ? label.outerHTML : ''}`;
-    piece.classList.add('is-placed');
-    altar.querySelector('[data-rune-set]').appendChild(piece);
-    const need = root.querySelectorAll('.runePiece[data-fits="1"]').length;
-    const placed = [...altar.querySelectorAll('.runePiece.is-placed')];
-    if (placed.length < need) return;
-    altar.classList.add('is-forged');
-    const ids = placed.map((node) => node.dataset.piece);
-    setTimeout(() => handleStationChallenge(root.dataset.station, { ids }), 780);
+    placeRunePiece(piece, root);
   };
   document.addEventListener('pointerup', finishRuneDrag);
   document.addEventListener('pointercancel', finishRuneDrag);
+
+  document.addEventListener('click', (event) => {
+    const altar = event.target.closest('[data-rune-altar]');
+    if (!altar) return;
+    const root = altar.closest('[data-station]');
+    if (!root || !runeSelectedPiece || runeSelectedPiece.closest('[data-station]') !== root) return;
+    placeRunePiece(runeSelectedPiece, root);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    const altar = event.target.closest?.('[data-rune-altar]');
+    if (altar && (event.key === 'Enter' || event.key === ' ')) {
+      const root = altar.closest('[data-station]');
+      if (runeSelectedPiece && runeSelectedPiece.closest('[data-station]') === root) {
+        event.preventDefault();
+        placeRunePiece(runeSelectedPiece, root);
+      }
+      return;
+    }
+    const piece = event.target.closest?.('.runePiece');
+    if (piece && (event.key === 'Enter' || event.key === ' ')) {
+      const root = piece.closest('[data-station]');
+      event.preventDefault();
+      if (runeSelectedPiece === piece) {
+        // Second activation places onto the rune when already selected.
+        placeRunePiece(piece, root);
+      } else {
+        selectRunePiece(piece, root);
+      }
+    }
+  });
 
   document.addEventListener('submit', (event) => {
     if (event.target.id !== 'keepersForm') return;
@@ -3835,11 +4189,31 @@ function wire() {
   window.addEventListener('popstate', route);
   window.addEventListener('pagehide', stopStoryAudio);
   document.addEventListener('keydown', (event) => {
+    if (event.key === 'Tab') {
+      if (Scanner.isOpen()) trapModalFocus(event, dom.scanner || document.getElementById('scanner'));
+      else if (!dom.award.hidden) trapModalFocus(event, dom.award);
+      else if (!dom.finale.hidden) trapModalFocus(event, dom.finale);
+      else if (mapModalMode) trapModalFocus(event, dom.mapModal);
+      else if (currentPanel === 'journey') trapModalFocus(event, dom.journeyPanel);
+      else if (currentPanel === 'passport') trapModalFocus(event, dom.passportPanel);
+      else if (dom.beginStory && !dom.beginStory.hidden) trapModalFocus(event, dom.beginStory);
+      else if (dom.beginBrief && !dom.beginBrief.hidden) trapModalFocus(event, dom.beginBrief);
+      return;
+    }
     if (event.key !== 'Escape') return;
     if (dom.beginStory && !dom.beginStory.hidden) { hideStoryModal(); return; }
     if (dom.beginBrief && !dom.beginBrief.hidden) { hideBeginBrief(); return; }
-    if (Scanner.isOpen()) Scanner.close();
-    else if (!dom.award.hidden) dismissAward();
+    if (Scanner.isOpen()) {
+      Scanner.close();
+      document.body.classList.remove('scanner-open');
+      if (!currentPanel
+        && !document.body.classList.contains('map-modal-open')
+        && !document.body.classList.contains('award-open')
+        && !document.body.classList.contains('finale-open')) {
+        setChromeInert(false);
+      }
+      restoreModalTrigger();
+    } else if (!dom.award.hidden) dismissAward();
     else if (!dom.finale.hidden) hideFinale();
     else if (mapModalMode === 'choice') return;
     else if (mapModalMode === 'begin' || mapModalMode === 'beginGuide') hideMapModal();
@@ -3851,6 +4225,19 @@ function wire() {
     }
     else if (document.body.classList.contains('guide-open')) closeGuide();
   });
+}
+
+function consumePendingScanDeepLink() {
+  const params = new URLSearchParams(location.search);
+  const fromQuery = params.get('scan');
+  const fromHash = window.GuestSupport?.legacyHashScan?.(location.hash)
+    || (location.hash.match(/^#\/?scan\/([A-Za-z0-9-]+)/i) || [])[1];
+  const code = (fromQuery || fromHash || '').toUpperCase();
+  if (!code) return null;
+  params.delete('scan');
+  const q = params.toString();
+  history.replaceState(history.state, '', `${location.pathname}${q ? `?${q}` : ''}`);
+  return { kind: 'amenity', code };
 }
 
 async function boot() {
@@ -3868,12 +4255,24 @@ async function boot() {
   dom.parkLocation.textContent = park.locationName || park.name || '';
   document.title = `Castle Quest — ${park.name || 'Ice Castles'}`;
   if (adventure.venueCode && !Store.state.path.venueCode) {
-    history.replaceState(null, '', `${Store.stationPath(Store.state.path.station)}${location.search}`);
+    history.replaceState(null, '', `${Store.stationPath(Store.state.path.station)}${location.search}${location.hash || ''}`);
     Store.state.path = Store.pathContext();
   }
 
   renderProgress();
   await route();
+
+  if (Store.state.online) {
+    try {
+      const flushed = await Store.flushQueue();
+      await reportQueueFlush(flushed);
+    } catch { /* keep queued */ }
+  }
+
+  const pendingScan = consumePendingScanDeepLink();
+  if (pendingScan) {
+    await handleCode(pendingScan);
+  }
 
   if (Store.state.session?.winterKeeper && Store.state.path.station === 'heart') {
     showFinale();

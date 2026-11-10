@@ -1,11 +1,10 @@
-/* global window, jsQR */
+/* global window, jsQR, GuestSupport */
 /**
  * QR scanning.
  *
- * The physical signs encode a URL (/s/CODE), so a guest can always use their
- * phone's built-in camera app and land in the app with the scan applied. This
- * in-app scanner is the faster path for guests already playing — it keeps them
- * in the game loop instead of bouncing through the OS camera each time.
+ * Station signs encode /{venue}/{slug}. Amenity markers encode /s/CODE.
+ * Phone-camera navigation hits those URLs directly; this in-app scanner is the
+ * faster path for guests already playing.
  *
  * jsQR is loaded lazily: no camera permission prompt and no 250KB download
  * until someone actually taps Scan.
@@ -28,6 +27,19 @@ const Scanner = (() => {
   let onCode = () => {};
   let lastCode = null;
   let lastCodeAt = 0;
+  let openGeneration = 0;
+  let opening = false;
+
+  function parsePayload(raw) {
+    if (window.GuestSupport?.parseScanPayload) {
+      return window.GuestSupport.parseScanPayload(raw);
+    }
+    const text = String(raw || '').trim();
+    const match = text.match(/\/s\/([A-Za-z0-9-]+)/i);
+    if (match) return { kind: 'amenity', code: match[1].toUpperCase() };
+    if (/^[A-Za-z0-9-]{4,14}$/.test(text)) return { kind: 'amenity', code: text.toUpperCase() };
+    return { kind: 'invalid' };
+  }
 
   function loadLibrary() {
     if (window.jsQR) return Promise.resolve(window.jsQR);
@@ -42,39 +54,83 @@ const Scanner = (() => {
     return libraryPromise;
   }
 
-  async function open(handler) {
-    onCode = handler || onCode;
-    el.root.hidden = false;
-    requestAnimationFrame(() => el.root.classList.add('is-open'));
-    el.input.value = '';
+  function stopStream(active) {
+    if (active) {
+      try { active.getTracks().forEach((track) => track.stop()); } catch { /* already ended */ }
+    }
+  }
 
-    if (!navigator.mediaDevices?.getUserMedia) {
-      el.hint.textContent = 'This browser can’t open the camera. Type the code printed under the sign instead.';
-      el.input.focus();
+  function clearVideo() {
+    if (el.video) el.video.srcObject = null;
+  }
+
+  async function open(handler) {
+    if (opening || isOpen()) {
+      // Overlapping open: keep the existing attempt, just refresh the handler.
+      onCode = handler || onCode;
       return;
     }
 
+    const generation = ++openGeneration;
+    opening = true;
+    onCode = handler || onCode;
+    el.root.hidden = false;
+    el.root.setAttribute('aria-modal', 'true');
+    el.root.setAttribute('role', 'dialog');
+    requestAnimationFrame(() => {
+      if (generation === openGeneration) el.root.classList.add('is-open');
+    });
+    el.input.value = '';
+    el.close?.focus();
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      if (generation === openGeneration) {
+        el.hint.textContent = 'This browser can’t open the camera. Type the code printed under the sign instead.';
+        el.input.focus();
+      }
+      opening = false;
+      return;
+    }
+
+    let localStream = null;
     try {
       const jsqr = await loadLibrary();
-      stream = await navigator.mediaDevices.getUserMedia({
+      if (generation !== openGeneration) return;
+
+      localStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' } },
         audio: false,
       });
+      if (generation !== openGeneration) {
+        stopStream(localStream);
+        return;
+      }
+
+      stream = localStream;
       el.video.srcObject = stream;
       await el.video.play();
-      el.hint.textContent = 'Point your camera at a code on the trail';
+      if (generation !== openGeneration) {
+        stopTracks();
+        return;
+      }
+      el.hint.textContent = 'Point your camera at a station or map code';
       decoding = true;
-      tick(jsqr);
+      tick(jsqr, generation);
     } catch (err) {
+      stopStream(localStream);
+      if (generation !== openGeneration) return;
       const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
       el.hint.textContent = denied
         ? 'Camera access is off. Turn it on in your browser settings, or type the code below.'
         : 'Camera isn’t available right now. Type the code printed under the sign instead.';
+      el.input.focus();
+    } finally {
+      if (generation === openGeneration) opening = false;
     }
   }
 
-  function tick(jsqr) {
-    if (!decoding) return;
+  function tick(jsqr, generation) {
+    if (!decoding || generation !== openGeneration) return;
     const { video, canvas } = el;
 
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -92,67 +148,78 @@ const Scanner = (() => {
           inversionAttempts: 'dontInvert',
         });
         if (found?.data) {
-          const code = normalize(found.data);
+          const payload = parsePayload(found.data);
+          const key = payload.kind === 'station'
+            ? `station:${payload.venue}/${payload.slug}`
+            : payload.kind === 'amenity'
+              ? `amenity:${payload.code}`
+              : null;
           const now = Date.now();
           // Guard against the same sign firing over and over while framed.
-          if (code && (code !== lastCode || now - lastCodeAt > 2500)) {
-            lastCode = code;
+          if (key && (key !== lastCode || now - lastCodeAt > 2500)) {
+            lastCode = key;
             lastCodeAt = now;
             buzz();
-            onCode(code);
+            onCode(payload);
           }
         }
       } catch {
         /* a dropped frame is not worth interrupting the loop for */
       }
     }
-    rafId = requestAnimationFrame(() => tick(jsqr));
-  }
-
-  function normalize(raw) {
-    const text = String(raw).trim();
-    const match = text.match(/\/s\/([A-Za-z0-9-]+)/i);
-    if (match) return match[1].toUpperCase();
-    if (/^[A-Za-z0-9-]{4,14}$/.test(text)) return text.toUpperCase();
-    return null;
+    rafId = requestAnimationFrame(() => tick(jsqr, generation));
   }
 
   function buzz() {
     if (navigator.vibrate) navigator.vibrate(35);
   }
 
-  function close() {
+  function stopTracks() {
     decoding = false;
     if (rafId) cancelAnimationFrame(rafId);
     rafId = null;
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      stream = null;
-    }
-    el.video.srcObject = null;
-    el.root.classList.remove('is-open');
-    setTimeout(() => { el.root.hidden = true; }, 260);
+    stopStream(stream);
+    stream = null;
+    clearVideo();
   }
 
-  const isOpen = () => !el.root.hidden;
+  function close() {
+    openGeneration += 1;
+    opening = false;
+    stopTracks();
+    el.root.classList.remove('is-open');
+    setTimeout(() => {
+      if (!el.root.classList.contains('is-open')) el.root.hidden = true;
+    }, 260);
+  }
+
+  const isOpen = () => !el.root.hidden && el.root.classList.contains('is-open')
+    || (!el.root.hidden && opening);
 
   function submitManual() {
-    const code = normalize(el.input.value);
-    if (!code) {
-      el.hint.textContent = 'That code doesn’t look right. Check the letters under the sign.';
+    const payload = parsePayload(el.input.value);
+    if (payload.kind === 'invalid') {
+      el.hint.textContent = 'That code doesn’t look right. Use a station link or the letters under the sign.';
       return;
     }
     el.input.value = '';
-    onCode(code);
+    onCode(payload);
   }
 
-  el.close.addEventListener('click', close);
-  el.submit.addEventListener('click', submitManual);
-  el.input.addEventListener('keydown', (event) => {
+  el.close?.addEventListener('click', close);
+  el.submit?.addEventListener('click', submitManual);
+  el.input?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') submitManual();
   });
 
-  return { open, close, isOpen, buzz };
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && (opening || decoding || stream)) close();
+  });
+  window.addEventListener('pagehide', () => {
+    if (opening || decoding || stream) close();
+  });
+
+  return { open, close, isOpen, buzz, parsePayload };
 })();
 
 window.Scanner = Scanner;

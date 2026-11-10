@@ -90,9 +90,11 @@ async function redirectScan(req, res, preferredSlug) {
       return res.redirect(302, `/${venue}/${station.slug}`);
     }
   }
+  // Amenity markers that are not Castle Quest stations. Prefer a query the
+  // current guest router understands; older printed material may still use #/scan/.
   const slug = preferredSlug || poi?.location_slug || poi?.venue_code;
   const base = slug ? `/${slug}` : '';
-  res.redirect(302, `${base}/#/scan/${code}`);
+  res.redirect(302, `${base}?scan=${encodeURIComponent(code)}`);
 }
 
 app.get('/s/:code', (req, res) => redirectScan(req, res, null));
