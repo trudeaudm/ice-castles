@@ -872,30 +872,62 @@ function goStartHero() {
   goStation(welcome?.slug || 'threshold');
 }
 
-function toast(message, { warm = false, ms = 3200 } = {}) {
-  dom.toast.textContent = message;
-  dom.toast.classList.toggle('is-warm', warm);
-  dom.toast.classList.add('is-on');
-  clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => dom.toast.classList.remove('is-on'), ms);
+function resetToastAnchor() {
+  if (!dom.toast) return;
+  dom.toast.classList.remove('is-anchored', 'is-challenge');
+  dom.toast.style.left = '';
+  dom.toast.style.top = '';
+  dom.toast.style.bottom = '';
+  dom.toast.style.transform = '';
 }
 
-function challengeIssueEl(root) {
-  return root?.querySelector('[data-challenge-error], [data-pick-error], [data-rune-error]') || null;
+function toast(message, { warm = false, ms = 3200, anchor = null, challenge = false } = {}) {
+  if (!dom.toast) return;
+  dom.toast.textContent = message;
+  dom.toast.classList.toggle('is-warm', warm);
+  if (anchor) {
+    const rect = anchor.getBoundingClientRect();
+    const left = Math.round(rect.left + (rect.width / 2));
+    const top = Math.round(rect.top - 12);
+    dom.toast.classList.add('is-anchored');
+    dom.toast.classList.toggle('is-challenge', challenge);
+    dom.toast.style.left = `${left}px`;
+    dom.toast.style.top = `${top}px`;
+    dom.toast.style.bottom = 'auto';
+    dom.toast.style.transform = '';
+  } else {
+    resetToastAnchor();
+  }
+  dom.toast.classList.add('is-on');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => {
+    dom.toast.classList.remove('is-on');
+  }, ms);
+}
+
+function challengeSubmitAnchor(root) {
+  if (!root) return null;
+  const preferred = root.querySelector(
+    '[data-seq-submit], [data-challenge-submit], [data-image-submit], [data-rune-retry]:not([hidden])'
+  );
+  if (preferred) return preferred;
+  const play = [...root.querySelectorAll('.textButton--play')].find((btn) => !btn.hidden);
+  return play || root.querySelector('[data-rune-altar]') || root;
 }
 
 function showChallengeIssue(root, message) {
-  const el = challengeIssueEl(root);
-  if (!el) {
-    if (message) toast(message);
-    return;
-  }
-  el.textContent = message || '';
-  el.hidden = !message;
+  if (!message) return;
+  toast(message, {
+    anchor: challengeSubmitAnchor(root),
+    challenge: true,
+    ms: 3800,
+  });
 }
 
-function clearChallengeIssue(root) {
-  showChallengeIssue(root, '');
+function clearChallengeIssue() {
+  if (!dom.toast?.classList.contains('is-challenge')) return;
+  dom.toast.classList.remove('is-on');
+  clearTimeout(toast.timer);
 }
 
 function challengeRootForSlug(slug) {
@@ -1051,7 +1083,6 @@ function spiritChallengeHtml(station) {
         <button class="challenge__clear" data-spirit-undo type="button">${escapeHtml(challenge.undoLabel || 'Undo')}</button>
         <button class="challenge__clear" data-seq-clear type="button">${escapeHtml(challenge.clearLabel || 'Clear')}</button>
       </div>
-      <p class="challenge__error" data-challenge-error hidden role="alert"></p>
       <button class="textButton textButton--play" data-seq-submit type="button">${escapeHtml(challenge.submitLabel || 'Awaken Spirit')}</button>
       <button class="textButton" data-spirit-replay type="button">${escapeHtml(challenge.replayLabel || 'Show button sequence again')}</button>
     </div>
@@ -1130,7 +1161,6 @@ function challengeHtml(station) {
         ${challenge.fieldLabel ? `<p class="challenge__field">${escapeHtml(challenge.fieldLabel)}</p>` : ''}
         <input class="challenge__input" data-challenge-code inputmode="latin" autocapitalize="characters"
                autocomplete="off" spellcheck="false" maxlength="24" placeholder="${escapeHtml(challenge.placeholder || 'WORD')}">
-        <p class="challenge__error" data-challenge-error hidden role="alert"></p>
         <button class="textButton textButton--play" data-challenge-submit type="button">${escapeHtml(challenge.submitLabel || 'Go')}</button>
       </div>
     </div>`;
@@ -1150,7 +1180,6 @@ function challengeHtml(station) {
       ${challenge.hint ? `<p class="challenge__hint">${escapeHtml(challenge.hint)}</p>` : ''}
       <p class="challenge__count" data-pick-count role="status" aria-live="polite">0 of ${need} selected</p>
       <div class="pickGrid">${tiles}</div>
-      <p class="challenge__error" data-challenge-error data-pick-error hidden role="alert">Choose three images</p>
       <button class="textButton textButton--play" data-image-submit type="button">Check my three</button>
     </div>`;
   }
@@ -1181,7 +1210,6 @@ function challengeHtml(station) {
         : '<p class="seqReadout" data-seq-readout>Tap the sequence</p>'}
       <div class="seqRow">${opts}</div>
       <button class="${challenge.clearLabel ? 'challenge__clear' : 'textButton'}" data-seq-clear type="button">${escapeHtml(clearLabel)}</button>
-      <p class="challenge__error" data-challenge-error hidden role="alert"></p>
       ${challenge.submitLabel ? `<button class="textButton textButton--play" data-seq-submit type="button">${escapeHtml(challenge.submitLabel)}</button>` : ''}
     </div>`;
   }
@@ -1212,7 +1240,6 @@ function challengeHtml(station) {
         <p class="runeAltar__hint">Drag or tap the five pieces here</p>
       </div>
       <div class="runeTray">${pieces}</div>
-      <p class="challenge__error" data-challenge-error data-rune-error hidden role="alert"></p>
       <button class="textButton textButton--play" data-rune-retry type="button" hidden>Try again</button>
     </div>`;
   }
@@ -3546,7 +3573,7 @@ function paintImagePick(root, { clearError = false } = {}) {
     readout.textContent = `${count} of ${need} selected`;
     readout.classList.toggle('is-ready', count === need);
   }
-  if (clearError) clearChallengeIssue(root);
+  if (clearError) clearChallengeIssue();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -3605,9 +3632,9 @@ function announceRune(root, message) {
 }
 
 function showRuneError(root, message, { retry = false } = {}) {
-  showChallengeIssue(root, message);
   const retryBtn = root?.querySelector('[data-rune-retry]');
   if (retryBtn) retryBtn.hidden = !retry;
+  if (message) showChallengeIssue(root, message);
 }
 
 function placeRunePiece(piece, root) {
@@ -4096,7 +4123,7 @@ function wire() {
     if (event.target.closest('[data-spirit-undo]')) {
       const root = event.target.closest('[data-station]');
       sequenceBuffer.pop();
-      clearChallengeIssue(root);
+      clearChallengeIssue();
       paintSpiritSequence(root);
       return;
     }
@@ -4106,7 +4133,7 @@ function wire() {
       const len = Number(root.dataset.seqLen || 4);
       if (sequenceBuffer.length >= len) return;
       sequenceBuffer.push(spiritColor.dataset.spiritColor);
-      clearChallengeIssue(root);
+      clearChallengeIssue();
       paintSpiritSequence(root);
       return;
     }
@@ -4116,7 +4143,7 @@ function wire() {
       const len = Number(root.dataset.seqLen || 5);
       if (sequenceBuffer.length >= len) return;
       sequenceBuffer.push(seq.dataset.seq);
-      clearChallengeIssue(root);
+      clearChallengeIssue();
       paintSequence(root);
       if (!root.querySelector('[data-seq-submit]') && sequenceBuffer.length >= len) {
         const answer = { sequence: [...sequenceBuffer] };
@@ -4128,7 +4155,7 @@ function wire() {
     if (event.target.closest('[data-seq-clear]')) {
       const root = event.target.closest('[data-station]');
       sequenceBuffer = [];
-      clearChallengeIssue(root);
+      clearChallengeIssue();
       if (root?.dataset.challengeType === 'button_lantern') paintSpiritSequence(root);
       else paintSequence(root);
       return;
@@ -4142,7 +4169,7 @@ function wire() {
           : 'Tap the full sequence first.');
         return;
       }
-      clearChallengeIssue(root);
+      clearChallengeIssue();
       const answer = { sequence: [...sequenceBuffer] };
       if (root.dataset.challengeType === 'button_lantern') {
         answer.challengeId = root.dataset.spiritId
@@ -4162,7 +4189,7 @@ function wire() {
         showChallengeIssue(root, 'Enter the word first.');
         return;
       }
-      clearChallengeIssue(root);
+      clearChallengeIssue();
       handleStationChallenge(root.dataset.station, { code });
       return;
     }
@@ -4308,7 +4335,7 @@ function wire() {
 
   document.addEventListener('input', (event) => {
     if (!event.target.closest?.('[data-challenge-code]')) return;
-    clearChallengeIssue(event.target.closest('[data-station]'));
+    clearChallengeIssue();
   });
 
   document.addEventListener('submit', (event) => {

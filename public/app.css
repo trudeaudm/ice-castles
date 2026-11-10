@@ -2772,6 +2772,26 @@ body.sheet-open .sheet { transform: none; }
 }
 .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 .toast.is-warm { border-color: var(--lantern-dim); color: #ffd6a3; }
+/* Challenge submit issues: larger bubble parked just above the awaken button. */
+.toast.is-anchored {
+  bottom: auto;
+  transform: translate(-50%, calc(-100% + 14px));
+}
+.toast.is-anchored.is-on {
+  transform: translate(-50%, -100%);
+}
+.toast.is-challenge {
+  max-width: min(92vw, 360px);
+  padding: 14px 18px;
+  border-radius: 22px;
+  background: #eef7ff;
+  color: #123a55;
+  border: 2px solid #4d8eb8;
+  box-shadow: 0 10px 28px rgba(18, 58, 85, 0.28);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.35;
+}
 
 /* ---------------------------------- splash -------------------------------- */
 
@@ -3770,7 +3790,11 @@ body[data-realm="spirit"] .spiritPlay__lead {
 .staffCard__count { font-size: 22px; color: var(--aurora); font-weight: 800; margin: 10px 0; }
 
 body.quest .toast { bottom: calc(20px + var(--safe-b)); }
-body.quest.guide-open .toast {
+body.quest .toast.is-anchored,
+body.quest.guide-open .toast.is-anchored {
+  bottom: auto;
+}
+body.quest.guide-open .toast:not(.is-anchored) {
   top: calc(16px + var(--safe-t));
   bottom: auto;
 }
