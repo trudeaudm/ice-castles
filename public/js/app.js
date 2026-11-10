@@ -1293,6 +1293,20 @@ function hearthHtml() {
     <canvas class="hearth" aria-hidden="true"></canvas>`;
 }
 
+function waterSkyHtml() {
+  const bands = Array.from({ length: 5 }, (_, i) =>
+    `<span class="waterBand waterBand--${i + 1}" aria-hidden="true"></span>`
+  ).join('');
+  const ripples = Array.from({ length: 7 }, (_, i) =>
+    `<span class="waterRipple waterRipple--${i + 1}" aria-hidden="true"></span>`
+  ).join('');
+  const bubbles = '<i></i>'.repeat(7);
+  return `<div class="realmSky realmSky--water" aria-hidden="true">
+    <div class="waterField">${bands}${ripples}</div>
+    ${bubbles}
+  </div>`;
+}
+
 function realmSkyHtml(element) {
   if (element === 'fire') {
     const embers = '<span class="ember"></span>'.repeat(14);
@@ -1301,6 +1315,7 @@ function realmSkyHtml(element) {
   if (element === 'air') return airSkyHtml();
   if (element === 'earth') return earthSkyHtml();
   if (element === 'spirit') return spiritSkyHtml();
+  if (element === 'water') return waterSkyHtml();
   return `<div class="realmSky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>`;
 }
 

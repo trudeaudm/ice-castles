@@ -3969,14 +3969,20 @@ body.map-moving .realmSky i,
 body.map-moving .realmSky .lick,
 body.map-moving .realmSky .ember,
 body.map-moving .realmSky .borealis span,
+body.map-moving .realmSky .waterBand,
+body.map-moving .realmSky .waterRipple,
 body.guide-open .realmSky i,
 body.guide-open .realmSky .lick,
 body.guide-open .realmSky .ember,
 body.guide-open .realmSky .borealis span,
+body.guide-open .realmSky .waterBand,
+body.guide-open .realmSky .waterRipple,
 body.landing-open .realmSky i,
 body.landing-open .realmSky .lick,
 body.landing-open .realmSky .ember,
-body.landing-open .realmSky .borealis span { animation-play-state: paused; }
+body.landing-open .realmSky .borealis span,
+body.landing-open .realmSky .waterBand,
+body.landing-open .realmSky .waterRipple { animation-play-state: paused; }
 
 body[data-realm] .shrine__kicker,
 body[data-realm] .shrineGate.is-focus .shrineIcon.is-on .shrineIcon__label {
@@ -4062,38 +4068,96 @@ body.quest[data-realm="water"] .topbar {
 body[data-realm="water"] .aurora__band--1 { background: radial-gradient(ellipse at 50% 50%, #9adfff, transparent 70%); opacity: 0.5; }
 body[data-realm="water"] .aurora__band--2 { background: radial-gradient(ellipse at 40% 50%, #2f8fd0, transparent 70%); opacity: 0.38; }
 body[data-realm="water"] .aurora__band--3 { background: radial-gradient(ellipse at 60% 50%, #0c4f86, transparent 72%); opacity: 0.28; }
-body[data-realm="water"] .realmSky::before,
-body[data-realm="water"] .realmSky::after {
-  content: "";
+body[data-realm="water"] .waterField {
   position: absolute;
-  left: -25%;
-  width: 150%;
-  height: 90px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  animation: waterWave 7s ease-in-out infinite;
+  inset: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
 }
-body[data-realm="water"] .realmSky::before { bottom: 8%; }
-body[data-realm="water"] .realmSky::after {
-  bottom: 1%;
-  height: 70px;
-  background: rgba(180, 230, 255, 0.28);
-  animation-duration: 9s;
+body[data-realm="water"] .waterBand {
+  position: absolute;
+  left: -55%;
+  width: 210%;
+  height: 72px;
+  opacity: 0.55;
+  background-repeat: repeat-x;
+  background-size: 280px 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 280 72' preserveAspectRatio='none'%3E%3Cpath d='M0 36 C35 12 70 60 105 36 S175 12 210 36 280 60 280 36 V72 H0 Z' fill='rgba(255,255,255,0.28)'/%3E%3Cpath d='M0 42 C35 22 70 58 105 42 S175 22 210 42 280 58 280 42' fill='none' stroke='rgba(210,242,255,0.55)' stroke-width='2'/%3E%3C/svg%3E");
+  animation: waterDrift 10s linear infinite;
+  will-change: transform;
+}
+body[data-realm="water"] .waterBand--1 {
+  top: 14%;
+  height: 58px;
+  opacity: 0.34;
+  background-size: 320px 100%;
+  animation-duration: 14s;
+}
+body[data-realm="water"] .waterBand--2 {
+  top: 28%;
+  height: 66px;
+  opacity: 0.42;
+  background-size: 260px 100%;
+  animation-duration: 11s;
   animation-direction: reverse;
 }
-body[data-realm="water"] .realmSky i {
+body[data-realm="water"] .waterBand--3 {
+  top: 44%;
+  height: 74px;
+  opacity: 0.5;
+  background-size: 300px 100%;
+  animation-duration: 9s;
+}
+body[data-realm="water"] .waterBand--4 {
+  top: 60%;
+  height: 80px;
+  opacity: 0.58;
+  background-size: 240px 100%;
+  animation-duration: 7.5s;
+  animation-direction: reverse;
+}
+body[data-realm="water"] .waterBand--5 {
+  top: 76%;
+  height: 88px;
+  opacity: 0.66;
+  background-size: 280px 100%;
+  animation-duration: 8.5s;
+  filter: drop-shadow(0 8px 12px rgba(10, 60, 110, 0.18));
+}
+body[data-realm="water"] .waterRipple {
+  position: absolute;
+  height: 18px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  border-bottom-color: rgba(180, 230, 255, 0.15);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 0 10px rgba(180, 230, 255, 0.25);
+  opacity: 0;
+  animation: waterRipple 5.8s ease-out infinite;
+  will-change: transform, opacity;
+}
+body[data-realm="water"] .waterRipple--1 { top: 18%; left: 8%;  width: 54px; animation-delay: 0s; }
+body[data-realm="water"] .waterRipple--2 { top: 26%; left: 62%; width: 38px; animation-delay: -1.2s; animation-duration: 4.8s; }
+body[data-realm="water"] .waterRipple--3 { top: 38%; left: 28%; width: 70px; animation-delay: -2.1s; animation-duration: 6.4s; }
+body[data-realm="water"] .waterRipple--4 { top: 48%; left: 74%; width: 46px; animation-delay: -0.6s; animation-duration: 5.2s; }
+body[data-realm="water"] .waterRipple--5 { top: 58%; left: 14%; width: 62px; animation-delay: -3.4s; animation-duration: 6.8s; }
+body[data-realm="water"] .waterRipple--6 { top: 68%; left: 52%; width: 42px; animation-delay: -1.8s; animation-duration: 5.4s; }
+body[data-realm="water"] .waterRipple--7 { top: 78%; left: 34%; width: 78px; animation-delay: -2.8s; animation-duration: 7.2s; }
+body[data-realm="water"] .realmSky--water > i {
   bottom: -24px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.7);
-  background: radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.95), rgba(120, 210, 255, 0.12) 62%, transparent 64%);
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  background: radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.85), rgba(120, 210, 255, 0.1) 62%, transparent 64%);
   animation: waterRise linear infinite;
+  opacity: 0.75;
 }
-body[data-realm="water"] .realmSky i:nth-child(1) { left: 8%;  width: 12px; height: 12px; animation-duration: 7.5s; }
-body[data-realm="water"] .realmSky i:nth-child(2) { left: 22%; width: 20px; height: 20px; animation-duration: 9.2s; animation-delay: -3s; }
-body[data-realm="water"] .realmSky i:nth-child(3) { left: 40%; width: 9px;  height: 9px;  animation-duration: 6.4s; animation-delay: -1.5s; }
-body[data-realm="water"] .realmSky i:nth-child(4) { left: 56%; width: 16px; height: 16px; animation-duration: 8.4s; animation-delay: -5s; }
-body[data-realm="water"] .realmSky i:nth-child(5) { left: 72%; width: 11px; height: 11px; animation-duration: 7s;   animation-delay: -2.2s; }
-body[data-realm="water"] .realmSky i:nth-child(6) { left: 86%; width: 22px; height: 22px; animation-duration: 10s;  animation-delay: -6s; }
+body[data-realm="water"] .realmSky--water > i:nth-of-type(1) { left: 10%; width: 9px;  height: 9px;  animation-duration: 8.5s; }
+body[data-realm="water"] .realmSky--water > i:nth-of-type(2) { left: 24%; width: 14px; height: 14px; animation-duration: 10s; animation-delay: -3s; }
+body[data-realm="water"] .realmSky--water > i:nth-of-type(3) { left: 38%; width: 7px;  height: 7px;  animation-duration: 7.2s; animation-delay: -1.5s; }
+body[data-realm="water"] .realmSky--water > i:nth-of-type(4) { left: 52%; width: 11px; height: 11px; animation-duration: 9.1s; animation-delay: -5s; }
+body[data-realm="water"] .realmSky--water > i:nth-of-type(5) { left: 66%; width: 8px;  height: 8px;  animation-duration: 7.8s; animation-delay: -2.2s; }
+body[data-realm="water"] .realmSky--water > i:nth-of-type(6) { left: 78%; width: 13px; height: 13px; animation-duration: 10.6s; animation-delay: -6s; }
+body[data-realm="water"] .realmSky--water > i:nth-of-type(7) { left: 90%; width: 6px;  height: 6px;  animation-duration: 6.8s; animation-delay: -4.1s; }
 
 body[data-realm="earth"] {
   --realm-ink: #2c5a28;
@@ -4390,14 +4454,20 @@ body[data-realm="spirit"] .realmSky i {
   animation-delay: var(--d);
 }
 
-@keyframes waterWave {
-  0%, 100% { transform: translateX(-3%) scaleY(1); }
-  50% { transform: translateX(4%) scaleY(1.3); }
+@keyframes waterDrift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(14%, 0, 0); }
+}
+@keyframes waterRipple {
+  0% { transform: translate3d(0, 0, 0) scaleX(0.55); opacity: 0; }
+  14% { opacity: 0.75; }
+  55% { transform: translate3d(18px, -6px, 0) scaleX(1.15); opacity: 0.45; }
+  100% { transform: translate3d(42px, -12px, 0) scaleX(1.45); opacity: 0; }
 }
 @keyframes waterRise {
   0% { transform: translate3d(0, 12px, 0) scale(0.55); opacity: 0; }
-  12% { opacity: 0.9; }
-  100% { transform: translate3d(16px, -108vh, 0) scale(1.15); opacity: 0; }
+  12% { opacity: 0.7; }
+  100% { transform: translate3d(18px, -108vh, 0) scale(1.05); opacity: 0; }
 }
 @keyframes lick {
   0%, 100% { transform: scaleY(0.94) scaleX(1.05) skewX(-3deg); }
