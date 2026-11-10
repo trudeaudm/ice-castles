@@ -880,6 +880,30 @@ function toast(message, { warm = false, ms = 3200 } = {}) {
   toast.timer = setTimeout(() => dom.toast.classList.remove('is-on'), ms);
 }
 
+function challengeIssueEl(root) {
+  return root?.querySelector('[data-challenge-error], [data-pick-error], [data-rune-error]') || null;
+}
+
+function showChallengeIssue(root, message) {
+  const el = challengeIssueEl(root);
+  if (!el) {
+    if (message) toast(message);
+    return;
+  }
+  el.textContent = message || '';
+  el.hidden = !message;
+}
+
+function clearChallengeIssue(root) {
+  showChallengeIssue(root, '');
+}
+
+function challengeRootForSlug(slug) {
+  if (!slug) return null;
+  return document.querySelector(`.challenge[data-station="${slug}"]`)
+    || document.querySelector(`[data-station="${slug}"]`);
+}
+
 function goStation(slug) {
   Store.state.path = Store.pathContext();
   hideMapModal();
@@ -1027,6 +1051,7 @@ function spiritChallengeHtml(station) {
         <button class="challenge__clear" data-spirit-undo type="button">${escapeHtml(challenge.undoLabel || 'Undo')}</button>
         <button class="challenge__clear" data-seq-clear type="button">${escapeHtml(challenge.clearLabel || 'Clear')}</button>
       </div>
+      <p class="challenge__error" data-challenge-error hidden role="alert"></p>
       <button class="textButton textButton--play" data-seq-submit type="button">${escapeHtml(challenge.submitLabel || 'Awaken Spirit')}</button>
       <button class="textButton" data-spirit-replay type="button">${escapeHtml(challenge.replayLabel || 'Show button sequence again')}</button>
     </div>
@@ -1105,6 +1130,7 @@ function challengeHtml(station) {
         ${challenge.fieldLabel ? `<p class="challenge__field">${escapeHtml(challenge.fieldLabel)}</p>` : ''}
         <input class="challenge__input" data-challenge-code inputmode="latin" autocapitalize="characters"
                autocomplete="off" spellcheck="false" maxlength="24" placeholder="${escapeHtml(challenge.placeholder || 'WORD')}">
+        <p class="challenge__error" data-challenge-error hidden role="alert"></p>
         <button class="textButton textButton--play" data-challenge-submit type="button">${escapeHtml(challenge.submitLabel || 'Go')}</button>
       </div>
     </div>`;
@@ -1123,8 +1149,8 @@ function challengeHtml(station) {
       <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
       ${challenge.hint ? `<p class="challenge__hint">${escapeHtml(challenge.hint)}</p>` : ''}
       <p class="challenge__count" data-pick-count role="status" aria-live="polite">0 of ${need} selected</p>
-      <p class="challenge__error" data-pick-error hidden role="alert">Choose three images</p>
       <div class="pickGrid">${tiles}</div>
+      <p class="challenge__error" data-challenge-error data-pick-error hidden role="alert">Choose three images</p>
       <button class="textButton textButton--play" data-image-submit type="button">Check my three</button>
     </div>`;
   }
@@ -1155,6 +1181,7 @@ function challengeHtml(station) {
         : '<p class="seqReadout" data-seq-readout>Tap the sequence</p>'}
       <div class="seqRow">${opts}</div>
       <button class="${challenge.clearLabel ? 'challenge__clear' : 'textButton'}" data-seq-clear type="button">${escapeHtml(clearLabel)}</button>
+      <p class="challenge__error" data-challenge-error hidden role="alert"></p>
       ${challenge.submitLabel ? `<button class="textButton textButton--play" data-seq-submit type="button">${escapeHtml(challenge.submitLabel)}</button>` : ''}
     </div>`;
   }
@@ -1179,13 +1206,13 @@ function challengeHtml(station) {
       <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
       <p class="challenge__hint">Drag a piece onto the rune, or tap to select it and tap the rune to place it. Keyboard: select a piece, then press Enter or Space on the rune.</p>
       <p class="runeStatus" data-rune-status role="status" aria-live="polite">No piece selected.</p>
-      <p class="challenge__error" data-rune-error hidden role="alert"></p>
       <div class="runeAltar" data-rune-altar tabindex="0" role="button" aria-label="Air rune drop target. Activate to place the selected piece.">
         <div class="runeAltar__mark" aria-hidden="true">${RUNE_FULL}</div>
         <div class="runeAltar__set" data-rune-set></div>
         <p class="runeAltar__hint">Drag or tap the five pieces here</p>
       </div>
       <div class="runeTray">${pieces}</div>
+      <p class="challenge__error" data-challenge-error data-rune-error hidden role="alert"></p>
       <button class="textButton textButton--play" data-rune-retry type="button" hidden>Try again</button>
     </div>`;
   }
@@ -2884,6 +2911,21 @@ function hideLandTalk() {
   haltWaves();
 }
 
+function fitLandingBubbleText() {
+  const bubble = dom.landingBubble;
+  const text = dom.landingBubbleText;
+  if (!bubble || !text) return;
+  const max = 13.5;
+  const min = 9.5;
+  let size = max;
+  text.style.fontSize = `${size}px`;
+  // Shrink until the fixed bubble box fully contains the copy.
+  while (size > min && bubble.scrollHeight > bubble.clientHeight + 1) {
+    size -= 0.5;
+    text.style.fontSize = `${size}px`;
+  }
+}
+
 function landTalk(realm, hold = 4800) {
   const facts = LANDING_FACTS[realm];
   if (!facts?.length || !dom.landingBubble || !dom.landingTalk) return;
@@ -2897,9 +2939,11 @@ function landTalk(realm, hold = 4800) {
   if (dom.landingBubbleWho) dom.landingBubbleWho.textContent = fact.who;
   if (dom.landingBubbleText) dom.landingBubbleText.textContent = fact.text;
   dom.landingTalk.hidden = false;
+  fitLandingBubbleText();
   dom.landingBubble.classList.remove('is-fresh');
   void dom.landingBubble.offsetWidth;
   dom.landingBubble.classList.add('is-fresh');
+  requestAnimationFrame(fitLandingBubbleText);
   window.clearTimeout(talkHide);
   talkHide = window.setTimeout(hideLandTalk, hold);
   haltWaves();
@@ -3564,12 +3608,8 @@ function announceRune(root, message) {
 }
 
 function showRuneError(root, message, { retry = false } = {}) {
-  const err = root?.querySelector('[data-rune-error]');
+  showChallengeIssue(root, message);
   const retryBtn = root?.querySelector('[data-rune-retry]');
-  if (err) {
-    err.textContent = message;
-    err.hidden = !message;
-  }
   if (retryBtn) retryBtn.hidden = !retry;
 }
 
@@ -3579,7 +3619,7 @@ function placeRunePiece(piece, root) {
   if (!altar || altar.classList.contains('is-forged') || altar.classList.contains('is-submitting')) return false;
   if (piece.dataset.fits !== '1') {
     const station = Store.touchBySlug(root.dataset.station);
-    toast(station?.challenge?.retry || 'These shapes have not found each other yet.');
+    showChallengeIssue(root, station?.challenge?.retry || 'These shapes have not found each other yet.');
     piece.classList.add('is-rejected');
     setTimeout(() => piece.classList.remove('is-rejected'), 450);
     announceRune(root, `${piece.querySelector('span')?.textContent || 'Piece'} does not fit.`);
@@ -3625,7 +3665,6 @@ async function submitRuneArrangement(root) {
           ? 'These shapes have not found each other yet.'
           : 'Not quite — try again.'));
     showRuneError(root, message, { retry: true });
-    toast(message);
     return;
   }
   await applyChallengeSuccess(slug, result);
@@ -3672,7 +3711,7 @@ async function handleStationChallenge(slug, answer) {
     const message = result.connection
       ? 'Could not reach the park. Check your signal and try again.'
       : (station?.challenge?.retry || messages[result.error] || 'Not quite — try again.');
-    toast(message);
+    showChallengeIssue(challengeRootForSlug(slug), message);
     return result;
   }
   if (gen !== viewGeneration && Store.state.path?.station !== slug) {
@@ -4021,12 +4060,7 @@ function wire() {
         selectedImages.delete(id);
         paintImagePick(root, { clearError: true });
       } else if (selectedImages.size >= need) {
-        const err = root?.querySelector('[data-pick-error]');
-        if (err) {
-          err.textContent = 'You already chose three. Deselect one to change.';
-          err.hidden = false;
-        }
-        toast('Choose three images');
+        showChallengeIssue(root, 'You already chose three. Deselect one to change.');
         paintImagePick(root);
       } else {
         selectedImages.add(id);
@@ -4038,12 +4072,7 @@ function wire() {
       const root = event.target.closest('[data-station]');
       const need = Number(root?.dataset.selectCount || 3);
       if (selectedImages.size !== need) {
-        const err = root?.querySelector('[data-pick-error]');
-        if (err) {
-          err.textContent = need === 3 ? 'Choose three images' : `Choose ${need} images`;
-          err.hidden = false;
-        }
-        toast(need === 3 ? 'Choose three images' : `Choose ${need} images`);
+        showChallengeIssue(root, need === 3 ? 'Choose three images' : `Choose ${need} images`);
         paintImagePick(root);
         return;
       }
