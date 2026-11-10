@@ -12,13 +12,14 @@
  */
 
 const SPIRIT_STATION_CONFIG = {
-  version: 1,
+  version: 3,
   sequenceLength: 4,
+  // Colors mirror Water, Earth, Fire, and Air (Spirit uses these four at the station).
   colors: {
-    blue: { id: 'blue', label: 'Blue', symbol: '●', number: 1, hex: '#3d8bfd' },
-    amber: { id: 'amber', label: 'Amber', symbol: '▲', number: 2, hex: '#ffb455' },
-    white: { id: 'white', label: 'White', symbol: '◇', number: 3, hex: '#f4fbff' },
-    green: { id: 'green', label: 'Green', symbol: '■', number: 4, hex: '#5df0a0' },
+    blue: { id: 'blue', label: 'Blue', symbol: '●', number: 1, hex: '#3d8bfd', element: 'water' },
+    green: { id: 'green', label: 'Green', symbol: '■', number: 2, hex: '#3fd67a', element: 'earth' },
+    red: { id: 'red', label: 'Red', symbol: '◆', number: 3, hex: '#ff5a5a', element: 'fire' },
+    icy: { id: 'icy', label: 'Icy blue', symbol: '✦', number: 4, hex: '#8ec9e8', element: 'air' },
   },
   /**
    * Each challenge: unique button input sequence → matching lantern answer.
@@ -29,26 +30,26 @@ const SPIRIT_STATION_CONFIG = {
     {
       id: 'spirit-test-01',
       test: true,
-      buttons: ['blue', 'amber', 'blue', 'white'],
-      lanterns: ['green', 'white', 'amber', 'green'],
+      buttons: ['blue', 'green', 'blue', 'red'],
+      lanterns: ['icy', 'red', 'green', 'icy'],
     },
     {
       id: 'spirit-test-02',
       test: true,
-      buttons: ['green', 'blue', 'amber', 'white'],
-      lanterns: ['amber', 'green', 'white', 'blue'],
+      buttons: ['green', 'blue', 'icy', 'red'],
+      lanterns: ['red', 'icy', 'green', 'blue'],
     },
     {
       id: 'spirit-test-03',
       test: true,
-      buttons: ['white', 'green', 'blue', 'amber'],
-      lanterns: ['blue', 'amber', 'green', 'white'],
+      buttons: ['red', 'icy', 'blue', 'green'],
+      lanterns: ['blue', 'green', 'icy', 'red'],
     },
     {
       id: 'spirit-test-04',
       test: true,
-      buttons: ['amber', 'white', 'green', 'blue'],
-      lanterns: ['white', 'blue', 'amber', 'green'],
+      buttons: ['icy', 'red', 'green', 'blue'],
+      lanterns: ['green', 'blue', 'red', 'icy'],
     },
   ],
 };

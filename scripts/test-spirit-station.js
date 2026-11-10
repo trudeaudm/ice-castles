@@ -21,20 +21,29 @@ assertSpiritStationConfig();
 const ok = validateSpiritStationConfig();
 assert.strictEqual(ok.ok, true, ok.errors.join('; '));
 
-// Example test mapping from the brief.
+// Example test mapping (Water/Earth/Fire/Air palette).
 const example = getChallenge('spirit-test-01');
 assert.ok(example);
-assert.deepStrictEqual(example.buttons, ['blue', 'amber', 'blue', 'white']);
-assert.deepStrictEqual(example.lanterns, ['green', 'white', 'amber', 'green']);
+assert.deepStrictEqual(example.buttons, ['blue', 'green', 'blue', 'red']);
+assert.deepStrictEqual(example.lanterns, ['icy', 'red', 'green', 'icy']);
 assert.strictEqual(example.test, true);
 assert.strictEqual(
-  lanternAnswerMatches('spirit-test-01', ['green', 'white', 'amber', 'green']),
+  lanternAnswerMatches('spirit-test-01', ['icy', 'red', 'green', 'icy']),
   true
 );
 assert.strictEqual(
-  lanternAnswerMatches('spirit-test-01', ['blue', 'amber', 'blue', 'white']),
+  lanternAnswerMatches('spirit-test-01', ['blue', 'green', 'blue', 'red']),
   false
 );
+assert.deepStrictEqual(
+  Object.keys(SPIRIT_STATION_CONFIG.colors),
+  ['blue', 'green', 'red', 'icy']
+);
+assert.strictEqual(SPIRIT_STATION_CONFIG.colors.blue.element, 'water');
+assert.strictEqual(SPIRIT_STATION_CONFIG.colors.green.element, 'earth');
+assert.strictEqual(SPIRIT_STATION_CONFIG.colors.red.element, 'fire');
+assert.strictEqual(SPIRIT_STATION_CONFIG.colors.icy.element, 'air');
+assert.strictEqual(SPIRIT_STATION_CONFIG.colors.icy.label, 'Icy blue');
 
 // Guest-safe assignment never includes lantern answers.
 const pub = publicAssignment('spirit-test-01');
@@ -47,7 +56,7 @@ assert.ok(publicColors().every((c) => c.id && c.label && c.symbol && c.number &&
 const pass = validateChallengeAnswer(
   'button_lantern',
   {},
-  { sequence: ['green', 'white', 'amber', 'green'], challengeId: 'spirit-test-01' },
+  { sequence: ['icy', 'red', 'green', 'icy'], challengeId: 'spirit-test-01' },
   { spiritChallengeId: 'spirit-test-01' }
 );
 assert.strictEqual(pass.ok, true);
@@ -55,7 +64,7 @@ assert.strictEqual(pass.ok, true);
 const wrong = validateChallengeAnswer(
   'button_lantern',
   {},
-  { sequence: ['blue', 'amber', 'blue', 'white'], challengeId: 'spirit-test-01' },
+  { sequence: ['blue', 'green', 'blue', 'red'], challengeId: 'spirit-test-01' },
   { spiritChallengeId: 'spirit-test-01' }
 );
 assert.strictEqual(wrong.ok, false);
@@ -64,7 +73,7 @@ assert.strictEqual(wrong.error, 'bad_sequence');
 const spoof = validateChallengeAnswer(
   'button_lantern',
   {},
-  { sequence: ['amber', 'green', 'white', 'blue'], challengeId: 'spirit-test-02' },
+  { sequence: ['red', 'icy', 'green', 'blue'], challengeId: 'spirit-test-02' },
   { spiritChallengeId: 'spirit-test-01' }
 );
 assert.strictEqual(spoof.ok, false);
@@ -72,7 +81,7 @@ assert.strictEqual(spoof.ok, false);
 const missing = validateChallengeAnswer(
   'button_lantern',
   {},
-  { sequence: ['green', 'white', 'amber', 'green'] },
+  { sequence: ['icy', 'red', 'green', 'icy'] },
   {}
 );
 assert.strictEqual(missing.ok, false);
@@ -100,8 +109,8 @@ expectInvalid({
   challenges: [{
     id: 'bad-color',
     test: true,
-    buttons: ['blue', 'amber', 'blue', 'purple'],
-    lanterns: ['green', 'white', 'amber', 'green'],
+    buttons: ['blue', 'green', 'blue', 'purple'],
+    lanterns: ['icy', 'red', 'green', 'icy'],
   }],
 }, 'invalid button color');
 
@@ -109,8 +118,8 @@ expectInvalid({
   challenges: [{
     id: 'bad-len',
     test: true,
-    buttons: ['blue', 'amber', 'blue'],
-    lanterns: ['green', 'white', 'amber', 'green'],
+    buttons: ['blue', 'green', 'blue'],
+    lanterns: ['icy', 'red', 'green', 'icy'],
   }],
 }, 'length');
 
@@ -119,14 +128,14 @@ expectInvalid({
     {
       id: 'dup-a',
       test: true,
-      buttons: ['blue', 'amber', 'blue', 'white'],
-      lanterns: ['green', 'white', 'amber', 'green'],
+      buttons: ['blue', 'green', 'blue', 'red'],
+      lanterns: ['icy', 'red', 'green', 'icy'],
     },
     {
       id: 'dup-b',
       test: true,
-      buttons: ['blue', 'amber', 'blue', 'white'],
-      lanterns: ['white', 'blue', 'amber', 'green'],
+      buttons: ['blue', 'green', 'blue', 'red'],
+      lanterns: ['red', 'blue', 'green', 'icy'],
     },
   ],
 }, 'duplicate button');
@@ -154,16 +163,16 @@ function spiritBufferOps(ops, len = 4) {
 assert.deepStrictEqual(
   spiritBufferOps([
     { type: 'push', id: 'green' },
-    { type: 'push', id: 'white' },
+    { type: 'push', id: 'red' },
     { type: 'undo' },
-    { type: 'push', id: 'amber' },
+    { type: 'push', id: 'icy' },
   ]),
-  ['green', 'amber']
+  ['green', 'icy']
 );
 assert.deepStrictEqual(
   spiritBufferOps([
     { type: 'push', id: 'green' },
-    { type: 'push', id: 'white' },
+    { type: 'push', id: 'red' },
     { type: 'clear' },
   ]),
   []

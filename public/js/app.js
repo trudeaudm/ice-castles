@@ -911,7 +911,7 @@ function spiritColorMeta(challenge, id) {
 }
 
 function spiritChipHtml(meta, { index = null } = {}) {
-  const ink = meta.id === 'white' || meta.id === 'amber' ? '#1a2433' : '#f4fbff';
+  const ink = meta.id === 'icy' || meta.id === 'green' ? '#1a2433' : '#f4fbff';
   const mark = meta.symbol || String(meta.number || '');
   const order = index == null ? '' : `<span class="spiritChip__order">${index + 1}</span>`;
   return `<span class="spiritChip" style="--tile:${escapeHtml(meta.color || '#8ec9e8')};--chip-ink:${ink}">
@@ -923,7 +923,7 @@ function spiritChipHtml(meta, { index = null } = {}) {
 }
 
 function spiritPadHtml(meta) {
-  const ink = meta.id === 'white' || meta.id === 'amber' ? '#1a2433' : '#f4fbff';
+  const ink = meta.id === 'icy' || meta.id === 'green' ? '#1a2433' : '#f4fbff';
   return `<button class="spiritPad" data-spirit-color="${escapeHtml(meta.id)}" type="button"
       style="--tile:${escapeHtml(meta.color || '#8ec9e8')};--chip-ink:${ink}"
       aria-label="${escapeHtml(meta.label)}">
