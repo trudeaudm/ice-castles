@@ -2382,6 +2382,10 @@ body.quest .topbar {
   aspect-ratio: calc(var(--summon-w) / var(--summon-h));
   margin: 8px auto 0;
 }
+/* Match subject size across realms (--hero-fit), then bump everyone +30%. */
+.summon.shrine__hero {
+  width: min(100%, calc(280px * 1.3 * var(--hero-fit, 1) * var(--summon-w) / var(--summon-h)));
+}
 .summon--portrait {
   width: min(240px, 72%);
   margin: 0 auto 14px;

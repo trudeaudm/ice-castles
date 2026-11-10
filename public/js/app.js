@@ -117,6 +117,18 @@ const SUMMON_RATIO = {
   spirit: [1600, 1600],
   ice: [819, 1024],
 };
+/* Opaque subject height in each 1600 square — scale so shrine heroes match. */
+const HERO_CONTENT_H = {
+  water: 1287,
+  earth: 1445,
+  fire: 1287,
+  air: 1287,
+  spirit: 1231,
+};
+const HERO_FIT_TARGET = Math.max(...Object.values(HERO_CONTENT_H));
+const HERO_FIT = Object.fromEntries(
+  Object.entries(HERO_CONTENT_H).map(([realm, h]) => [realm, HERO_FIT_TARGET / h]),
+);
 const SUMMON_SWIRL_MS = 1500;
 const SUMMON_FRAME_MS = 100;
 const summonJobs = new Set();
@@ -128,7 +140,8 @@ function summonHtml(src, className, realm, { hero = false } = {}) {
   const portrait = className === 'shrine__portrait';
   const cls = `summon${portrait ? ' summon--portrait' : ''}${hero ? ' shrine__hero' : ''}`;
   const priority = hero ? ' fetchpriority="high"' : '';
-  return `<div class="${cls}" data-realm="${escapeHtml(key)}" style="--summon-w:${w};--summon-h:${h}" aria-busy="true">
+  const fit = hero && HERO_FIT[key] ? `;--hero-fit:${HERO_FIT[key].toFixed(4)}` : '';
+  return `<div class="${cls}" data-realm="${escapeHtml(key)}" style="--summon-w:${w};--summon-h:${h}${fit}" aria-busy="true">
     <canvas class="summon__veil" width="2" height="2" aria-hidden="true"></canvas>
     <img class="${className}" src="${escapeHtml(src)}" alt=""${priority}>
   </div>`;
