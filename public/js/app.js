@@ -664,7 +664,7 @@ const dom = {
   landingPlace: el('landingPlace'), landingProgress: el('landingProgress'),
   landingMap: el('landingMap'),
   landingGate: el('landingGate'), landingScene: el('landingScene'),
-  landingFxDebug: el('landingFxDebug'),
+  landingFx: el('landingFx'), landingFxDebug: el('landingFxDebug'),
   landingParty: el('landingParty'), landingPartySize: el('landingPartySize'),
   landingPartyHint: el('landingPartyHint'),
   beginBrief: el('beginBrief'), beginBriefClose: el('beginBriefClose'),
@@ -2629,11 +2629,13 @@ function fitLandingScene() {
   scene.style.width = `${w}px`;
   scene.style.height = `${h}px`;
   scene.style.transform = `translate(${left}px, ${top}px)`;
-  if (dom.landingFxDebug) {
-    dom.landingFxDebug.style.width = `${w}px`;
-    dom.landingFxDebug.style.height = `${h}px`;
-    dom.landingFxDebug.style.transform = `translate(${left}px, ${top}px)`;
-  }
+  /* Keep fx + debug locked to the same image-space box as the photo. */
+  [dom.landingFx, dom.landingFxDebug].forEach((layer) => {
+    if (!layer) return;
+    layer.style.width = `${w}px`;
+    layer.style.height = `${h}px`;
+    layer.style.transform = `translate(${left}px, ${top}px)`;
+  });
 }
 
 function scheduleLandingSceneFit() {

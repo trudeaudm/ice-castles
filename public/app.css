@@ -786,7 +786,12 @@ body.landing-open .station { visibility: hidden; }
 }
 .landing__fx {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  width: 941px;
+  height: 1672px;
+  transform-origin: 0 0;
   overflow: hidden;
   pointer-events: none;
 }
@@ -796,12 +801,12 @@ body.landing-open .station { visibility: hidden; }
   z-index: 2;
   background:
     linear-gradient(180deg,
-      rgba(7, 21, 38, 0.7) 0%,
-      rgba(7, 21, 38, 0.2) 26%,
-      rgba(7, 21, 38, 0.05) 46%,
-      rgba(7, 21, 38, 0.04) 58%,
-      rgba(7, 21, 38, 0.12) 68%,
-      rgba(7, 21, 38, 0.76) 100%);
+      rgba(7, 21, 38, 0.48) 0%,
+      rgba(7, 21, 38, 0.14) 22%,
+      rgba(7, 21, 38, 0.03) 42%,
+      rgba(7, 21, 38, 0.02) 58%,
+      rgba(7, 21, 38, 0.1) 70%,
+      rgba(7, 21, 38, 0.74) 100%);
   pointer-events: none;
 }
 
@@ -809,19 +814,14 @@ body.landing-open .station { visibility: hidden; }
 .landing__aurora {
   position: absolute;
   left: 6%;
-  top: 2%;
+  top: 1.5%;
   width: 88%;
-  height: 24%;
+  height: 26%;
   overflow: hidden;
   pointer-events: none;
-  -webkit-mask-image:
-    linear-gradient(to bottom, #000 0%, #000 42%, rgba(0, 0, 0, 0.55) 68%, transparent 100%),
-    linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%);
-  -webkit-mask-composite: source-in;
-  mask-image:
-    linear-gradient(to bottom, #000 0%, #000 42%, rgba(0, 0, 0, 0.55) 68%, transparent 100%),
-    linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%);
-  mask-composite: intersect;
+  /* Single soft mask — dual mask-composite was wiping ribbons out in Chromium. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 48%, rgba(0, 0, 0, 0.55) 72%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 48%, rgba(0, 0, 0, 0.55) 72%, transparent 100%);
 }
 .landing__ribbon {
   position: absolute;
@@ -829,58 +829,60 @@ body.landing-open .station { visibility: hidden; }
   width: 118%;
   height: 42%;
   border-radius: 48% 52% 50% 50%;
-  opacity: 0.16;
+  opacity: 0.5;
   will-change: transform, opacity;
-  /* Static soft edge only — do not animate blur. */
-  filter: blur(10px);
+  /* Static soft edge only — do not animate blur.
+     Avoid mix-blend-mode here: the fx layer is transformed, so screen-blend
+     children composite against an empty parent and disappear. */
+  filter: blur(5px);
   transform: translate3d(0, 0, 0) skewX(-6deg);
 }
 .landing__ribbon--1 {
-  top: 6%;
-  height: 38%;
+  top: 4%;
+  height: 40%;
   background: linear-gradient(90deg,
     transparent 0%,
-    rgba(86, 210, 190, 0.55) 22%,
-    rgba(120, 170, 255, 0.4) 48%,
-    rgba(168, 120, 255, 0.45) 72%,
+    rgba(64, 220, 190, 0.7) 20%,
+    rgba(120, 170, 255, 0.55) 48%,
+    rgba(176, 120, 255, 0.65) 74%,
     transparent 100%);
   animation: landingAuroraDriftA 22s ease-in-out infinite;
 }
 .landing__ribbon--2 {
-  top: 28%;
-  height: 34%;
-  opacity: 0.13;
+  top: 26%;
+  height: 36%;
+  opacity: 0.42;
   background: linear-gradient(90deg,
     transparent 0%,
-    rgba(140, 110, 255, 0.5) 18%,
-    rgba(90, 200, 210, 0.42) 52%,
-    rgba(110, 150, 255, 0.35) 78%,
+    rgba(150, 110, 255, 0.65) 18%,
+    rgba(70, 210, 210, 0.55) 52%,
+    rgba(110, 150, 255, 0.45) 78%,
     transparent 100%);
   animation: landingAuroraDriftB 27s ease-in-out -6s infinite;
 }
 .landing__ribbon--3 {
-  top: 48%;
-  height: 30%;
-  opacity: 0.11;
+  top: 46%;
+  height: 32%;
+  opacity: 0.36;
   background: linear-gradient(90deg,
     transparent 0%,
-    rgba(70, 190, 200, 0.4) 28%,
-    rgba(150, 120, 255, 0.38) 58%,
-    rgba(80, 160, 220, 0.3) 82%,
+    rgba(60, 200, 210, 0.5) 28%,
+    rgba(160, 120, 255, 0.55) 58%,
+    rgba(80, 160, 220, 0.4) 82%,
     transparent 100%);
   animation: landingAuroraDriftC 30s ease-in-out -12s infinite;
 }
 @keyframes landingAuroraDriftA {
-  0%, 100% { transform: translate3d(-3%, 0, 0) skewX(-7deg) scaleY(1); opacity: 0.14; }
-  50% { transform: translate3d(4%, 6%, 0) skewX(-3deg) scaleY(1.12); opacity: 0.2; }
+  0%, 100% { transform: translate3d(-3%, 0, 0) skewX(-7deg) scaleY(1); opacity: 0.4; }
+  50% { transform: translate3d(4%, 6%, 0) skewX(-3deg) scaleY(1.12); opacity: 0.62; }
 }
 @keyframes landingAuroraDriftB {
-  0%, 100% { transform: translate3d(3%, 2%, 0) skewX(5deg) scaleY(1.05); opacity: 0.1; }
-  50% { transform: translate3d(-4%, -3%, 0) skewX(2deg) scaleY(0.95); opacity: 0.16; }
+  0%, 100% { transform: translate3d(3%, 2%, 0) skewX(5deg) scaleY(1.05); opacity: 0.32; }
+  50% { transform: translate3d(-4%, -3%, 0) skewX(2deg) scaleY(0.95); opacity: 0.55; }
 }
 @keyframes landingAuroraDriftC {
-  0%, 100% { transform: translate3d(-2%, 4%, 0) skewX(-4deg) scaleY(0.98); opacity: 0.09; }
-  50% { transform: translate3d(5%, -2%, 0) skewX(-1deg) scaleY(1.08); opacity: 0.14; }
+  0%, 100% { transform: translate3d(-2%, 4%, 0) skewX(-4deg) scaleY(0.98); opacity: 0.28; }
+  50% { transform: translate3d(5%, -2%, 0) skewX(-1deg) scaleY(1.08); opacity: 0.48; }
 }
 
 /* ---- Lantern glows (image % coordinates; panes masked so frames stay dark) ---- */
@@ -914,7 +916,7 @@ body.landing-open .station { visibility: hidden; }
   width: 7.1%;
   height: 3.35%;
   background:
-    linear-gradient(180deg, rgba(255, 236, 180, 0.42), rgba(255, 186, 90, 0.28) 55%, rgba(255, 160, 70, 0.2));
+    linear-gradient(180deg, rgba(255, 244, 200, 0.88), rgba(255, 196, 100, 0.7) 55%, rgba(255, 168, 70, 0.5));
   /* Three glass panes; dark mullions stay clear so the painted frames read. */
   -webkit-mask-image: linear-gradient(90deg,
     #000 0%, #000 29%,
@@ -936,7 +938,7 @@ body.landing-open .station { visibility: hidden; }
   width: 7.1%;
   height: 3.35%;
   background:
-    linear-gradient(180deg, rgba(255, 236, 180, 0.42), rgba(255, 186, 90, 0.28) 55%, rgba(255, 160, 70, 0.2));
+    linear-gradient(180deg, rgba(255, 244, 200, 0.88), rgba(255, 196, 100, 0.7) 55%, rgba(255, 168, 70, 0.5));
   -webkit-mask-image: linear-gradient(90deg,
     #000 0%, #000 29%,
     transparent 29%, transparent 35.5%,
@@ -954,35 +956,35 @@ body.landing-open .station { visibility: hidden; }
 .landing__lantern--left .landing__bloom {
   left: 9.6%;
   top: 68.2%;
-  width: 7.2%;
-  height: 4.2%;
+  width: 10%;
+  height: 5.8%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: radial-gradient(ellipse at center,
-    rgba(255, 200, 110, 0.38) 0%,
-    rgba(255, 170, 70, 0.14) 42%,
-    transparent 72%);
+    rgba(255, 220, 140, 0.75) 0%,
+    rgba(255, 170, 70, 0.4) 38%,
+    transparent 74%);
   animation-name: landingBloomPulse;
 }
 .landing__lantern--right .landing__bloom {
   left: 90.3%;
   top: 68.2%;
-  width: 7.2%;
-  height: 4.2%;
+  width: 10%;
+  height: 5.8%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: radial-gradient(ellipse at center,
-    rgba(255, 200, 110, 0.38) 0%,
-    rgba(255, 170, 70, 0.14) 42%,
-    transparent 72%);
+    rgba(255, 220, 140, 0.75) 0%,
+    rgba(255, 170, 70, 0.4) 38%,
+    transparent 74%);
   animation-name: landingBloomPulse;
 }
 .landing__reflect {
   border-radius: 50%;
   transform: translate(-50%, -50%);
   background: radial-gradient(ellipse at center,
-    rgba(255, 178, 88, 0.3) 0%,
-    rgba(255, 150, 60, 0.12) 45%,
+    rgba(255, 190, 100, 0.55) 0%,
+    rgba(255, 150, 60, 0.25) 45%,
     transparent 72%);
   animation-name: landingReflectPulse;
 }
@@ -1039,17 +1041,17 @@ body.landing-open .station { visibility: hidden; }
     transparent 70%);
 }
 @keyframes landingPaneShimmer {
-  0%, 100% { opacity: 0.28; }
-  45% { opacity: 0.72; }
-  60% { opacity: 0.58; }
+  0%, 100% { opacity: 0.45; }
+  45% { opacity: 0.95; }
+  60% { opacity: 0.72; }
 }
 @keyframes landingBloomPulse {
-  0%, 100% { opacity: 0.32; }
-  50% { opacity: 0.78; }
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.95; }
 }
 @keyframes landingReflectPulse {
-  0%, 100% { opacity: 0.22; }
-  50% { opacity: 0.62; }
+  0%, 100% { opacity: 0.32; }
+  50% { opacity: 0.78; }
 }
 .landing__lantern--left .landing__reflect--cap,
 .landing__lantern--left .landing__reflect--ledge,
@@ -1058,8 +1060,8 @@ body.landing-open .station { visibility: hidden; }
   animation-name: landingReflectSoft;
 }
 @keyframes landingReflectSoft {
-  0%, 100% { opacity: 0.18; }
-  50% { opacity: 0.42; }
+  0%, 100% { opacity: 0.28; }
+  50% { opacity: 0.62; }
 }
 
 /* Pause decorative landing fx when the tab is hidden or the welcome is closed. */
@@ -1075,7 +1077,7 @@ body.landing-open .station { visibility: hidden; }
   position: absolute;
   left: 0;
   top: 0;
-  z-index: 3;
+  z-index: 4;
   width: 941px;
   height: 1672px;
   transform-origin: 0 0;
