@@ -931,9 +931,17 @@ function renderProgress() {
   if (dom.landingProgress) dom.landingProgress.textContent = `${awakened} / 5`;
   if (dom.landingProgressLine) dom.landingProgressLine.textContent = line;
   const realms = Store.state.session?.realms || [];
+  const guardians = Store.touchByType('guardian');
+  dom.realmPips.removeAttribute('aria-hidden');
   dom.realmPips.innerHTML = REALM_ORDER.map((realm) => {
     const on = realms.some((r) => r.realm === realm && r.complete);
-    return `<img class="realmPip ${on ? 'is-on' : ''}" src="${realmPfp(realm)}" alt="${REALM_META[realm].label}">`;
+    const guardian = guardians.find((t) => t.element === realm);
+    const name = guardian?.title || REALM_META[realm]?.label || realm;
+    const face = `<img class="realmPip__face" src="${realmPfp(realm)}" alt="">`;
+    if (!guardian?.slug) {
+      return `<span class="realmPip${on ? ' is-on' : ''}" data-realm="${escapeHtml(realm)}">${face}</span>`;
+    }
+    return `<button class="realmPip${on ? ' is-on' : ''}" type="button" data-realm="${escapeHtml(realm)}" data-go-station="${escapeHtml(guardian.slug)}" aria-label="Open ${escapeHtml(name)}">${face}</button>`;
   }).join('');
 }
 
@@ -1848,7 +1856,6 @@ function renderStation(slug) {
     ? `<p class="fineprint">You finished the builder quiz. This stop is optional.</p>`
     : '';
   const art = stationArt(station);
-  const portrait = station.element ? realmCharacter(station.element) : '';
   const sky = station.type === 'guardian' ? realmSkyHtml(station.element) : '';
   const waveRealm = station.type === 'guardian' && REALM_META[station.element]?.wave ? station.element : '';
   const artHtml = art ? summonHtml(art, 'shrine__art', station.element, { hero: Boolean(waveRealm) }) : '';
@@ -1906,7 +1913,6 @@ function renderStation(slug) {
       <section class="shrinePanel" data-panel="meet">
         <h3>${escapeHtml(shrineMeetTitle(station))}</h3>
         ${station.type === 'guardian' ? listenButtonHtml(station.audioUrl) : ''}
-        ${portrait ? summonHtml(portrait, 'shrine__portrait', station.element) : ''}
         ${storyHtml(station.body)}
       </section>
       <section class="shrinePanel" data-panel="discover">
@@ -2835,6 +2841,7 @@ function armLandWaves(realm) {
 
 function armShrineWaves(realm) {
   const gen = waveGen;
+  const nextGap = () => 3000 + Math.random() * 2000;
   const tick = (delay) => {
     window.clearTimeout(waveTimer);
     waveTimer = window.setTimeout(async () => {
@@ -2850,10 +2857,10 @@ function armShrineWaves(realm) {
       }
       try { await runWave(realm, 'hero', hero, hero, gen); } catch { /* try later */ }
       if (gen !== waveGen) return;
-      tick(11000 + Math.random() * 9000);
+      tick(nextGap());
     }, delay);
   };
-  tick(3800 + Math.random() * 2200);
+  tick(1500);
 }
 
 function hideLandTalk() {

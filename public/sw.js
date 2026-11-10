@@ -5,11 +5,11 @@
    Private /api responses (bootstrap with session tokens, names, email) are
    never stored in this shared URL-keyed cache. Guest progress offline uses
    the guest-scoped localStorage snapshot in api.js instead. */
-const CACHE = 'icecastles-v136';
+const CACHE = 'icecastles-v140';
 const SHELL = [
-  '/', '/app.css?v=108', '/manifest.webmanifest',
+  '/', '/app.css?v=110', '/manifest.webmanifest',
   '/js/guest-support.js?v=1', '/js/api.js?v=25', '/js/map.js?v=31',
-  '/js/scanner.js?v=20', '/js/wind-wisps.js?v=9', '/js/app.js?v=121',
+  '/js/scanner.js?v=20', '/js/wind-wisps.js?v=9', '/js/app.js?v=124',
   '/vendor/leaflet.js', '/vendor/leaflet.css', '/vendor/jsqr.js',
   '/assets/park-map.webp', '/assets/art/logo-mark.svg?v=4', '/assets/art/logo-mark.png?v=4', '/assets/art/logo-mark-app.png?v=4',
   '/assets/art/icon-threshold.svg?v=1', '/assets/art/icon-builders.svg?v=1', '/assets/art/icon-throne.svg?v=1',
