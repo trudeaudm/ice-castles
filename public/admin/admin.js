@@ -45,6 +45,8 @@ const CHALLENGE_TYPES = [
   { id: 'image_select', label: 'Image select' },
   { id: 'sequence', label: 'Sequence' },
   { id: 'multi_sequence', label: 'Any-of sequences' },
+  { id: 'button_lantern', label: 'Spirit buttons + lanterns' },
+  { id: 'shape_match', label: 'Shape match' },
   { id: 'quiz', label: 'Quiz (no score)' },
 ];
 

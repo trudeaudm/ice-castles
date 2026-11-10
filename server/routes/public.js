@@ -463,19 +463,36 @@ router.post('/quest/challenge', async (req, res) => {
     });
   }
 
-  const check = validateChallengeAnswer(type, station.config, req.body?.answer);
+  let sessionRow = pack.row;
+  if (type === 'button_lantern' && !sessionRow.spirit_challenge_id) {
+    const assigned = await quest.assignSpiritChallenge(sessionRow);
+    sessionRow = assigned.row || sessionRow;
+    if (!sessionRow.spirit_challenge_id) {
+      return res.status(400).json({ error: assigned.error || 'no_spirit_challenge' });
+    }
+  }
+
+  const check = validateChallengeAnswer(type, station.config, req.body?.answer, {
+    spiritChallengeId: sessionRow.spirit_challenge_id,
+  });
   if (!check.ok) return res.status(400).json({ error: check.error || 'invalid_answer' });
 
-  await quest.track(pack.row, 'challenge_complete', {
+  await quest.track(sessionRow, 'challenge_complete', {
     station: slug,
-    payload: { type, realm: station.element },
+    payload: {
+      type,
+      realm: station.element,
+      ...(type === 'button_lantern'
+        ? { spiritChallengeId: sessionRow.spirit_challenge_id }
+        : {}),
+    },
   }, req);
 
   let realmAwakened = null;
   if (station.type === 'guardian' && REALM_OK(station.element)) {
-    const result = await quest.completeRealm(pack.row.id, station.element, station.id);
+    const result = await quest.completeRealm(sessionRow.id, station.element, station.id);
     if (!result.already) {
-      await quest.track(pack.row, 'realm_complete', {
+      await quest.track(sessionRow, 'realm_complete', {
         station: slug,
         payload: { realm: station.element },
       }, req);
@@ -487,6 +504,35 @@ router.post('/quest/challenge', async (req, res) => {
     ...(await refreshPack(ctx.guest.id, ctx.adventure)),
     alreadyCompleted: !realmAwakened,
     realmAwakened,
+  });
+});
+
+/** Assign (or return) the party's Spirit button→lantern challenge. Never re-rolls. */
+router.post('/quest/spirit-challenge', async (req, res) => {
+  const ctx = await guestAndAdventure(req, res);
+  if (!ctx) return;
+  const pack = await quest.requireLiveSession(ctx.guest.id, ctx.adventure.id);
+  if (pack.error) return res.status(409).json({ error: pack.error });
+
+  const assigned = await quest.assignSpiritChallenge(pack.row);
+  if (assigned.error && !assigned.assignment) {
+    return res.status(409).json({ error: assigned.error });
+  }
+  if (assigned.created) {
+    await quest.track(assigned.row, 'challenge_attempt', {
+      station: 'aurora',
+      payload: {
+        type: 'button_lantern',
+        event: 'spirit_assigned',
+        spiritChallengeId: assigned.row.spirit_challenge_id,
+      },
+    }, req);
+  }
+
+  res.json({
+    ...(await refreshPack(ctx.guest.id, ctx.adventure)),
+    spiritChallenge: assigned.assignment,
+    created: assigned.created,
   });
 });
 

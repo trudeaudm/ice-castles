@@ -1,5 +1,10 @@
 const db = require('./db');
 const { uuid, now, clean, num, bool } = require('./helpers');
+const {
+  pickChallengeId,
+  getChallenge,
+  publicAssignment,
+} = require('./spiritStationConfig');
 
 const REALMS = ['water', 'earth', 'fire', 'air', 'spirit'];
 const OPERATING_TZ = 'America/New_York';
@@ -114,6 +119,10 @@ function publicSession(row, realms = []) {
     })),
     realmsComplete: REALMS.every((realm) => done.has(realm)),
     winterKeeper: Boolean(row.quest_complete_at),
+    spiritChallengeId: row.spirit_challenge_id || null,
+    spiritChallenge: row.spirit_challenge_id
+      ? publicAssignment(row.spirit_challenge_id)
+      : null,
   };
 }
 
@@ -181,6 +190,43 @@ async function requireLiveSession(guestId, adventureId) {
   if (!pack.row) return { error: 'no_session', ...pack };
   if (!isSessionLive(pack.row)) return { error: 'session_expired', ...pack };
   return pack;
+}
+
+/**
+ * Assign one Spirit button→lantern challenge for this operating-day session.
+ * Never silently replaces an active assignment, even if the config table changes.
+ */
+async function assignSpiritChallenge(session) {
+  if (!session?.id) return { row: session, assignment: null, created: false };
+  if (session.spirit_challenge_id) {
+    const existing = getChallenge(session.spirit_challenge_id);
+    if (existing) {
+      return {
+        row: session,
+        assignment: publicAssignment(session.spirit_challenge_id),
+        created: false,
+      };
+    }
+    // Stored id is unknown (stale config). Keep it on the row; do not re-roll
+    // until staff clears spirit_challenge_id — guests must not get a silent swap.
+    return {
+      row: session,
+      assignment: null,
+      created: false,
+      error: 'unknown_spirit_challenge',
+    };
+  }
+  const challengeId = pickChallengeId();
+  await db.run(
+    'UPDATE quest_sessions SET spirit_challenge_id = ? WHERE id = ? AND spirit_challenge_id IS NULL',
+    [challengeId, session.id]
+  );
+  const row = await db.get('SELECT * FROM quest_sessions WHERE id = ?', [session.id]);
+  return {
+    row,
+    assignment: publicAssignment(row.spirit_challenge_id),
+    created: Boolean(row.spirit_challenge_id),
+  };
 }
 
 async function completeRealm(sessionId, realm, stationId) {
@@ -270,6 +316,7 @@ module.exports = {
   sessionWithRealms,
   startSession,
   requireLiveSession,
+  assignSpiritChallenge,
   completeRealm,
   markBuildersVisited,
   markBuilderQuiz,

@@ -691,6 +691,7 @@ let awardShowing = false;
 let mapReady = false;
 let selectedImages = new Set();
 let sequenceBuffer = [];
+let spiritAssigning = false;
 let shrineFocus = null;
 let shrineSlug = null;
 let mapModalMode = null;
@@ -811,6 +812,10 @@ function setShrineFocus(key, { spin = true, scroll = true, restore = false } = {
     panel.classList.toggle('is-open', panel.dataset.panel === shrineFocus);
   });
   syncShrineHistoryFocus();
+  if (!closing && shrineFocus === 'play') {
+    const pending = document.querySelector('[data-challenge-type="button_lantern"][data-spirit-pending]');
+    if (pending) ensureSpiritAssignment({ forceRender: true });
+  }
   if (!closing && shrineFocus === 'play' && scroll) {
     window.requestAnimationFrame(() => {
       const panel = document.querySelector('.shrinePanel.is-open[data-panel="play"]');
@@ -895,6 +900,140 @@ function renderProgress() {
 /* shrine                                                                     */
 /* -------------------------------------------------------------------------- */
 
+function spiritColorMeta(challenge, id) {
+  return (challenge?.colors || []).find((c) => c.id === id) || {
+    id,
+    label: id,
+    symbol: '•',
+    number: '',
+    color: '#8ec9e8',
+  };
+}
+
+function spiritChipHtml(meta, { index = null } = {}) {
+  const ink = meta.id === 'white' || meta.id === 'amber' ? '#1a2433' : '#f4fbff';
+  const mark = meta.symbol || String(meta.number || '');
+  const order = index == null ? '' : `<span class="spiritChip__order">${index + 1}</span>`;
+  return `<span class="spiritChip" style="--tile:${escapeHtml(meta.color || '#8ec9e8')};--chip-ink:${ink}">
+    ${order}
+    <span class="spiritChip__mark" aria-hidden="true">${escapeHtml(mark)}</span>
+    <span class="spiritChip__num" aria-hidden="true">${escapeHtml(String(meta.number || ''))}</span>
+    <span class="spiritChip__label">${escapeHtml(meta.label || meta.id)}</span>
+  </span>`;
+}
+
+function spiritPadHtml(meta) {
+  const ink = meta.id === 'white' || meta.id === 'amber' ? '#1a2433' : '#f4fbff';
+  return `<button class="spiritPad" data-spirit-color="${escapeHtml(meta.id)}" type="button"
+      style="--tile:${escapeHtml(meta.color || '#8ec9e8')};--chip-ink:${ink}"
+      aria-label="${escapeHtml(meta.label)}">
+    <span class="spiritPad__mark" aria-hidden="true">${escapeHtml(meta.symbol || '')}</span>
+    <span class="spiritPad__num" aria-hidden="true">${escapeHtml(String(meta.number || ''))}</span>
+    <span class="spiritPad__label">${escapeHtml(meta.label || meta.id)}</span>
+  </button>`;
+}
+
+function spiritChallengeHtml(station) {
+  const challenge = station.challenge || {};
+  const assignment = Store.state.session?.spiritChallenge || null;
+  const len = Number(challenge.length || assignment?.length || 4);
+  const colors = challenge.colors || [];
+  const pads = colors.map((c) => spiritPadHtml(c)).join('');
+  const slots = Array.from({ length: len }, () =>
+    '<span class="seqSlot spiritSlot" data-seq-slot><span class="seqSlot__dot"></span></span>'
+  ).join('');
+
+  if (!assignment?.buttons?.length) {
+    return `<div class="challenge spiritPlay" data-station="${escapeHtml(station.slug)}" data-challenge-type="button_lantern" data-spirit-pending="1">
+      <p class="challenge__prompt">${escapeHtml(challenge.prompt || 'Loading your Spirit challenge…')}</p>
+      <p class="challenge__hint">${escapeHtml(challenge.partyNote || 'This station serves one party at a time.')}</p>
+      <button class="textButton textButton--play" data-spirit-assign type="button">Get my button sequence</button>
+    </div>`;
+  }
+
+  const buttons = assignment.buttons.map((id, index) =>
+    spiritChipHtml(spiritColorMeta(challenge, id), { index })
+  ).join('');
+  const testNote = assignment.test
+    ? '<p class="spiritPlay__test">Test mapping — replace when the physical station uses the production table.</p>'
+    : '';
+
+  return `<div class="challenge spiritPlay" data-station="${escapeHtml(station.slug)}"
+      data-challenge-type="button_lantern"
+      data-seq-len="${len}"
+      data-spirit-id="${escapeHtml(assignment.challengeId)}"
+      data-spirit-step="press">
+    <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
+    ${challenge.partyNote ? `<p class="challenge__hint">${escapeHtml(challenge.partyNote)}</p>` : ''}
+    ${testNote}
+    <div class="spiritPlay__step" data-spirit-panel="press">
+      <p class="spiritPlay__lead">${escapeHtml(challenge.pressPrompt || 'Wait for Ready, then press these buttons in order.')}</p>
+      <ol class="spiritSeq" aria-label="Buttons to press">${buttons}</ol>
+      <button class="textButton textButton--play" data-spirit-continue type="button">${escapeHtml(challenge.continueLabel || 'I pressed the buttons')}</button>
+    </div>
+    <div class="spiritPlay__step" data-spirit-panel="enter" hidden>
+      <p class="spiritPlay__lead">${escapeHtml(challenge.watchPrompt || 'Watch the lanterns.')}</p>
+      <p class="spiritPlay__lead">${escapeHtml(challenge.enterPrompt || 'Tap the lantern colors you saw, in order.')}</p>
+      ${challenge.replayNote ? `<p class="challenge__hint">${escapeHtml(challenge.replayNote)}</p>` : ''}
+      <div class="seqSlots spiritSlots" data-seq-readout style="--slots:${len}" aria-label="Entered lantern colors">${slots}</div>
+      <p class="seqReadout spiritReadout" data-spirit-readout>No colors yet</p>
+      <div class="seqRow spiritPads">${pads}</div>
+      <div class="spiritPlay__tools">
+        <button class="challenge__clear" data-spirit-undo type="button">${escapeHtml(challenge.undoLabel || 'Undo')}</button>
+        <button class="challenge__clear" data-seq-clear type="button">${escapeHtml(challenge.clearLabel || 'Clear')}</button>
+      </div>
+      <button class="textButton textButton--play" data-seq-submit type="button">${escapeHtml(challenge.submitLabel || 'Awaken Spirit')}</button>
+      <button class="textButton" data-spirit-replay type="button">${escapeHtml(challenge.replayLabel || 'Show button sequence again')}</button>
+    </div>
+  </div>`;
+}
+
+async function ensureSpiritAssignment({ forceRender = false } = {}) {
+  if (!Store.hasLiveSession()) return null;
+  if (Store.state.session?.spiritChallenge?.buttons?.length) {
+    return Store.state.session.spiritChallenge;
+  }
+  if (spiritAssigning) return null;
+  spiritAssigning = true;
+  try {
+    const result = await Store.assignSpiritChallenge();
+    if (result.status === 'error') {
+      toast(result.error === 'unknown_spirit_challenge'
+        ? 'Your Spirit challenge could not be loaded. Ask a cast member for help.'
+        : 'Could not load your Spirit challenge. Try again.');
+      return null;
+    }
+    if (forceRender || document.querySelector('[data-challenge-type="button_lantern"]')) {
+      const slug = document.querySelector('[data-challenge-type="button_lantern"]')?.dataset.station
+        || Store.state.path?.station
+        || 'aurora';
+      renderStation(slug);
+    }
+    return result.spiritChallenge || Store.state.session?.spiritChallenge || null;
+  } finally {
+    spiritAssigning = false;
+  }
+}
+
+function setSpiritStep(root, step) {
+  if (!root) return;
+  root.dataset.spiritStep = step;
+  root.querySelectorAll('[data-spirit-panel]').forEach((panel) => {
+    panel.hidden = panel.dataset.spiritPanel !== step;
+  });
+}
+
+function paintSpiritSequence(root) {
+  if (!root) return;
+  paintSequence(root);
+  const challenge = Store.touchBySlug(root.dataset.station)?.challenge || {};
+  const readout = root.querySelector('[data-spirit-readout]');
+  if (!readout) return;
+  readout.textContent = sequenceBuffer.length
+    ? sequenceBuffer.map((id) => spiritColorMeta(challenge, id).label || id).join(' → ')
+    : 'No colors yet';
+}
+
 function challengeHtml(station) {
   const type = station.challengeType;
   const challenge = station.challenge || {};
@@ -964,6 +1103,10 @@ function challengeHtml(station) {
       <button class="${challenge.clearLabel ? 'challenge__clear' : 'textButton'}" data-seq-clear type="button">${escapeHtml(clearLabel)}</button>
       ${challenge.submitLabel ? `<button class="textButton textButton--play" data-seq-submit type="button">${escapeHtml(challenge.submitLabel)}</button>` : ''}
     </div>`;
+  }
+
+  if (type === 'button_lantern') {
+    return spiritChallengeHtml(station);
   }
 
   if (type === 'shape_match') {
@@ -3167,6 +3310,7 @@ async function handleStationChallenge(slug, answer) {
       bad_images: 'Not those three — look again at the ice.',
       bad_sequence: 'Not that order. Watch once more.',
       bad_shapes: 'These shapes have not found each other yet.',
+      no_spirit_challenge: 'Get your button sequence first, then try again.',
     };
     toast(station?.challenge?.retry || messages[result.error] || 'Not quite — try again.');
     return;
@@ -3301,7 +3445,8 @@ function paintSequence(root) {
   if (!root) return;
   const slots = root.querySelectorAll('[data-seq-slot]');
   if (slots.length) {
-    const buttons = [...root.querySelectorAll('[data-seq]')];
+    const buttons = [...root.querySelectorAll('[data-seq], [data-spirit-color]')];
+    const challenge = Store.touchBySlug(root.dataset.station)?.challenge || {};
     slots.forEach((slot, index) => {
       const id = sequenceBuffer[index];
       slot.classList.toggle('is-filled', Boolean(id));
@@ -3312,11 +3457,17 @@ function paintSequence(root) {
         slot.appendChild(dot);
         return;
       }
-      const source = buttons.find((btn) => btn.dataset.seq === id)?.querySelector('img');
-      if (source) {
-        const img = source.cloneNode(true);
-        img.alt = '';
-        slot.appendChild(img);
+      const source = buttons.find((btn) => (btn.dataset.seq || btn.dataset.spiritColor) === id);
+      const img = source?.querySelector('img');
+      if (img) {
+        const clone = img.cloneNode(true);
+        clone.alt = '';
+        slot.appendChild(clone);
+        return;
+      }
+      if (root.dataset.challengeType === 'button_lantern') {
+        const meta = spiritColorMeta(challenge, id);
+        slot.insertAdjacentHTML('beforeend', spiritChipHtml(meta));
         return;
       }
       const mark = document.createElement('span');
@@ -3494,6 +3645,37 @@ function wire() {
       handleStationChallenge(root.dataset.station, { ids: [...selectedImages] });
       return;
     }
+    if (event.target.closest('[data-spirit-assign]')) {
+      ensureSpiritAssignment({ forceRender: true });
+      return;
+    }
+    if (event.target.closest('[data-spirit-continue]')) {
+      const root = event.target.closest('[data-station]');
+      sequenceBuffer = [];
+      paintSpiritSequence(root);
+      setSpiritStep(root, 'enter');
+      return;
+    }
+    if (event.target.closest('[data-spirit-replay]')) {
+      const root = event.target.closest('[data-station]');
+      setSpiritStep(root, 'press');
+      return;
+    }
+    if (event.target.closest('[data-spirit-undo]')) {
+      const root = event.target.closest('[data-station]');
+      sequenceBuffer.pop();
+      paintSpiritSequence(root);
+      return;
+    }
+    const spiritColor = event.target.closest('[data-spirit-color]');
+    if (spiritColor) {
+      const root = spiritColor.closest('[data-station]');
+      const len = Number(root.dataset.seqLen || 4);
+      if (sequenceBuffer.length >= len) return;
+      sequenceBuffer.push(spiritColor.dataset.spiritColor);
+      paintSpiritSequence(root);
+      return;
+    }
     const seq = event.target.closest('[data-seq]');
     if (seq) {
       const root = seq.closest('[data-station]');
@@ -3509,20 +3691,30 @@ function wire() {
       return;
     }
     if (event.target.closest('[data-seq-clear]')) {
+      const root = event.target.closest('[data-station]');
       sequenceBuffer = [];
-      paintSequence(event.target.closest('[data-station]'));
+      if (root?.dataset.challengeType === 'button_lantern') paintSpiritSequence(root);
+      else paintSequence(root);
       return;
     }
     if (event.target.closest('[data-seq-submit]')) {
       const root = event.target.closest('[data-station]');
       const len = Number(root.dataset.seqLen || 5);
       if (sequenceBuffer.length < len) {
-        toast('Tap the full sequence first.');
+        toast(root?.dataset.challengeType === 'button_lantern'
+          ? 'Enter the full lantern sequence first.'
+          : 'Tap the full sequence first.');
         return;
       }
       const answer = { sequence: [...sequenceBuffer] };
+      if (root.dataset.challengeType === 'button_lantern') {
+        answer.challengeId = root.dataset.spiritId
+          || Store.state.session?.spiritChallengeId
+          || Store.state.session?.spiritChallenge?.challengeId;
+      }
       sequenceBuffer = [];
-      paintSequence(root);
+      if (root.dataset.challengeType === 'button_lantern') paintSpiritSequence(root);
+      else paintSequence(root);
       handleStationChallenge(root.dataset.station, answer);
       return;
     }

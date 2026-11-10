@@ -3,6 +3,12 @@ const { publishedFor } = require('./parkMap');
 const { uuid, now, clean, num, bool, slugify, shortCode } = require('./helpers');
 const { ensureQuestStations } = require('./questStations');
 
+const {
+  publicColors,
+  lanternAnswerMatches,
+  SPIRIT_STATION_CONFIG,
+} = require('./spiritStationConfig');
+
 const CHALLENGE_TYPES = [
   'scan',
   'acknowledge',
@@ -12,6 +18,7 @@ const CHALLENGE_TYPES = [
   'image_select',
   'sequence',
   'multi_sequence',
+  'button_lantern',
   'quiz',
   'shape_match',
 ];
@@ -434,7 +441,7 @@ async function awardStop(guestId, stop, ts = now()) {
   return { already: false, awards, completed };
 }
 
-function validateChallengeAnswer(type, config, answer) {
+function validateChallengeAnswer(type, config, answer, context = {}) {
   const cfg = parseConfig(config);
   switch (type) {
     case 'acknowledge':
@@ -480,6 +487,22 @@ function validateChallengeAnswer(type, config, answer) {
       );
       const got = (answer?.sequence || []).map((v) => String(v).toLowerCase()).join('|');
       if (!accepted.length || !accepted.includes(got)) {
+        return { ok: false, error: 'bad_sequence' };
+      }
+      return { ok: true };
+    }
+    case 'button_lantern': {
+      // Session assignment is authoritative — never trust a client-supplied id alone.
+      const challengeId = String(context.spiritChallengeId || '').trim();
+      if (!challengeId) return { ok: false, error: 'no_spirit_challenge' };
+      if (
+        answer?.challengeId
+        && String(answer.challengeId).trim()
+        && String(answer.challengeId).trim() !== challengeId
+      ) {
+        return { ok: false, error: 'bad_sequence' };
+      }
+      if (!lanternAnswerMatches(challengeId, answer?.sequence)) {
         return { ok: false, error: 'bad_sequence' };
       }
       return { ok: true };
@@ -547,6 +570,26 @@ function publicChallengeConfig(type, config) {
         length: Number(cfg.length) || (cfg.correct || [])[0]?.length || 5,
         submitLabel: cfg.submitLabel || '',
         clearLabel: cfg.clearLabel || '',
+      };
+    case 'button_lantern':
+      return {
+        prompt: cfg.prompt || 'Press the buttons at the Spirit station, watch the lanterns, then enter what you saw.',
+        hint: cfg.hint || '',
+        retry: cfg.retry || '',
+        success: cfg.success || '',
+        pressPrompt: cfg.pressPrompt || '',
+        watchPrompt: cfg.watchPrompt || '',
+        enterPrompt: cfg.enterPrompt || '',
+        partyNote: cfg.partyNote || '',
+        replayNote: cfg.replayNote || '',
+        submitLabel: cfg.submitLabel || 'Awaken Spirit',
+        clearLabel: cfg.clearLabel || 'Clear',
+        undoLabel: cfg.undoLabel || 'Undo',
+        continueLabel: cfg.continueLabel || 'I pressed the buttons',
+        replayLabel: cfg.replayLabel || 'Show button sequence again',
+        length: Number(cfg.length) || SPIRIT_STATION_CONFIG.sequenceLength,
+        configVersion: SPIRIT_STATION_CONFIG.version,
+        colors: publicColors(),
       };
     case 'quiz':
       return {

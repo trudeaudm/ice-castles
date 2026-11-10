@@ -8,6 +8,9 @@
  */
 const db = require('./db');
 const { uuid, now, slugify, shortCode } = require('./helpers');
+const { SPIRIT_STATION_CONFIG, assertSpiritStationConfig } = require('./spiritStationConfig');
+
+assertSpiritStationConfig();
 
 /** Pin art a location can wear. `park` is the ordinary location pin. */
 const POI_MARKERS = ['park', 'water', 'earth', 'fire', 'air', 'spirit'];
@@ -131,19 +134,23 @@ const CHALLENGES = {
     },
   },
   aurora: {
-    type: 'multi_sequence',
+    type: 'button_lantern',
     config: {
-      prompt: 'Aurora’s symbols bring the five elements into harmony. Find the sequence nearby, then tap the symbols on your screen in the same order.',
-      retry: 'The symbols are not in harmony yet. Look closely at the sequence and try again.',
+      prompt: 'At Aurora’s Spirit station, press the colored buttons in the order shown here. Then watch the lanterns and enter that sequence on your phone.',
+      pressPrompt: 'Wait for the station’s Ready indicator, then press these buttons in order.',
+      watchPrompt: 'Watch the lanterns. Remember the colors in order.',
+      enterPrompt: 'Tap the lantern colors you saw, in order.',
+      partyNote: 'This station serves one party at a time. If someone else is using it, wait for Ready.',
+      replayNote: 'Missed the lights? Ask the station for a replay, or show your button sequence again here and try once more.',
+      hint: 'No phone-to-station connection is needed. Follow the buttons, then enter what the lanterns show.',
+      retry: 'That lantern order is not quite right. Watch again, or show your button sequence and try once more.',
       success: 'Spirit awakens. Aurora’s mark joins the others, carrying your quest toward its final meeting at the Winter Keeper Throne.',
-      kind: 'symbol',
-      length: 5,
-      options: REALM_OPTIONS,
-      accepted: [
-        ['water', 'earth', 'fire', 'air', 'spirit'],
-        ['earth', 'water', 'air', 'fire', 'spirit'],
-        ['spirit', 'air', 'fire', 'earth', 'water'],
-      ],
+      submitLabel: 'Awaken Spirit',
+      clearLabel: 'Clear',
+      undoLabel: 'Undo',
+      continueLabel: 'I pressed the buttons',
+      replayLabel: 'Show button sequence again',
+      length: SPIRIT_STATION_CONFIG.sequenceLength,
     },
   },
   builders: {
@@ -233,6 +240,15 @@ const PREVIOUS_COPY = {
     discover_body: 'A physical installation plays several five-symbol Realm sequences on a loop. Repeat any one of them. The website answers on its own — no show-control hookup is required.',
     prompt: 'Watch the installation, then tap the five Realm symbols in the order you saw.',
   },
+};
+
+/** Prior Spirit challenge (symbol multi_sequence) — boot migrates to button_lantern. */
+const PREVIOUS_AURORA_CHALLENGE = {
+  type: 'multi_sequence',
+  prompts: [
+    'Aurora’s symbols bring the five elements into harmony. Find the sequence nearby, then tap the symbols on your screen in the same order.',
+    'Watch the installation, then tap the five Realm symbols in the order you saw.',
+  ],
 };
 
 /** Copy shipped just before elements, the Throne, and the air-rune puzzle. */
@@ -356,7 +372,7 @@ const QUEST_STATIONS = [
     body:
       'Aurora is the Guardian of Spirit, the spark of wonder that connects the elements and everyone who visits. She notices a first brave slide, a family photo that will be retold, and the quiet moment when someone stops to take in the ice.\n\nAurora knows the castle will change with the season. What lasts is the fond memories people carry with them.',
     discover_body:
-      'An Ice Castle changes with the season. Cold nights, warm days, snowfall, and the movement of guests shape it, so each season is different. Water, Earth, Fire, and Air shape the frozen structure; Spirit is the curiosity, courage, laughter, and connection people bring to the experience.\n\nAurora reminds us that wonder can continue as a memory, shared long after the ice has changed.',
+      'An Ice Castle changes with the season. Cold nights, warm days, snowfall, and the movement of guests shape it, so each season is different. Water, Earth, Fire, and Air shape the frozen structure; Spirit is the curiosity, courage, laughter, and connection people bring to the experience.\n\nAurora’s station uses colored buttons and lanterns. Your phone shows which buttons to press; the station answers with lanterns; you enter that lantern order. The phone and station share the same mapping table — they do not connect over the network.\n\nAurora reminds us that wonder can continue as a memory, shared long after the ice has changed.',
     sort_order: 5,
     poi: 'Mystic Forest — Spirit',
     challenge: CHALLENGES.aurora,
@@ -593,8 +609,13 @@ async function ensureQuestStations(adventureId) {
       const oldCascadeArt = tp.slug === 'cascade' && cfg && Array.isArray(cfg.images) && cfg.images.some(
         (img) => typeof img?.url === 'string' && img.url.endsWith('.png')
       );
-      if (cfg && (oldPrompt || needsLines || oldSummitPieces || oldCascadeArt)) {
-        const next = (oldPrompt || oldSummitPieces)
+      const oldAuroraSpirit = tp.slug === 'aurora' && (
+        row.challenge_type === PREVIOUS_AURORA_CHALLENGE.type
+        || PREVIOUS_AURORA_CHALLENGE.prompts.includes(cfg?.prompt)
+        || (Array.isArray(cfg?.accepted) && cfg.kind === 'symbol')
+      );
+      if (cfg && (oldPrompt || needsLines || oldSummitPieces || oldCascadeArt || oldAuroraSpirit)) {
+        const next = (oldPrompt || oldSummitPieces || oldAuroraSpirit)
           ? tp.challenge.config
           : oldCascadeArt
             ? { ...cfg, images: tp.challenge.config.images }

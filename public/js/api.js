@@ -215,6 +215,20 @@ const Store = (() => {
     }
   }
 
+  /** Get or create the party's Spirit button sequence. Never re-rolls server-side. */
+  async function assignSpiritChallenge() {
+    try {
+      const data = await request(`/api/quest/spirit-challenge${bootstrapQuery()}`, {
+        method: 'POST',
+        body: '{}',
+      });
+      applyQuest(data);
+      return { status: 'ok', ...data };
+    } catch (err) {
+      return { status: 'error', error: err.body?.error || err.message };
+    }
+  }
+
   async function scanHeart() {
     try {
       const data = await request(`/api/quest/heart${bootstrapQuery()}`, { method: 'POST', body: '{}' });
@@ -398,7 +412,7 @@ const Store = (() => {
     guardianPoiIds, completedGuardianPoiIds, totals,
     toggleCategory, showAllCategories, setJourneyMode, toggleJourneyMode, queue, pathContext,
     hasLiveSession, realmsAwakened, intendedStation, setIntendedStation, stationPath,
-    startSession, visitStation, completeStation, scanHeart, finishQuest,
+    startSession, visitStation, completeStation, assignSpiritChallenge, scanHeart, finishQuest,
   };
 })();
 

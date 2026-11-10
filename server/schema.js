@@ -164,6 +164,7 @@ CREATE TABLE IF NOT EXISTS quest_sessions (
   quest_complete_at   TEXT,
   builders_visited_at TEXT,
   builder_quiz_at     TEXT,
+  spirit_challenge_id TEXT,
   created_at          TEXT NOT NULL
 );
 
@@ -351,6 +352,7 @@ async function migrate() {
   await ensureColumn('touchpoints', 'slug_locked', 'slug_locked INTEGER NOT NULL DEFAULT 0');
   await ensureColumn('touchpoints', 'discover_audio_url', 'discover_audio_url TEXT');
   await ensureColumn('pois', 'marker', 'marker TEXT');
+  await ensureColumn('quest_sessions', 'spirit_challenge_id', 'spirit_challenge_id TEXT');
 
   await db.exec(INDEX_DDL);
   await dropLegacyGlobalSlugConstraints();

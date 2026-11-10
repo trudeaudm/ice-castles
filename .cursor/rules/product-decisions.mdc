@@ -1,0 +1,53 @@
+---
+description: Castle Quest product rulings — always apply when changing guest flow, URLs, sessions, or completion
+alwaysApply: true
+---
+
+# Castle Quest product decisions
+
+Source: `Castle_Quest_Web_Backend_Developer_Brief.docx`, plus chat rulings that override it.
+
+## Chat overrides (beat the brief)
+
+- **Onboarding is the welcome.** No ticket check, no ShowClix. Party size is asked on the welcome page, before Begin Quest or Map.
+- **First scan landing.** Any Castle Quest QR with no live session opens the full-screen Castle Quest landing (not a text card). **Begin Quest** opens the quest brief: the threshold welcome, how Castle Quest works, and How to play. **Continue** starts the session and opens the map in Begin mode, framed on the five Guardians. **Map** starts the session and opens the full park map with every marker on. Both wait for a party size and remind the guest if it is missing. Ignore a station QR scanned before they start. Sticky Explore/Begin for the operating day; the map star tool still switches modes.
+- **Unfinished Guardian QR.** Live session + unfinished Guardian URL → zoomed map centered on that POI + small begin modal. Begin opens the shrine (Meet / Discover / Play). Dismiss stays on the map. Completed Guardian QR → shrine.
+- **Monument and the Winter Keeper Throne** stay shrine-first (station page). Not part of Begin-mode pins. The guest-facing name is Winter Keeper Throne. The printed slug stays `/heart`.
+- **Begin-mode pin tap** opens that Guardian shrine directly (no second modal). Completed Guardians stay visible, dimmer, still tappable.
+- **Threshold QR.** `/nh/threshold` and `/mtl/threshold` always open the welcome page, even with a live session. Same-day `/nh` or `/mtl` (no station) opens the map in the sticky Explore / Begin mode.
+- **Guest-facing session = operating day.** New day → new session, Threshold again, play from zero. **Do not delete** ended sessions; keep them for analytics.
+- **Which QRs start the quest.** Only Castle Quest station QRs (Threshold, Guardians, Monument, Winter Keeper Throne).
+- **URL shape.** `/{venue}/{station}`. New Hampshire is `/nh/{station}`. Montreal is `/mtl/{station}`.
+- **Permanent station QRs.** Each park has its own banners. New Hampshire uses `/nh/threshold`, `/nh/cascade`, `/nh/granite`, `/nh/ember`, `/nh/summit`, `/nh/aurora`, `/nh/builders`, `/nh/heart`. Montreal uses the same station names under `/mtl/…`. A New Hampshire banner does not open Montreal. Banners are printed from the SVG and stay up for at least one season. The slug can be set while the station is unpublished. Publishing freezes it, and that station cannot be deleted or hidden. Titles, stories, and challenges do not need a reprint. A new season at that park keeps the same slugs. Do not change the live site address or a park’s venue code after its banners are printed. An unpublished station with no slug gets a random one until it is named; that does not rewrite a published URL.
+
+## From the brief (now locked)
+
+**Guardians — any order, unlimited attempts, complete only on validated challenge.**
+
+| Station | Element | Challenge |
+|---|---|---|
+| Cascade | Water | Image pick: 6 photos, guest selects 3; validate IDs against configured set |
+| Granite | Earth | Text `ARCH` — case-insensitive, trim whitespace |
+| Ember | Fire | Tap a 4-color lantern sequence; seasonal sequence is admin-configurable |
+| Summit | Air | Drag matching shapes together until they form an air rune |
+| Aurora | Spirit | Physical button→lantern sequence: app assigns one preset button sequence; guest presses station buttons, watches lanterns, enters lantern order in app. Mapping is a versioned shared table (app + station updated together). |
+
+Fifth Guardian does **not** finish the quest.
+
+**Builder’s Monument.** Optional story + fixed 4–5 question quiz. No passing score. Does not affect Winter Keeper eligibility. Track visit + quiz completion.
+
+**Winter Keeper Throne** (slug `heart`). Mandatory later scan. Incomplete → the content-pack line, plus which elements remain. All five done → the elements combine into the Winter Keeper medallion, with an optional group-photo suggestion, then first names. Winter Keeper is the title. Protector of Winter Magic is bestowed at that recognition, not attached to every mention.
+
+**Completion (after Throne eligibility).** The five elements combine in an animation that reveals the Winter Keeper medallion. An optional group photo at the Throne is suggested, not required. Then one or more first names → optional email for a digital copy of the recognition. No marketing opt-in question. Staff screen is the Gift Shop, for the Winter Keeper medallion, with the party count. No complex redemption tokens.
+
+**Shrine template.** Meet the Guardian / Discover the Element / Play the Challenge. Story never blocks the challenge.
+
+- **Party size.** Ask on the welcome page, before Begin Quest or Map (1–20). Save it on the session. The Throne asks for first names and an optional email for a digital copy. There is no marketing opt-in question. The welcome party size is the Gift Shop count for the Winter Keeper medallion.
+- **Operating-day cutoff.** 4:00 AM America/New_York.
+- **Analytics.** Full brief event log (scans, attempts, completions, dwell, device, etc.). Ended sessions are never deleted.
+- **Challenge media.** Placeholders and a simple seal animation first; swap real artwork later.
+- **Keep.** Store the optional recognition email. Do not ask a marketing opt-in. Do **not** send to Keep yet; leave a single later hook.
+
+## Still open
+
+- None. Ready to implement when asked.
