@@ -2450,6 +2450,7 @@ let talkHide = 0;
 let waveGen = 0;
 let waveTimer = 0;
 let waveRaf = 0;
+let waveRvcf = 0;
 const WAVE_STILL_S = 0.25;
 
 function waveStillEl(paintHost, mode) {
@@ -2515,7 +2516,7 @@ function isBackdrop(r, g, b) {
   return m < 18;
 }
 
-function keyBackdrop(image) {
+function keyBackdrop(image, mode = 'hero') {
   const { data, width: w, height: h } = image;
   const count = w * h;
   if (keyBackdrop.n !== count) {
@@ -2557,121 +2558,118 @@ function keyBackdrop(image) {
     if (y > 0) push(x, y - 1);
     if (y + 1 < h) push(x, y + 1);
   }
-  // Black showing through a pose, such as the gap between Ember's face and
-  // raised arm, or between a wing and the tail. Those pockets never reach
-  // the frame edge, so the flood above leaves them. Pupils are smaller.
-  if (!keyBackdrop.seen || keyBackdrop.seen.length !== count) {
-    keyBackdrop.seen = new Uint8Array(count);
-    keyBackdrop.stack = new Int32Array(count);
-    keyBackdrop.comp = new Int32Array(count);
-  }
-  const seen = keyBackdrop.seen;
-  const stack = keyBackdrop.stack;
-  const comp = keyBackdrop.comp;
-  seen.fill(0);
-  const minPocket = Math.max(12, Math.round(count * 0.00085));
-  for (let start = 0; start < count; start += 1) {
-    if (bg[start] || seen[start]) continue;
-    const s0 = start * 4;
-    if (Math.max(data[s0], data[s0 + 1], data[s0 + 2]) >= 24) continue;
-    let sp = 0;
-    let cp = 0;
-    let touchLinks = 0;
-    let pure = 0;
-    const x0 = start % w;
-    const y0 = (start / w) | 0;
-    let minX = x0;
-    let maxX = x0;
-    let minY = y0;
-    let maxY = y0;
-    stack[sp] = start;
-    sp += 1;
-    seen[start] = 1;
-    while (sp) {
-      sp -= 1;
-      const q = stack[sp];
-      comp[cp] = q;
-      cp += 1;
-      const qi = q * 4;
-      const qm = data[qi] > data[qi + 1]
-        ? (data[qi] > data[qi + 2] ? data[qi] : data[qi + 2])
-        : (data[qi + 1] > data[qi + 2] ? data[qi + 1] : data[qi + 2]);
-      if (qm < 8) pure += 1;
-      const x = q % w;
-      const y = (q / w) | 0;
-      if (x < minX) minX = x;
-      else if (x > maxX) maxX = x;
-      if (y < minY) minY = y;
-      else if (y > maxY) maxY = y;
-      let ni = x > 0 ? q - 1 : -1;
-      if (ni >= 0 && bg[ni]) touchLinks += 1;
-      else if (ni >= 0 && !seen[ni]) {
-        const o = ni * 4;
-        if (Math.max(data[o], data[o + 1], data[o + 2]) < 24) {
-          seen[ni] = 1;
-          stack[sp] = ni;
-          sp += 1;
+  // Pose pockets (Ember arm gaps, wing holes) matter on the full shrine hero.
+  // Landing faces are a tight bust crop inside a circle, so skip that BFS.
+  if (mode !== 'face') {
+    if (!keyBackdrop.seen || keyBackdrop.seen.length !== count) {
+      keyBackdrop.seen = new Uint8Array(count);
+      keyBackdrop.stack = new Int32Array(count);
+      keyBackdrop.comp = new Int32Array(count);
+    }
+    const seen = keyBackdrop.seen;
+    const stack = keyBackdrop.stack;
+    const comp = keyBackdrop.comp;
+    seen.fill(0);
+    const minPocket = Math.max(12, Math.round(count * 0.00085));
+    for (let start = 0; start < count; start += 1) {
+      if (bg[start] || seen[start]) continue;
+      const s0 = start * 4;
+      if (Math.max(data[s0], data[s0 + 1], data[s0 + 2]) >= 24) continue;
+      let sp = 0;
+      let cp = 0;
+      let touchLinks = 0;
+      let pure = 0;
+      const x0 = start % w;
+      const y0 = (start / w) | 0;
+      let minX = x0;
+      let maxX = x0;
+      let minY = y0;
+      let maxY = y0;
+      stack[sp] = start;
+      sp += 1;
+      seen[start] = 1;
+      while (sp) {
+        sp -= 1;
+        const q = stack[sp];
+        comp[cp] = q;
+        cp += 1;
+        const qi = q * 4;
+        const qm = data[qi] > data[qi + 1]
+          ? (data[qi] > data[qi + 2] ? data[qi] : data[qi + 2])
+          : (data[qi + 1] > data[qi + 2] ? data[qi + 1] : data[qi + 2]);
+        if (qm < 8) pure += 1;
+        const x = q % w;
+        const y = (q / w) | 0;
+        if (x < minX) minX = x;
+        else if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        else if (y > maxY) maxY = y;
+        let ni = x > 0 ? q - 1 : -1;
+        if (ni >= 0 && bg[ni]) touchLinks += 1;
+        else if (ni >= 0 && !seen[ni]) {
+          const o = ni * 4;
+          if (Math.max(data[o], data[o + 1], data[o + 2]) < 24) {
+            seen[ni] = 1;
+            stack[sp] = ni;
+            sp += 1;
+          }
+        }
+        ni = x + 1 < w ? q + 1 : -1;
+        if (ni >= 0 && bg[ni]) touchLinks += 1;
+        else if (ni >= 0 && !seen[ni]) {
+          const o = ni * 4;
+          if (Math.max(data[o], data[o + 1], data[o + 2]) < 24) {
+            seen[ni] = 1;
+            stack[sp] = ni;
+            sp += 1;
+          }
+        }
+        ni = y > 0 ? q - w : -1;
+        if (ni >= 0 && bg[ni]) touchLinks += 1;
+        else if (ni >= 0 && !seen[ni]) {
+          const o = ni * 4;
+          if (Math.max(data[o], data[o + 1], data[o + 2]) < 24) {
+            seen[ni] = 1;
+            stack[sp] = ni;
+            sp += 1;
+          }
+        }
+        ni = y + 1 < h ? q + w : -1;
+        if (ni >= 0 && bg[ni]) touchLinks += 1;
+        else if (ni >= 0 && !seen[ni]) {
+          const o = ni * 4;
+          if (Math.max(data[o], data[o + 1], data[o + 2]) < 24) {
+            seen[ni] = 1;
+            stack[sp] = ni;
+            sp += 1;
+          }
         }
       }
-      ni = x + 1 < w ? q + 1 : -1;
-      if (ni >= 0 && bg[ni]) touchLinks += 1;
-      else if (ni >= 0 && !seen[ni]) {
-        const o = ni * 4;
-        if (Math.max(data[o], data[o + 1], data[o + 2]) < 24) {
-          seen[ni] = 1;
-          stack[sp] = ni;
-          sp += 1;
-        }
-      }
-      ni = y > 0 ? q - w : -1;
-      if (ni >= 0 && bg[ni]) touchLinks += 1;
-      else if (ni >= 0 && !seen[ni]) {
-        const o = ni * 4;
-        if (Math.max(data[o], data[o + 1], data[o + 2]) < 24) {
-          seen[ni] = 1;
-          stack[sp] = ni;
-          sp += 1;
-        }
-      }
-      ni = y + 1 < h ? q + w : -1;
-      if (ni >= 0 && bg[ni]) touchLinks += 1;
-      else if (ni >= 0 && !seen[ni]) {
-        const o = ni * 4;
-        if (Math.max(data[o], data[o + 1], data[o + 2]) < 24) {
-          seen[ni] = 1;
-          stack[sp] = ni;
-          sp += 1;
-        }
+      const frame = w < h ? w : h;
+      const bw = maxX - minX + 1;
+      const bh = maxY - minY + 1;
+      const shortSide = bw < bh ? bw : bh;
+      const longSide = bw > bh ? bw : bh;
+      const pureRatio = pure / cp;
+      const chunky = bw >= frame * 0.07 && bh >= frame * 0.07;
+      const open = shortSide >= frame * 0.03 && longSide >= frame * 0.04;
+      const neck = Math.max(8, Math.round(frame * 0.03));
+      const hole = cp >= minPocket && pureRatio >= 0.86
+        && (touchLinks === 0 || touchLinks <= neck)
+        && (chunky || open);
+      if (hole) {
+        for (let k = 0; k < cp; k += 1) bg[comp[k]] = 1;
       }
     }
-    // A pose hole is flat black: the opening between Ember's head and wing,
-    // or a wing and a tail. Pupils and open mouths are black too, but they
-    // stay under about 86% pure and the long side stays short. Granite's
-    // scarf is dark green rather than empty black.
-    const frame = w < h ? w : h;
-    const bw = maxX - minX + 1;
-    const bh = maxY - minY + 1;
-    const shortSide = bw < bh ? bw : bh;
-    const longSide = bw > bh ? bw : bh;
-    const pureRatio = pure / cp;
-    const chunky = bw >= frame * 0.07 && bh >= frame * 0.07;
-    const open = shortSide >= frame * 0.03 && longSide >= frame * 0.04;
-    const neck = Math.max(8, Math.round(frame * 0.03));
-    const hole = cp >= minPocket && pureRatio >= 0.86
-      && (touchLinks === 0 || touchLinks <= neck)
-      && (chunky || open);
-    if (hole) {
-      for (let k = 0; k < cp; k += 1) bg[comp[k]] = 1;
-    }
   }
-  // Dark fringe clinging to the silhouette. Only pixels that touch the
-  // backdrop qualify, and only for a couple of pixels, so the body and face stay.
+  // Dark fringe clinging to the silhouette. Face crops only need one pass.
   if (!keyBackdrop.rim || keyBackdrop.rim.length !== count) {
     keyBackdrop.rim = new Int32Array(count);
   }
   const rim = keyBackdrop.rim;
   const rimLimit = 52;
-  for (let depth = 0; depth < 2; depth += 1) {
+  const rimPasses = mode === 'face' ? 1 : 2;
+  for (let depth = 0; depth < rimPasses; depth += 1) {
     let n = 0;
     for (let y = 1; y < h - 1; y += 1) {
       for (let x = 1; x < w - 1; x += 1) {
@@ -2699,15 +2697,24 @@ function keyBackdrop(image) {
       if (bg[p]) continue;
       if (!(bg[p - 1] || bg[p + 1] || bg[p - w] || bg[p + w])) continue;
       const i = p * 4;
-      const m = Math.max(data[i], data[i + 1], data[i + 2]);
+      const m = data[i] > data[i + 1]
+        ? (data[i] > data[i + 2] ? data[i] : data[i + 2])
+        : (data[i + 1] > data[i + 2] ? data[i + 1] : data[i + 2]);
       if (m < 42) data[i + 3] = Math.round((m / 42) * 255);
     }
   }
   return image;
 }
 
+function waveCanvasCtx(canvas) {
+  if (canvas._cqWaveCtx) return canvas._cqWaveCtx;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: true });
+  canvas._cqWaveCtx = ctx;
+  return ctx;
+}
+
 function paintWaveFrame(canvas, video, mode, realm) {
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const ctx = waveCanvasCtx(canvas);
   if (!ctx) return;
   const w = canvas.width;
   const h = canvas.height;
@@ -2725,12 +2732,13 @@ function paintWaveFrame(canvas, video, mode, realm) {
     const dh = vh * scale;
     ctx.drawImage(video, (w - dw) / 2, (h - dh) / 2, dw, dh);
   }
-  ctx.putImageData(keyBackdrop(ctx.getImageData(0, 0, w, h)), 0, 0);
+  ctx.putImageData(keyBackdrop(ctx.getImageData(0, 0, w, h), mode), 0, 0);
 }
 
 function sizeWaveCanvas(canvas, cssW, cssH) {
-  const maxEdge = cssH > 140 ? 420 : 240;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  // Chroma-key cost scales with pixels; keep display sharp enough, not retina-max.
+  const maxEdge = cssH > 140 ? 288 : 160;
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
   let w = Math.max(2, Math.round(cssW * dpr));
   let h = Math.max(2, Math.round(cssH * dpr));
   const edge = Math.max(w, h);
@@ -2739,8 +2747,32 @@ function sizeWaveCanvas(canvas, cssW, cssH) {
     w = Math.max(2, Math.round(w * fit));
     h = Math.max(2, Math.round(h * fit));
   }
-  canvas.width = w;
-  canvas.height = h;
+  if (canvas.width !== w || canvas.height !== h) {
+    canvas.width = w;
+    canvas.height = h;
+    canvas._cqWaveCtx = null;
+  }
+}
+
+function cancelWavePaint(video) {
+  if (waveRvcf && video && typeof video.cancelVideoFrameCallback === 'function') {
+    try { video.cancelVideoFrameCallback(waveRvcf); } catch { /* closed */ }
+  }
+  waveRvcf = 0;
+  if (waveRaf) window.cancelAnimationFrame(waveRaf);
+  waveRaf = 0;
+}
+
+function scheduleWavePaint(video, draw) {
+  cancelWavePaint(video);
+  if (typeof video.requestVideoFrameCallback === 'function') {
+    waveRvcf = video.requestVideoFrameCallback(() => {
+      waveRvcf = 0;
+      draw();
+    });
+    return;
+  }
+  waveRaf = window.requestAnimationFrame(draw);
 }
 
 function loadWave(video, realm) {
@@ -2766,9 +2798,8 @@ function loadWave(video, realm) {
 function haltWaves() {
   waveGen += 1;
   window.clearTimeout(waveTimer);
-  window.cancelAnimationFrame(waveRaf);
-  waveRaf = 0;
   const video = waveVideoEl.el;
+  cancelWavePaint(video);
   if (video) {
     video.onended = null;
     video.pause();
@@ -2845,8 +2876,12 @@ async function runWave(realm, mode, paintHost, wavingHost, gen) {
   planOutro();
   const natural = await new Promise((resolve) => {
     let safety = 0;
+    let live = true;
     const finish = (ok) => {
+      if (!live) return;
+      live = false;
       window.clearTimeout(safety);
+      cancelWavePaint(video);
       video.removeEventListener('ended', onEnd);
       video.removeEventListener('pause', onPause);
       video.removeEventListener('durationchange', planOutro);
@@ -2862,17 +2897,23 @@ async function runWave(realm, mode, paintHost, wavingHost, gen) {
     video.addEventListener('pause', onPause);
     video.addEventListener('durationchange', planOutro);
     safety = window.setTimeout(() => finish(false), 8000);
+    let lastPaintT = -1;
     const draw = () => {
-      if (gen !== waveGen || !canvas.isConnected) return;
+      if (!live || gen !== waveGen || !canvas.isConnected) return;
       if (!outroAt && Number.isFinite(video.duration) && video.duration - video.currentTime <= WAVE_STILL_S) {
         armOutro();
       }
       if (video.ended) return;
       if (!video.muted || video.volume !== 0) silenceWave(video);
-      paintWaveFrame(canvas, video, mode, realm);
-      waveRaf = window.requestAnimationFrame(draw);
+      const t = video.currentTime;
+      // Video often runs ~24–30fps; skip duplicate rAF ticks that re-key the same frame.
+      if (t !== lastPaintT) {
+        lastPaintT = t;
+        paintWaveFrame(canvas, video, mode, realm);
+      }
+      scheduleWavePaint(video, draw);
     };
-    waveRaf = window.requestAnimationFrame(draw);
+    scheduleWavePaint(video, draw);
   });
   if (gen === waveGen && !outroAt) armOutro();
   if (gen === waveGen && outroAt) {

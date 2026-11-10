@@ -744,8 +744,11 @@ body.landing-open .station { visibility: hidden; }
   border-radius: 50%;
   overflow: hidden;
   background: radial-gradient(circle at 50% 42%, #1a568f 0%, #0c335f 72%, #071526 100%);
-  filter: drop-shadow(0 4px 10px rgba(4, 16, 31, 0.4));
   animation: pfpBob 2.6s ease-in-out infinite;
+}
+/* Keep drop-shadow off while the wave canvas paints — filter re-rasterizes every frame. */
+.landing__realm:not(.is-waving) .landing__face {
+  filter: drop-shadow(0 4px 10px rgba(4, 16, 31, 0.4));
 }
 .landing__face img,
 .landing__wave {
@@ -780,6 +783,8 @@ body.landing-open .station { visibility: hidden; }
 .landing__realm--spirit .landing__face { animation-delay: 0.7s; }
 .landing__realm.is-talking .landing__face {
   animation: pfpTalk 560ms var(--ease-spring);
+}
+.landing__realm.is-talking:not(.is-waving) .landing__face {
   filter: drop-shadow(0 0 14px currentColor);
 }
 .landing__realm.is-waving .landing__face::after { opacity: 1; }
