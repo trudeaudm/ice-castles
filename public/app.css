@@ -1011,46 +1011,46 @@ body.landing-open .station { visibility: hidden; }
 }
 /* Faster, lower-amplitude candle flicker — stays lit, with quick soft dips. */
 @keyframes landingCandlePane {
-  0%, 100% { opacity: 0.88; }
-  8% { opacity: 0.72; }
+  0%, 100% { opacity: 0.9; }
+  8% { opacity: 0.78; }
   14% { opacity: 0.94; }
-  22% { opacity: 0.8; }
-  30% { opacity: 0.92; }
-  38% { opacity: 0.7; }
-  46% { opacity: 0.9; }
-  58% { opacity: 0.78; }
+  22% { opacity: 0.84; }
+  30% { opacity: 0.93; }
+  38% { opacity: 0.76; }
+  46% { opacity: 0.91; }
+  58% { opacity: 0.82; }
   66% { opacity: 0.95; }
-  74% { opacity: 0.74; }
-  82% { opacity: 0.9; }
-  90% { opacity: 0.76; }
+  74% { opacity: 0.8; }
+  82% { opacity: 0.91; }
+  90% { opacity: 0.81; }
 }
 @keyframes landingCandleBloom {
-  0%, 100% { opacity: 0.78; transform: translate(-50%, -50%) scale(0.98); }
-  8% { opacity: 0.62; transform: translate(-50%, -50%) scale(0.94); }
-  14% { opacity: 0.88; transform: translate(-50%, -50%) scale(1.02); }
-  22% { opacity: 0.7; transform: translate(-50%, -50%) scale(0.96); }
+  0%, 100% { opacity: 0.8; transform: translate(-50%, -50%) scale(0.99); }
+  8% { opacity: 0.68; transform: translate(-50%, -50%) scale(0.96); }
+  14% { opacity: 0.88; transform: translate(-50%, -50%) scale(1.01); }
+  22% { opacity: 0.74; transform: translate(-50%, -50%) scale(0.97); }
   30% { opacity: 0.85; transform: translate(-50%, -50%) scale(1); }
-  38% { opacity: 0.58; transform: translate(-50%, -50%) scale(0.93); }
-  46% { opacity: 0.82; transform: translate(-50%, -50%) scale(0.99); }
-  58% { opacity: 0.68; transform: translate(-50%, -50%) scale(0.95); }
-  66% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.03); }
-  74% { opacity: 0.64; transform: translate(-50%, -50%) scale(0.94); }
-  82% { opacity: 0.84; transform: translate(-50%, -50%) scale(1); }
-  90% { opacity: 0.7; transform: translate(-50%, -50%) scale(0.96); }
+  38% { opacity: 0.66; transform: translate(-50%, -50%) scale(0.95); }
+  46% { opacity: 0.84; transform: translate(-50%, -50%) scale(0.99); }
+  58% { opacity: 0.72; transform: translate(-50%, -50%) scale(0.97); }
+  66% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.02); }
+  74% { opacity: 0.7; transform: translate(-50%, -50%) scale(0.96); }
+  82% { opacity: 0.85; transform: translate(-50%, -50%) scale(1); }
+  90% { opacity: 0.74; transform: translate(-50%, -50%) scale(0.97); }
 }
 @keyframes landingCandleReflect {
-  0%, 100% { opacity: 0.62; }
-  8% { opacity: 0.48; }
+  0%, 100% { opacity: 0.64; }
+  8% { opacity: 0.54; }
   14% { opacity: 0.72; }
-  22% { opacity: 0.55; }
+  22% { opacity: 0.58; }
   30% { opacity: 0.68; }
-  38% { opacity: 0.44; }
+  38% { opacity: 0.52; }
   46% { opacity: 0.66; }
-  58% { opacity: 0.52; }
+  58% { opacity: 0.56; }
   66% { opacity: 0.74; }
-  74% { opacity: 0.46; }
+  74% { opacity: 0.53; }
   82% { opacity: 0.68; }
-  90% { opacity: 0.54; }
+  90% { opacity: 0.58; }
 }
 
 /* Pause decorative landing fx when the tab is hidden or the welcome is closed. */
