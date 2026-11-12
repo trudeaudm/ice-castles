@@ -4760,21 +4760,24 @@ body[data-realm="spirit"] .realmSky i {
 /* -------------------------------- language -------------------------------- */
 
 .langToggle {
-  position: fixed;
-  z-index: 140;
-  top: calc(var(--safe-t) + 6px);
-  right: max(8px, calc((100% - 460px) / 2 + 8px));
-  display: flex;
+  position: absolute;
+  z-index: 4;
+  top: calc(var(--safe-t) + 8px);
+  right: max(8px, env(safe-area-inset-right, 0px));
+  left: auto;
+  width: 64px;
+  height: 26px;
+  margin: 0;
+  display: none;
   gap: 2px;
   padding: 2px;
   border-radius: 999px;
   background: rgba(7, 21, 38, 0.62);
   border: 1px solid rgba(255, 255, 255, 0.42);
-  box-shadow: 0 2px 6px rgba(4, 16, 31, 0.22);
   pointer-events: auto;
   overflow: hidden;
-  max-width: calc(100% - 16px);
-  display: none;
+  contain: strict;
+  box-sizing: border-box;
 }
 body.landing-open .langToggle { display: flex; }
 body.landing-open:has(.beginBrief:not([hidden])) .langToggle { display: none; }
@@ -4782,7 +4785,9 @@ body.landing-open:has(.beginBrief:not([hidden])) .langToggle { display: none; }
 .langToggle__opt {
   width: 28px;
   height: 20px;
+  min-width: 0;
   padding: 0;
+  margin: 0;
   border: 0;
   border-radius: 4px;
   display: grid;
