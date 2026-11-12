@@ -40,6 +40,28 @@ const ELEMENT_LINES = [
   'One Guardian remains. Awaken the final element.',
   'All five elements are awake. Visit the Winter Keeper Throne to confirm your quest is complete.',
 ];
+
+function t(message, vars) {
+  return window.Lang ? Lang.t(message, vars) : String(message ?? '');
+}
+function realmLabel(realm) {
+  return t(REALM_META[realm]?.label || realm || '');
+}
+function elementLine(count) {
+  return t(ELEMENT_LINES[count] ?? ELEMENT_LINES[0]);
+}
+
+(function localizeStationReads() {
+  if (!window.Store || Store.touchBySlugRaw) return;
+  const rawSlug = Store.touchBySlug.bind(Store);
+  const rawType = Store.touchByType.bind(Store);
+  const rawPoi = Store.touchForPoi.bind(Store);
+  const present = (row) => (row && window.Lang ? Lang.present(row) : row);
+  Store.touchBySlugRaw = rawSlug;
+  Store.touchBySlug = (slug) => present(rawSlug(slug));
+  Store.touchByType = (type) => rawType(type).map(present);
+  Store.touchForPoi = (id) => present(rawPoi(id));
+})();
 const RUNE_SHAPES = {
   vortex: { tray: "<svg viewBox=\"39.28 37.95 25.32 25.32\" aria-hidden=\"true\"><path d=\"M47.18 48.97 L46.53 48.57 L46.05 48.18 L45.63 47.77 L45.26 47.33 L44.94 46.87 L44.67 46.38 L44.43 45.88 L44.24 45.36 L44.09 44.82 L43.98 44.27 L43.90 43.70 L43.87 43.13 L43.88 42.54 L43.94 41.95\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M52.30 48.07 L52.97 47.71 L53.55 47.49 L54.12 47.33 L54.68 47.23 L55.24 47.19 L55.80 47.19 L56.35 47.24 L56.90 47.33 L57.44 47.47 L57.98 47.65 L58.50 47.87 L59.01 48.13 L59.51 48.43 L60.00 48.77\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M50.52 52.95 L50.50 53.72 L50.40 54.33 L50.25 54.90 L50.05 55.44 L49.81 55.95 L49.53 56.43 L49.22 56.88 L48.86 57.31 L48.47 57.71 L48.05 58.08 L47.59 58.43 L47.11 58.74 L46.60 59.02 L46.06 59.27\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M47.18 48.97 L46.53 48.57 L46.05 48.18 L45.63 47.77 L45.26 47.33 L44.94 46.87 L44.67 46.38 L44.43 45.88 L44.24 45.36 L44.09 44.82 L43.98 44.27 L43.90 43.70 L43.87 43.13 L43.88 42.54 L43.94 41.95\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M52.30 48.07 L52.97 47.71 L53.55 47.49 L54.12 47.33 L54.68 47.23 L55.24 47.19 L55.80 47.19 L56.35 47.24 L56.90 47.33 L57.44 47.47 L57.98 47.65 L58.50 47.87 L59.01 48.13 L59.51 48.43 L60.00 48.77\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M50.52 52.95 L50.50 53.72 L50.40 54.33 L50.25 54.90 L50.05 55.44 L49.81 55.95 L49.53 56.43 L49.22 56.88 L48.86 57.31 L48.47 57.71 L48.05 58.08 L47.59 58.43 L47.11 58.74 L46.60 59.02 L46.06 59.27\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" },
   draft: { tray: "<svg viewBox=\"24.37 27.52 44.48 44.48\" aria-hidden=\"true\"><path d=\"M43.94 41.95 L44.03 41.36 L44.16 40.76 L44.34 40.17 L44.56 39.58 L44.81 38.99 L45.11 38.41 L45.45 37.84 L45.83 37.28 L46.25 36.73 L46.71 36.20 L47.20 35.69 L47.73 35.20 L48.30 34.73 L48.90 34.29 L49.54 33.87 L50.21 33.48 L50.91 33.12 L51.64 32.79 L52.39 32.50 L53.18 32.24 L53.99 32.02 L54.82 31.84 L55.67 31.70 L56.54 31.60 L57.43 31.54 L58.34 31.52 L59.25 31.56 L60.18 31.63\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M60.00 48.77 L60.47 49.15 L60.92 49.56 L61.34 50.01 L61.75 50.50 L62.13 51.02 L62.48 51.56 L62.81 52.14 L63.10 52.75 L63.37 53.39 L63.60 54.05 L63.79 54.73 L63.95 55.44 L64.07 56.16 L64.16 56.91 L64.20 57.67 L64.20 58.44 L64.17 59.22 L64.08 60.02 L63.96 60.82 L63.79 61.63 L63.58 62.44 L63.32 63.25 L63.02 64.06 L62.67 64.87 L62.27 65.67 L61.83 66.46 L61.35 67.24 L60.82 68.00\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M46.06 59.27 L45.50 59.49 L44.92 59.67 L44.32 59.82 L43.69 59.93 L43.06 60.00 L42.40 60.03 L41.74 60.02 L41.07 59.97 L40.38 59.88 L39.70 59.75 L39.01 59.58 L38.32 59.37 L37.63 59.11 L36.94 58.81 L36.26 58.47 L35.59 58.08 L34.93 57.66 L34.28 57.19 L33.65 56.68 L33.03 56.13 L32.44 55.54 L31.86 54.91 L31.31 54.24 L30.79 53.54 L30.30 52.79 L29.83 52.02 L29.40 51.21 L29.00 50.37\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M43.94 41.95 L44.03 41.36 L44.16 40.76 L44.34 40.17 L44.56 39.58 L44.81 38.99 L45.11 38.41 L45.45 37.84 L45.83 37.28 L46.25 36.73 L46.71 36.20 L47.20 35.69 L47.73 35.20 L48.30 34.73 L48.90 34.29 L49.54 33.87 L50.21 33.48 L50.91 33.12 L51.64 32.79 L52.39 32.50 L53.18 32.24 L53.99 32.02 L54.82 31.84 L55.67 31.70 L56.54 31.60 L57.43 31.54 L58.34 31.52 L59.25 31.56 L60.18 31.63\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M60.00 48.77 L60.47 49.15 L60.92 49.56 L61.34 50.01 L61.75 50.50 L62.13 51.02 L62.48 51.56 L62.81 52.14 L63.10 52.75 L63.37 53.39 L63.60 54.05 L63.79 54.73 L63.95 55.44 L64.07 56.16 L64.16 56.91 L64.20 57.67 L64.20 58.44 L64.17 59.22 L64.08 60.02 L63.96 60.82 L63.79 61.63 L63.58 62.44 L63.32 63.25 L63.02 64.06 L62.67 64.87 L62.27 65.67 L61.83 66.46 L61.35 67.24 L60.82 68.00\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M46.06 59.27 L45.50 59.49 L44.92 59.67 L44.32 59.82 L43.69 59.93 L43.06 60.00 L42.40 60.03 L41.74 60.02 L41.07 59.97 L40.38 59.88 L39.70 59.75 L39.01 59.58 L38.32 59.37 L37.63 59.11 L36.94 58.81 L36.26 58.47 L35.59 58.08 L34.93 57.66 L34.28 57.19 L33.65 56.68 L33.03 56.13 L32.44 55.54 L31.86 54.91 L31.31 54.24 L30.79 53.54 L30.30 52.79 L29.83 52.02 L29.40 51.21 L29.00 50.37\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" },
@@ -696,6 +718,10 @@ let shrineFocus = null;
 let shrineSlug = null;
 let mapModalMode = null;
 let mapModalStation = null;
+let visibleAward = null;
+let finaleKind = null;
+let landingFact = null;
+let openPoi = null;
 /** Bumps on every route / station paint so late async work cannot repaint a stale screen. */
 let viewGeneration = 0;
 let modalTrigger = null;
@@ -1048,7 +1074,7 @@ function renderProgress() {
   dom.progressFill.style.strokeDashoffset = String(circumference * (1 - ratio));
   dom.progressLabel.textContent = String(awakened);
   dom.questProgress.textContent = `${awakened} / 5`;
-  const line = ELEMENT_LINES[awakened] || ELEMENT_LINES[0];
+  const line = elementLine(awakened);
   if (dom.landingProgress) dom.landingProgress.textContent = `${awakened} / 5`;
   if (dom.landingProgressLine) dom.landingProgressLine.textContent = line;
   const realms = Store.state.session?.realms || [];
@@ -1057,12 +1083,12 @@ function renderProgress() {
   dom.realmPips.innerHTML = REALM_ORDER.map((realm) => {
     const on = realms.some((r) => r.realm === realm && r.complete);
     const guardian = guardians.find((t) => t.element === realm);
-    const name = guardian?.title || REALM_META[realm]?.label || realm;
+    const name = guardian?.title || realmLabel(realm);
     const face = `<img class="realmPip__face" src="${realmPfp(realm)}" alt="">`;
     if (!guardian?.slug) {
       return `<span class="realmPip${on ? ' is-on' : ''}" data-realm="${escapeHtml(realm)}">${face}</span>`;
     }
-    return `<button class="realmPip${on ? ' is-on' : ''}" type="button" data-realm="${escapeHtml(realm)}" data-go-station="${escapeHtml(guardian.slug)}" aria-label="Open ${escapeHtml(name)}">${face}</button>`;
+    return `<button class="realmPip${on ? ' is-on' : ''}" type="button" data-realm="${escapeHtml(realm)}" data-go-station="${escapeHtml(guardian.slug)}" aria-label="${escapeHtml(t('Open {name}', { name }))}">${face}</button>`;
   }).join('');
 }
 
@@ -1115,9 +1141,9 @@ function spiritChallengeHtml(station) {
 
   if (!assignment?.buttons?.length) {
     return `<div class="challenge spiritPlay" data-station="${escapeHtml(station.slug)}" data-challenge-type="button_lantern" data-spirit-pending="1">
-      <p class="challenge__prompt">${escapeHtml(challenge.prompt || 'Loading your Spirit challenge…')}</p>
-      <p class="challenge__hint">${escapeHtml(challenge.partyNote || 'This station serves one party at a time.')}</p>
-      <button class="textButton textButton--play" data-spirit-assign type="button">Get my button sequence</button>
+      <p class="challenge__prompt">${escapeHtml(challenge.prompt || t('Loading your Spirit challenge…'))}</p>
+      <p class="challenge__hint">${escapeHtml(challenge.partyNote || t('This station serves one party at a time.'))}</p>
+      <button class="textButton textButton--play" data-spirit-assign type="button">${escapeHtml(t('Get my button sequence'))}</button>
     </div>`;
   }
 
@@ -1130,26 +1156,26 @@ function spiritChallengeHtml(station) {
       data-seq-len="${len}"
       data-spirit-id="${escapeHtml(assignment.challengeId || '')}"
       data-spirit-step="press">
-    <p class="challenge__prompt">${escapeHtml(challenge.prompt || 'Press the buttons, watch the lanterns, then enter what you saw.')}</p>
+    <p class="challenge__prompt">${escapeHtml(challenge.prompt || t('Press the buttons, watch the lanterns, then enter what you saw.'))}</p>
     ${challenge.partyNote ? `<p class="challenge__hint">${escapeHtml(challenge.partyNote)}</p>` : ''}
     <div class="spiritPlay__step" data-spirit-panel="press">
-      <p class="spiritPlay__lead">${escapeHtml(challenge.pressPrompt || 'Wait for Ready, then press these buttons in order.')}</p>
-      <ol class="spiritSeq" aria-label="Buttons to press">${buttons}</ol>
-      <button class="textButton textButton--play" data-spirit-continue type="button">${escapeHtml(challenge.continueLabel || 'I pressed the buttons')}</button>
+      <p class="spiritPlay__lead">${escapeHtml(challenge.pressPrompt || t('Wait for Ready, then press these buttons in order.'))}</p>
+      <ol class="spiritSeq" aria-label="${escapeHtml(t('Buttons to press'))}">${buttons}</ol>
+      <button class="textButton textButton--play" data-spirit-continue type="button">${escapeHtml(challenge.continueLabel || t('I pressed the buttons'))}</button>
     </div>
     <div class="spiritPlay__step" data-spirit-panel="enter" hidden>
-      <p class="spiritPlay__lead">${escapeHtml(challenge.watchPrompt || 'Watch the lanterns.')}</p>
-      <p class="spiritPlay__lead">${escapeHtml(challenge.enterPrompt || 'Tap the lantern colors you saw, in order.')}</p>
+      <p class="spiritPlay__lead">${escapeHtml(challenge.watchPrompt || t('Watch the lanterns.'))}</p>
+      <p class="spiritPlay__lead">${escapeHtml(challenge.enterPrompt || t('Tap the lantern colors you saw, in order.'))}</p>
       ${challenge.replayNote ? `<p class="challenge__hint">${escapeHtml(challenge.replayNote)}</p>` : ''}
-      <div class="seqSlots spiritSlots" data-seq-readout style="--slots:${len}" aria-label="Entered lantern colors">${slots}</div>
-      <p class="seqReadout spiritReadout" data-spirit-readout>No colors yet</p>
+      <div class="seqSlots spiritSlots" data-seq-readout style="--slots:${len}" aria-label="${escapeHtml(t('Entered lantern colors'))}">${slots}</div>
+      <p class="seqReadout spiritReadout" data-spirit-readout>${escapeHtml(t('No colors yet'))}</p>
       <div class="seqRow spiritPads">${pads}</div>
       <div class="spiritPlay__tools">
-        <button class="challenge__clear" data-spirit-undo type="button">${escapeHtml(challenge.undoLabel || 'Undo')}</button>
-        <button class="challenge__clear" data-seq-clear type="button">${escapeHtml(challenge.clearLabel || 'Clear')}</button>
+        <button class="challenge__clear" data-spirit-undo type="button">${escapeHtml(challenge.undoLabel || t('Undo'))}</button>
+        <button class="challenge__clear" data-seq-clear type="button">${escapeHtml(challenge.clearLabel || t('Clear'))}</button>
       </div>
-      <button class="textButton textButton--play" data-seq-submit type="button">${escapeHtml(challenge.submitLabel || 'Awaken Spirit')}</button>
-      <button class="textButton" data-spirit-replay type="button">${escapeHtml(challenge.replayLabel || 'Show button sequence again')}</button>
+      <button class="textButton textButton--play" data-seq-submit type="button">${escapeHtml(challenge.submitLabel || t('Awaken Spirit'))}</button>
+      <button class="textButton" data-spirit-replay type="button">${escapeHtml(challenge.replayLabel || t('Show button sequence again'))}</button>
     </div>
   </div>`;
 }
@@ -1170,10 +1196,10 @@ async function ensureSpiritAssignment({ forceRender = false } = {}) {
     if (gen !== viewGeneration) return result.spiritChallenge || null;
     if (result.status === 'error') {
       toast(result.error === 'unknown_spirit_challenge'
-        ? 'Your Spirit challenge could not be loaded. Ask a cast member for help.'
+        ? t('Your Spirit challenge could not be loaded. Ask a cast member for help.')
         : result.connection
-          ? 'Could not reach the park. Check your signal and try again.'
-          : 'Could not load your Spirit challenge. Try again.');
+          ? t('Could not reach the park. Check your signal and try again.')
+          : t('Could not load your Spirit challenge. Try again.'));
       return null;
     }
     const stillOnSpirit = !expectedSlug || Store.state.path?.station === expectedSlug
@@ -1206,7 +1232,7 @@ function paintSpiritSequence(root) {
   if (!readout) return;
   readout.textContent = sequenceBuffer.length
     ? sequenceBuffer.map((id) => spiritColorMeta(challenge, id).label || id).join(' → ')
-    : 'No colors yet';
+    : t('No colors yet');
 }
 
 function challengeHtml(station) {
@@ -1214,7 +1240,7 @@ function challengeHtml(station) {
   const challenge = station.challenge || {};
   if (!type || station.complete && station.type === 'guardian') {
     return station.type === 'guardian' && station.complete
-      ? `<div class="challenge"><p class="challenge__prompt">This element is awake. Find the others, then scan the Winter Keeper Throne.</p></div>`
+      ? `<div class="challenge"><p class="challenge__prompt">${escapeHtml(t('This element is awake. Find the others, then scan the Winter Keeper Throne.'))}</p></div>`
       : '';
   }
 
@@ -1225,8 +1251,8 @@ function challengeHtml(station) {
       <div class="challenge__row">
         ${challenge.fieldLabel ? `<p class="challenge__field">${escapeHtml(challenge.fieldLabel)}</p>` : ''}
         <input class="challenge__input" data-challenge-code inputmode="latin" autocapitalize="characters"
-               autocomplete="off" spellcheck="false" maxlength="24" placeholder="${escapeHtml(challenge.placeholder || 'WORD')}">
-        <button class="textButton textButton--play" data-challenge-submit type="button">${escapeHtml(challenge.submitLabel || 'Go')}</button>
+               autocomplete="off" spellcheck="false" maxlength="24" placeholder="${escapeHtml(challenge.placeholder || t('WORD'))}">
+        <button class="textButton textButton--play" data-challenge-submit type="button">${escapeHtml(challenge.submitLabel || t('Go'))}</button>
       </div>
     </div>`;
   }
@@ -1243,9 +1269,9 @@ function challengeHtml(station) {
     return `<div class="challenge" data-station="${escapeHtml(station.slug)}" data-select-count="${need}">
       <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
       ${challenge.hint ? `<p class="challenge__hint">${escapeHtml(challenge.hint)}</p>` : ''}
-      <p class="challenge__count" data-pick-count role="status" aria-live="polite">0 of ${need} selected</p>
+      <p class="challenge__count" data-pick-count role="status" aria-live="polite">${escapeHtml(t('0 of {need} selected', { need }))}</p>
       <div class="pickGrid">${tiles}</div>
-      <button class="textButton textButton--play" data-image-submit type="button">Check my three</button>
+      <button class="textButton textButton--play" data-image-submit type="button">${escapeHtml(t('Check my three'))}</button>
     </div>`;
   }
 
@@ -1266,13 +1292,13 @@ function challengeHtml(station) {
     const slots = Array.from({ length: len }, () =>
       '<span class="seqSlot" data-seq-slot><span class="seqSlot__dot"></span></span>'
     ).join('');
-    const clearLabel = challenge.clearLabel || 'Clear';
+    const clearLabel = challenge.clearLabel || t('Clear');
     return `<div class="challenge" data-station="${escapeHtml(station.slug)}" data-seq-len="${len}">
       <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
       ${challenge.hint ? `<p class="challenge__hint">${escapeHtml(challenge.hint)}</p>` : ''}
       ${challenge.kind === 'color'
-        ? `<div class="seqSlots" data-seq-readout style="--slots:${len}" aria-label="Chosen lanterns">${slots}</div>`
-        : '<p class="seqReadout" data-seq-readout>Tap the sequence</p>'}
+        ? `<div class="seqSlots" data-seq-readout style="--slots:${len}" aria-label="${escapeHtml(t('Chosen lanterns'))}">${slots}</div>`
+        : `<p class="seqReadout" data-seq-readout>${escapeHtml(t('Tap the sequence'))}</p>`}
       <div class="seqRow">${opts}</div>
       <button class="${challenge.clearLabel ? 'challenge__clear' : 'textButton'}" data-seq-clear type="button">${escapeHtml(clearLabel)}</button>
       ${challenge.submitLabel ? `<button class="textButton textButton--play" data-seq-submit type="button">${escapeHtml(challenge.submitLabel)}</button>` : ''}
@@ -1297,15 +1323,15 @@ function challengeHtml(station) {
       </button>`).join('');
     return `<div class="challenge runePlay" data-station="${escapeHtml(station.slug)}">
       <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
-      <p class="challenge__hint">Drag a piece onto the rune, or tap to select it and tap the rune to place it. Keyboard: select a piece, then press Enter or Space on the rune.</p>
-      <p class="runeStatus" data-rune-status role="status" aria-live="polite">No piece selected.</p>
-      <div class="runeAltar" data-rune-altar tabindex="0" role="button" aria-label="Air rune drop target. Activate to place the selected piece.">
+      <p class="challenge__hint">${escapeHtml(t('Drag a piece onto the rune, or tap to select it and tap the rune to place it. Keyboard: select a piece, then press Enter or Space on the rune.'))}</p>
+      <p class="runeStatus" data-rune-status role="status" aria-live="polite">${escapeHtml(t('No piece selected.'))}</p>
+      <div class="runeAltar" data-rune-altar tabindex="0" role="button" aria-label="${escapeHtml(t('Air rune drop target. Activate to place the selected piece.'))}">
         <div class="runeAltar__mark" aria-hidden="true">${RUNE_FULL}</div>
         <div class="runeAltar__set" data-rune-set></div>
-        <p class="runeAltar__hint">Drag or tap the five pieces here</p>
+        <p class="runeAltar__hint">${escapeHtml(t('Drag or tap the five pieces here'))}</p>
       </div>
       <div class="runeTray">${pieces}</div>
-      <button class="textButton textButton--play" data-rune-retry type="button" hidden>Try again</button>
+      <button class="textButton textButton--play" data-rune-retry type="button" hidden>${escapeHtml(t('Try again'))}</button>
     </div>`;
   }
 
@@ -1313,30 +1339,32 @@ function challengeHtml(station) {
     return `<div class="challenge" data-station="${escapeHtml(station.slug)}" data-quiz-step="0">
       <p class="challenge__prompt">${escapeHtml(challenge.prompt)}</p>
       <div data-quiz-card>${quizCardHtml(station, 0, null)}</div>
-      <button class="textButton" data-quiz-skip type="button">Skip the quiz</button>
+      <button class="textButton" data-quiz-skip type="button">${escapeHtml(t('Skip the quiz'))}</button>
     </div>`;
   }
 
   // Never leave Play blank for an unknown challenge type after a deploy/cache miss.
   return `<div class="challenge" data-station="${escapeHtml(station.slug)}">
-    <p class="challenge__prompt">${escapeHtml(challenge.prompt || 'This challenge could not load. Refresh the page and try again.')}</p>
-    <button class="textButton textButton--play" type="button" onclick="location.reload()">Refresh</button>
+    <p class="challenge__prompt">${escapeHtml(challenge.prompt || t('This challenge could not load. Refresh the page and try again.'))}</p>
+    <button class="textButton textButton--play" type="button" onclick="location.reload()">${escapeHtml(t('Refresh'))}</button>
   </div>`;
 }
 
 function shrineMeetTitle(station) {
-  if (station.type === 'guardian') return 'Meet the Guardian';
-  if (station.type === 'monument') return 'Meet the First Builder';
-  if (station.type === 'heart') return 'The Winter Keeper Throne';
-  return `Meet ${station.title}`;
+  if (station.type === 'guardian') return t('Meet the Guardian');
+  if (station.type === 'monument') return t('Meet the First Builder');
+  if (station.type === 'heart') return t('The Winter Keeper Throne');
+  return t('Meet {name}', { name: station.title });
 }
 
 function formatRealmList(realms) {
-  const names = (realms || []).map((r) => REALM_META[r]?.label || r).filter(Boolean);
+  const names = (realms || []).map((r) => realmLabel(r)).filter(Boolean);
   if (!names.length) return '';
   if (names.length === 1) return names[0];
-  if (names.length === 2) return `${names[0]} and ${names[1]}`;
-  return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`;
+  const fr = window.Lang?.french();
+  if (names.length === 2) return fr ? `${names[0]} et ${names[1]}` : `${names[0]} and ${names[1]}`;
+  const head = names.slice(0, -1).join(', ');
+  return fr ? `${head} et ${names[names.length - 1]}` : `${head}, and ${names[names.length - 1]}`;
 }
 
 function heartRemainingRealms(heartResult) {
@@ -1348,30 +1376,27 @@ function heartRemainingRealms(heartResult) {
 
 function heartIntroHtml(session, heartResult) {
   if (session?.winterKeeper) {
-    return storyHtml('Your quest is complete. Show this screen at the Gift Shop for your Winter Keeper medallion.');
+    return storyHtml(t('Your quest is complete. Show this screen at the Gift Shop for your Winter Keeper medallion.'));
   }
   const remaining = heartRemainingRealms(heartResult);
   if (remaining.length) {
     const list = formatRealmList(remaining);
     const count = remaining.length;
-    const sleeping = count === 5
-      ? 'None of the five elements are awake yet'
-      : count === 1
-        ? `One element is still sleeping (${list})`
-        : `${count} elements are still sleeping (${list})`;
-    return storyHtml(
-      `The Winter Keeper Throne is the final scan — not a shortcut. ${sleeping}. Return here after you awaken ${count === 1 ? 'it' : 'them'} to confirm your quest and earn the Winter Keeper title.`
-    );
+    if (count === 5) {
+      return storyHtml(t('The Winter Keeper Throne is the final scan — not a shortcut. None of the five elements are awake yet. Return here after you awaken them to confirm your quest and earn the Winter Keeper title.'));
+    }
+    if (count === 1) {
+      return storyHtml(t('The Winter Keeper Throne is the final scan — not a shortcut. One element is still sleeping ({list}). Return here after you awaken it to confirm your quest and earn the Winter Keeper title.', { list }));
+    }
+    return storyHtml(t('The Winter Keeper Throne is the final scan — not a shortcut. {count} elements are still sleeping ({list}). Return here after you awaken them to confirm your quest and earn the Winter Keeper title.', { count, list }));
   }
-  return storyHtml(
-    'All five elements are awake. Scan the Winter Keeper Throne now to confirm your quest is complete. You will be named Winter Keeper, Protector of Winter Magic. An optional group photo here is welcome. Then show the completion screen at the Gift Shop for your medallion.'
-  );
+  return storyHtml(t('All five elements are awake. Scan the Winter Keeper Throne now to confirm your quest is complete. You will be named Winter Keeper, Protector of Winter Magic. An optional group photo here is welcome. Then show the completion screen at the Gift Shop for your medallion.'));
 }
 
 function shrineDiscoverTitle(station) {
-  if (station.type === 'guardian') return 'Discover the Element';
-  if (station.type === 'monument') return 'How Ice Castles Grow';
-  return 'Discover';
+  if (station.type === 'guardian') return t('Discover the Element');
+  if (station.type === 'monument') return t('How Ice Castles Grow');
+  return t('Discover');
 }
 
 function quizCardHtml(station, step, picked) {
@@ -1389,9 +1414,9 @@ function quizCardHtml(station, step, picked) {
   const correct = q.choices?.[index] || '';
   const last = step >= questions.length - 1;
   return `<p class="quizQ__ask">${escapeHtml(q.question)}</p>
-    <p class="quizReveal__answer">Correct answer: ${escapeHtml(letter)}. ${escapeHtml(correct)}</p>
+    <p class="quizReveal__answer">${escapeHtml(t('Correct answer: {letter}. {answer}', { letter, answer: correct }))}</p>
     <p class="quizReveal__fact">${escapeHtml(q.fact || '')}</p>
-    <button class="textButton textButton--play" data-quiz-next type="button">${last ? 'Finish quiz' : 'Next question'}</button>`;
+    <button class="textButton textButton--play" data-quiz-next type="button">${escapeHtml(last ? t('Finish quiz') : t('Next question'))}</button>`;
 }
 
 function storyHtml(text) {
@@ -1708,8 +1733,8 @@ function startWind() {
 
 function listenButtonHtml(src) {
   const audio = src ? `<audio preload="none" src="${escapeHtml(src)}"></audio>` : '';
-  return `<button class="listenButton" type="button" data-listen aria-pressed="false" aria-label="Play this story">
-    ${LISTEN_ICON}<span class="listenButton__label">Listen</span>
+  return `<button class="listenButton" type="button" data-listen aria-pressed="false" aria-label="${escapeHtml(t('Play this story'))}">
+    ${LISTEN_ICON}<span class="listenButton__label">${escapeHtml(t('Listen'))}</span>
   </button>
   ${audio}`;
 }
@@ -1719,9 +1744,9 @@ let storyAudio = null;
 function setListenButton(button, on) {
   button.classList.toggle('is-on', on);
   button.setAttribute('aria-pressed', on ? 'true' : 'false');
-  button.setAttribute('aria-label', on ? 'Stop the recording' : 'Play this story');
+  button.setAttribute('aria-label', on ? t('Stop the recording') : t('Play this story'));
   const label = button.querySelector('.listenButton__label');
-  if (label) label.textContent = on ? 'Stop' : 'Listen';
+  if (label) label.textContent = on ? t('Stop') : t('Listen');
 }
 
 function stopStoryAudio() {
@@ -1751,7 +1776,7 @@ function playStory(button) {
   audio.play().catch(() => {
     if (storyAudio === audio) storyAudio = null;
     setListenButton(button, false);
-    toast('Couldn’t play that recording.');
+    toast(t('Couldn’t play that recording.'));
   });
 }
 
@@ -1968,7 +1993,7 @@ function renderStation(slug) {
   if (!station) {
     delete document.body.dataset.realm;
     setShrineScrollLock(false);
-    dom.stationView.innerHTML = `<div class="empty"><p class="empty__title">This station isn’t on tonight’s quest.</p></div>`;
+    dom.stationView.innerHTML = `<div class="empty"><p class="empty__title">${escapeHtml(t('This station isn’t on tonight’s quest.'))}</p></div>`;
     return;
   }
   if (station.type === 'guardian' && station.element) document.body.dataset.realm = station.element;
@@ -1991,7 +2016,7 @@ function renderStation(slug) {
   const gated = station.type === 'guardian' || station.type === 'monument';
   const playHtml = station.challengeType ? challengeHtml(station) : '';
   const extra = station.type === 'monument' && Store.state.session?.builderQuizAt
-    ? `<p class="fineprint">You finished the builder quiz. This stop is optional.</p>`
+    ? `<p class="fineprint">${escapeHtml(t('You finished the builder quiz. This stop is optional.'))}</p>`
     : '';
   const art = stationArt(station);
   const sky = station.type === 'guardian' ? realmSkyHtml(station.element) : '';
@@ -2029,23 +2054,23 @@ function renderStation(slug) {
       ${sky}
       <p class="shrine__kicker">${escapeHtml(station.subtitle || station.type)}</p>
       <h2 class="shrine__title">${escapeHtml(station.title)}</h2>
-      ${station.element ? `<p class="chip chip--target">${escapeHtml(REALM_META[station.element]?.label || station.element)}</p>` : ''}
+      ${station.element ? `<p class="chip chip--target">${escapeHtml(realmLabel(station.element))}</p>` : ''}
       ${artHtml}
       <div class="shrineGate" data-focus="">
         <button class="shrineIcon" data-shrine-focus="meet" type="button" aria-expanded="false">
           <span class="shrineIcon__orbit" aria-hidden="true"></span>
           <span class="shrineIcon__gem">${ICON_MEET}</span>
-          <span class="shrineIcon__label">Meet</span>
+          <span class="shrineIcon__label">${escapeHtml(t('Meet'))}</span>
         </button>
         <button class="shrineIcon" data-shrine-focus="discover" type="button" aria-expanded="false">
           <span class="shrineIcon__orbit" aria-hidden="true"></span>
           <span class="shrineIcon__gem">${ICON_DISCOVER}</span>
-          <span class="shrineIcon__label">Discover</span>
+          <span class="shrineIcon__label">${escapeHtml(t('Discover'))}</span>
         </button>
         <button class="shrineIcon" data-shrine-focus="play" type="button" aria-expanded="false">
           <span class="shrineIcon__orbit" aria-hidden="true"></span>
           <span class="shrineIcon__gem shrineIcon__gem--play">${ICON_PLAY}</span>
-          <span class="shrineIcon__label">Play</span>
+          <span class="shrineIcon__label">${escapeHtml(t('Play'))}</span>
         </button>
       </div>
       <section class="shrinePanel" data-panel="meet">
@@ -2056,10 +2081,10 @@ function renderStation(slug) {
       <section class="shrinePanel" data-panel="discover">
         <h3>${escapeHtml(shrineDiscoverTitle(station))}</h3>
         ${station.type === 'guardian' ? listenButtonHtml(station.discoverAudioUrl) : ''}
-        ${storyHtml(station.discoverBody || 'Look around this shrine. The castle keeps its own clues.')}
+        ${storyHtml(station.discoverBody || t('Look around this shrine. The castle keeps its own clues.'))}
       </section>
       <section class="shrinePanel" data-panel="play" id="challenge">
-        <h3>Play the challenge</h3>
+        <h3>${escapeHtml(t('Play the challenge'))}</h3>
         ${playHtml}
         ${extra}
       </section>
@@ -2133,13 +2158,15 @@ function renderHeartSlot(heartResult) {
 
   if (remaining.length) {
     const icons = remaining.map((r) =>
-      `<li><img src="${realmPfp(r)}" alt=""><span>${escapeHtml(REALM_META[r]?.label || r)}</span></li>`
+      `<li><img src="${realmPfp(r)}" alt=""><span>${escapeHtml(realmLabel(r))}</span></li>`
     ).join('');
     const list = formatRealmList(remaining);
     slot.innerHTML = `<div class="challenge">
-      <p class="challenge__prompt">Still needed: ${escapeHtml(list)}. Finish ${remaining.length === 1 ? 'that Guardian challenge' : 'those Guardian challenges'}, then return here to scan and confirm.</p>
+      <p class="challenge__prompt">${escapeHtml(remaining.length === 1
+        ? t('Still needed: {list}. Finish that Guardian challenge, then return here to scan and confirm.', { list })
+        : t('Still needed: {list}. Finish those Guardian challenges, then return here to scan and confirm.', { list }))}</p>
       <ul class="remainList">${icons}</ul>
-      <button class="textButton" data-open-journey type="button">View my journey</button>
+      <button class="textButton" data-open-journey type="button">${escapeHtml(t('View my journey'))}</button>
     </div>`;
     return;
   }
@@ -2156,20 +2183,20 @@ function keepersFormHtml(values = {}) {
   const namesValue = escapeHtml(values.names || '');
   const sizeValue = escapeHtml(String(values.partySize || known || '1'));
   const sizeField = known
-    ? `<p class="fineprint">Party of ${known}.</p>`
-    : `<label>How many adventurers?
+    ? `<p class="fineprint">${escapeHtml(t('Party of {count}.', { count: known }))}</p>`
+    : `<label>${escapeHtml(t('How many adventurers?'))}
       <input class="challenge__input" name="partySize" type="number" min="1" max="20" value="${sizeValue}" required>
     </label>`;
   // Delivery of a digital copy is not live yet (Keep hook is deferred). Do not
   // collect an address solely for an undelivered email.
   return `<form class="challenge keepers" id="keepersForm">
-    <p class="challenge__prompt">Water, Earth, Fire, Air, and Spirit are awake. You completed all five Guardian challenges, and the Throne confirms your quest is complete. You are Winter Keepers, Protectors of Winter Magic. Enter your first names for your recognition.</p>
+    <p class="challenge__prompt">${escapeHtml(t('Water, Earth, Fire, Air, and Spirit are awake. You completed all five Guardian challenges, and the Throne confirms your quest is complete. You are Winter Keepers, Protectors of Winter Magic. Enter your first names for your recognition.'))}</p>
     ${sizeField}
-    <label>First names
-      <input class="challenge__input" name="names" placeholder="Ada, Sam, Juniper" value="${namesValue}" required>
+    <label>${escapeHtml(t('First names'))}
+      <input class="challenge__input" name="names" placeholder="${escapeHtml(t('Ada, Sam, Juniper'))}" value="${namesValue}" required>
     </label>
     <p class="challenge__error" data-keepers-error hidden role="alert"></p>
-    <button class="threshold__primary threshold__primary--earned" type="submit">Become Winter Keepers</button>
+    <button class="threshold__primary threshold__primary--earned" type="submit">${escapeHtml(t('Become Winter Keepers'))}</button>
   </form>`;
 }
 
@@ -2178,11 +2205,11 @@ function staffScreenHtml(session) {
   const park = Store.state.park || {};
   const count = session.partySize || names.length || 1;
   return `<div class="staffCard">
-    <p class="staffCard__kicker">Gift Shop</p>
-    <h3>Winter Keeper medallion</h3>
-    <p class="staffCard__names">${escapeHtml(names.join(' · ') || 'This party')}</p>
-    <p class="staffCard__count">Winter Keepers in this party: ${count}</p>
-    <p class="fineprint">${escapeHtml(park.badgeRedemption || 'Show this screen at the Gift Shop to receive your Winter Keeper medallion.')}</p>
+    <p class="staffCard__kicker">${escapeHtml(t('Gift Shop'))}</p>
+    <h3>${escapeHtml(t('Winter Keeper medallion'))}</h3>
+    <p class="staffCard__names">${escapeHtml(names.join(' · ') || t('This party'))}</p>
+    <p class="staffCard__count">${escapeHtml(t('Winter Keepers in this party: {count}', { count }))}</p>
+    <p class="fineprint">${escapeHtml(t(park.badgeRedemption || 'Show this screen at the Gift Shop to receive your Winter Keeper medallion.'))}</p>
   </div>`;
 }
 
@@ -2192,7 +2219,7 @@ function sealHtml(session) {
   const year = Store.state.adventure?.year || '';
   return `<div class="seal">
     <img class="seal__art" src="${ART}/seal-winter-keeper.png" alt="">
-    <img class="seal__wordmark" src="${ART}/wordmark-winter-keeper.png" alt="Winter Keeper">
+    <img class="seal__wordmark" src="${ART}/wordmark-winter-keeper.png" alt="${escapeHtml(t('Winter Keeper'))}">
     <h2 class="seal__names">${escapeHtml(names)}</h2>
     <p class="seal__meta">${escapeHtml(park.locationName || park.name || '')} · ${escapeHtml(String(year))}</p>
   </div>`;
@@ -2224,11 +2251,11 @@ async function submitKeepers(form) {
   } catch {
     if (err) {
       err.textContent = navigator.onLine
-        ? 'Could not finish just now. Your names are still here — try again.'
-        : 'You appear offline. Your names are still here — reconnect and try again.';
+        ? t('Could not finish just now. Your names are still here — try again.')
+        : t('You appear offline. Your names are still here — reconnect and try again.');
       err.hidden = false;
     } else {
-      toast('Could not finish just now. Try again.');
+      toast(t('Could not finish just now. Try again.'));
     }
     // Preserve entered values if the slot was re-rendered elsewhere.
     if (!form.isConnected) {
@@ -2260,6 +2287,7 @@ function openFinaleOverlay() {
 }
 
 function openThroneReveal() {
+  finaleKind = 'reveal';
   const pieces = REALM_ORDER.map((id, index) =>
     `<img class="combine__piece combine__piece--${id}" src="${realmIcon(id, true)}" alt="" style="--i:${index}">`
   ).join('');
@@ -2270,22 +2298,23 @@ function openThroneReveal() {
         <span class="combine__burst"></span>
         <img class="combine__medal" src="${ART}/seal-winter-keeper.png" alt="">
       </div>
-      <p class="combine__kicker">Winter Keeper</p>
-      <h2 class="combine__title">Protector of Winter Magic</h2>
-      <p class="finaleStage__lead">The five elements rush together, and the Winter Keeper medallion appears.</p>
-      <p class="combine__photo">If you like, take a group photo here at the Throne. That part is entirely optional.</p>
-      <button class="threshold__primary threshold__primary--earned finaleStage__btn" data-close-finale type="button">Continue</button>
+      <p class="combine__kicker">${escapeHtml(t('Winter Keeper'))}</p>
+      <h2 class="combine__title">${escapeHtml(t('Protector of Winter Magic'))}</h2>
+      <p class="finaleStage__lead">${escapeHtml(t('The five elements rush together, and the Winter Keeper medallion appears.'))}</p>
+      <p class="combine__photo">${escapeHtml(t('If you like, take a group photo here at the Throne. That part is entirely optional.'))}</p>
+      <button class="threshold__primary threshold__primary--earned finaleStage__btn" data-close-finale type="button">${escapeHtml(t('Continue'))}</button>
     </div>`;
   openFinaleOverlay();
 }
 
 function showFinale() {
+  finaleKind = 'staff';
   const session = Store.state.session;
   if (!session?.winterKeeper) return;
   dom.finaleCard.innerHTML = `
     <div class="finaleStage finaleStage--staff">
       ${staffScreenHtml(session)}
-      <button class="textButton finaleStage__btn" data-close-finale type="button">Done</button>
+      <button class="textButton finaleStage__btn" data-close-finale type="button">${escapeHtml(t('Done'))}</button>
     </div>`;
   openFinaleOverlay();
 }
@@ -2295,7 +2324,7 @@ function showReward() {
   dom.finaleCard.innerHTML = `
     <div class="finaleStage finaleStage--staff">
       ${staffScreenHtml(session)}
-      <button class="textButton finaleStage__btn" data-close-finale type="button">Done</button>
+      <button class="textButton finaleStage__btn" data-close-finale type="button">${escapeHtml(t('Done'))}</button>
     </div>`;
 }
 
@@ -2318,7 +2347,7 @@ function hideFinale() {
 /* -------------------------------------------------------------------------- */
 
 function renderJourney() {
-  const stations = Store.state.touchpoints || [];
+  const stations = (Store.state.touchpoints || []).map((tp) => (window.Lang ? Lang.present(tp) : tp));
   const session = Store.state.session;
   const realms = session?.realms || [];
   const rows = stations.map((tp) => {
@@ -2329,7 +2358,8 @@ function renderJourney() {
     else if (tp.complete) status = 'Element awake';
     const awake = Boolean(tp.complete || (tp.type === 'heart' && session?.winterKeeper));
     const realm = tp.element ? ` data-realm="${escapeHtml(tp.element)}"` : '';
-    const hint = tp.element ? `${REALM_META[tp.element]?.label || tp.element} · ${status}` : status;
+    const statusLabel = t(status);
+    const hint = tp.element ? `${realmLabel(tp.element)} · ${statusLabel}` : statusLabel;
     let token;
     if (tp.element) {
       token = `<span class="stop__face"><img src="${realmPfp(tp.element)}" alt=""></span>`;
@@ -2355,14 +2385,14 @@ function renderJourney() {
   const crew = REALM_ORDER.map((realm) => {
     const on = realms.some((r) => r.realm === realm && r.complete);
     return `<span class="journeyHead__face${on ? ' is-on' : ''}" data-realm="${escapeHtml(realm)}">
-      <img src="${realmPfp(realm)}" alt="${escapeHtml(REALM_META[realm].label)}">
+      <img src="${realmPfp(realm)}" alt="${escapeHtml(realmLabel(realm))}">
     </span>`;
   }).join('');
   dom.journeyBody.innerHTML = `
     <div class="journeyHead">
       <p class="journeyHead__count"><b>${awakened}</b><span>/ 5</span></p>
       <div class="journeyHead__crew" aria-hidden="true">${crew}</div>
-      <p class="journeyHead__note">${escapeHtml(ELEMENT_LINES[awakened] || ELEMENT_LINES[0])} Builder’s Monument is optional.</p>
+      <p class="journeyHead__note">${escapeHtml(elementLine(awakened))} ${escapeHtml(t('Builder’s Monument is optional.'))}</p>
     </div>
     <ul class="stopList">${rows}</ul>`;
 }
@@ -2469,10 +2499,10 @@ function renderPassport() {
   const session = Store.state.session;
   const park = Store.state.park || {};
   dom.passportBody.innerHTML = session?.winterKeeper
-    ? `${staffScreenHtml(session)}<p class="fineprint">${escapeHtml(park.badgeBody || '')}</p>`
+    ? `${staffScreenHtml(session)}<p class="fineprint">${escapeHtml(t(park.badgeBody || ''))}</p>`
     : `<div class="empty">
-        <h3 class="empty__title">Not a Winter Keeper yet</h3>
-        <p class="empty__body">Awaken five elements, then scan the Winter Keeper Throne. Progress lasts until 4 AM Eastern.</p>
+        <h3 class="empty__title">${escapeHtml(t('Not a Winter Keeper yet'))}</h3>
+        <p class="empty__body">${escapeHtml(t('Awaken five elements, then scan the Winter Keeper Throne. Progress lasts until 4 AM Eastern.'))}</p>
       </div>`;
 }
 
@@ -3068,6 +3098,7 @@ function landTalk(realm, hold = 4800) {
   const facts = LANDING_FACTS[realm];
   if (!facts?.length || !dom.landingBubble || !dom.landingTalk) return;
   const fact = facts[talkCursor[realm] % facts.length];
+  landingFact = fact;
   talkCursor[realm] += 1;
   document.querySelectorAll('.landing__realm.is-talking').forEach((n) => n.classList.remove('is-talking'));
   document.querySelector(`.landing__realm[data-realm="${realm}"]`)?.classList.add('is-talking');
@@ -3075,7 +3106,7 @@ function landTalk(realm, hold = 4800) {
   dom.landingBubble.dataset.realm = realm;
   dom.landingBubble.style.setProperty('--tail', `${slot}%`);
   if (dom.landingBubbleWho) dom.landingBubbleWho.textContent = fact.who;
-  if (dom.landingBubbleText) dom.landingBubbleText.textContent = fact.text;
+  if (dom.landingBubbleText) dom.landingBubbleText.textContent = t(fact.text);
   dom.landingTalk.hidden = false;
   fitLandingBubbleText();
   dom.landingBubble.classList.remove('is-fresh');
@@ -3220,12 +3251,12 @@ function initLandingScene() {
 function showThreshold() {
   const park = Store.state.park || {};
   if (dom.landingPlace) {
-    dom.landingPlace.textContent = park.locationName || park.name || 'Ice Castles';
+    dom.landingPlace.textContent = t(park.locationName || park.name || 'Ice Castles');
   }
   if (dom.landingProgress) {
     const awakened = Store.realmsAwakened();
     dom.landingProgress.textContent = `${awakened} / 5`;
-    if (dom.landingProgressLine) dom.landingProgressLine.textContent = ELEMENT_LINES[awakened] || ELEMENT_LINES[0];
+    if (dom.landingProgressLine) dom.landingProgressLine.textContent = elementLine(awakened);
   }
   hideBeginBrief();
   clearPartyReminder();
@@ -3258,15 +3289,15 @@ function clearPartyReminder() {
   dom.landingPartySize?.removeAttribute('aria-errormessage');
   if (dom.landingPartyHint) {
     dom.landingPartyHint.setAttribute('role', 'status');
-    dom.landingPartyHint.textContent = 'Enter your party size to continue.';
+    dom.landingPartyHint.textContent = t('Enter your party size to continue.');
   }
 }
 
 function remindPartySize() {
   const raw = String(dom.landingPartySize?.value || '').trim();
   const message = raw
-    ? 'Enter a party size from 1 to 20.'
-    : 'Enter your party size to continue.';
+    ? t('Enter a party size from 1 to 20.')
+    : t('Enter your party size to continue.');
   if (dom.landingPartyHint) {
     dom.landingPartyHint.textContent = message;
     dom.landingPartyHint.setAttribute('role', 'alert');
@@ -3338,7 +3369,7 @@ async function enterFromLanding({ journeyMode }) {
   try {
     await Store.startSession(Store.intendedStation(), partySize);
   } catch {
-    toast('Couldn’t start just yet. Try again in a moment.');
+    toast(t('Couldn’t start just yet. Try again in a moment.'));
     return;
   }
   stripWelcomePreview();
@@ -3387,12 +3418,12 @@ function renderBeginGuideGuardians() {
   dom.mapModalGuardians.hidden = false;
   dom.mapModalGuardians.innerHTML = guardians.map((g) => {
     const realm = g.element || '';
-    const name = g.title || REALM_META[realm]?.label || 'Guardian';
-    const realmLabel = REALM_META[realm]?.label || '';
+    const name = g.title || realmLabel(realm) || t('Guardian');
+    const elementName = realmLabel(realm);
     const done = g.complete ? ' is-done' : '';
     return `<button class="mapModal__guardian${done}" type="button" data-slug="${escapeHtml(g.slug)}" aria-label="${escapeHtml(name)}">
       <span class="mapModal__face mapModal__face--${escapeHtml(realm)}"><img src="${realmPfp(realm)}" alt=""></span>
-      <span class="mapModal__guardianName">${escapeHtml(realmLabel || name)}</span>
+      <span class="mapModal__guardianName">${escapeHtml(elementName || name)}</span>
     </button>`;
   }).join('');
 }
@@ -3400,16 +3431,16 @@ function renderBeginGuideGuardians() {
 function showMapModal({ mode, eyebrow, title, body, primary, ghost, placement }) {
   rememberModalTrigger();
   mapModalMode = mode;
-  dom.mapModalEyebrow.textContent = eyebrow;
-  dom.mapModalTitle.textContent = title;
+  dom.mapModalEyebrow.textContent = t(eyebrow);
+  dom.mapModalTitle.textContent = t(title);
   if (mode === 'beginGuide') renderBeginGuideGuardians();
   else if (dom.mapModalGuardians) {
     dom.mapModalGuardians.hidden = true;
     dom.mapModalGuardians.innerHTML = '';
   }
-  dom.mapModalBody.textContent = body;
-  dom.mapModalPrimary.textContent = primary;
-  dom.mapModalGhost.textContent = ghost || '';
+  dom.mapModalBody.textContent = t(body);
+  dom.mapModalPrimary.textContent = t(primary);
+  dom.mapModalGhost.textContent = ghost ? t(ghost) : '';
   dom.mapModalGhost.hidden = !ghost;
   dom.mapModal.hidden = false;
   dom.mapModal.inert = false;
@@ -3437,11 +3468,11 @@ function showBeginStationModal(station) {
   mapModalStation = station;
   showMapModal({
     mode: 'begin',
-    eyebrow: station.subtitle || 'Guardian',
+    eyebrow: station.subtitle || t('Guardian'),
     title: station.title,
-    body: 'Begin this shrine when you are ready.',
-    primary: `Begin ${station.title}`,
-    ghost: 'Stay on the map',
+    body: t('Begin this shrine when you are ready.'),
+    primary: t('Begin {name}', { name: station.title }),
+    ghost: t('Stay on the map'),
   });
 }
 
@@ -3541,8 +3572,9 @@ function openGuide() {
   document.body.classList.add('guide-open');
   dom.guide.hidden = false;
   dom.guideToggle.setAttribute('aria-pressed', 'true');
-  dom.guideToggle.textContent = 'Quest';
-  dom.guideToggle.setAttribute('aria-label', 'Back to Castle Quest');
+  const guideLabel = dom.guideToggle.querySelector('span');
+  if (guideLabel) guideLabel.textContent = t('Quest');
+  dom.guideToggle.setAttribute('aria-label', t('Back to Castle Quest'));
   if (dom.headerMap) dom.headerMap.setAttribute('aria-pressed', 'true');
   ensureMap();
   setTimeout(() => ParkMap.invalidate?.(), 80);
@@ -3555,8 +3587,9 @@ function closeGuide({ force = false } = {}) {
   document.body.classList.remove('sheet-open');
   dom.guide.hidden = true;
   dom.guideToggle.setAttribute('aria-pressed', 'false');
-  dom.guideToggle.textContent = 'Quest';
-  dom.guideToggle.setAttribute('aria-label', 'Back to Castle Quest');
+  const guideLabel = dom.guideToggle.querySelector('span');
+  if (guideLabel) guideLabel.textContent = t('Quest');
+  dom.guideToggle.setAttribute('aria-label', t('Back to Castle Quest'));
   if (dom.headerMap) dom.headerMap.setAttribute('aria-pressed', 'false');
 }
 
@@ -3615,24 +3648,26 @@ function renderMap() {
 }
 
 function openPoiSheet(poi) {
+  openPoi = poi;
   const touch = Store.touchForPoi(poi.id);
   dom.sheetBody.innerHTML = `
     <div>
-      <p class="poi__eyebrow">${escapeHtml(poi.category)}</p>
-      <h2 class="poi__name">${escapeHtml(poi.name)}</h2>
-      ${poi.blurb ? `<p class="poi__blurb">${escapeHtml(poi.blurb)}</p>` : ''}
-      ${poi.description ? `<p class="poi__body">${escapeHtml(poi.description)}</p>` : ''}
-      ${touch ? `<button class="textButton" data-go-station="${escapeHtml(touch.slug)}" type="button">Open ${escapeHtml(touch.title)}</button>` : ''}
+      <p class="poi__eyebrow">${escapeHtml(categoryLabel(poi.category))}</p>
+      <h2 class="poi__name">${escapeHtml(t(poi.name))}</h2>
+      ${poi.blurb ? `<p class="poi__blurb">${escapeHtml(t(poi.blurb))}</p>` : ''}
+      ${poi.description ? `<p class="poi__body">${escapeHtml(t(poi.description))}</p>` : ''}
+      ${touch ? `<button class="textButton" data-go-station="${escapeHtml(touch.slug)}" type="button">${escapeHtml(t('Open {name}', { name: touch.title }))}</button>` : ''}
     </div>`;
   document.body.classList.add('sheet-open');
 }
 
 function categoryLabel(category) {
-  return CATEGORY_LABELS[category] || String(category || '')
+  const english = CATEGORY_LABELS[category] || String(category || '')
     .split('-')
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+  return t(english);
 }
 
 function syncFilterChrome() {
@@ -3642,13 +3677,13 @@ function syncFilterChrome() {
     dom.filterButton.classList.toggle('is-filtered', filtering);
     dom.filterButton.setAttribute(
       'aria-label',
-      filtering ? `Filter map (${hidden} hidden)` : 'Filter what the map shows'
+      filtering ? t('Filter map ({count} hidden)', { count: hidden }) : t('Filter what the map shows')
     );
   }
   if (dom.legendHint) {
     dom.legendHint.textContent = filtering
-      ? `${hidden} categor${hidden === 1 ? 'y' : 'ies'} hidden`
-      : 'All categories on';
+      ? t(hidden === 1 ? '{count} category hidden' : '{count} categories hidden', { count: hidden })
+      : t('All categories on');
     dom.legendHint.classList.toggle('is-filtered', filtering);
   }
 }
@@ -3681,7 +3716,7 @@ function paintImagePick(root, { clearError = false } = {}) {
   });
   const readout = root.querySelector('[data-pick-count]');
   if (readout) {
-    readout.textContent = `${count} of ${need} selected`;
+    readout.textContent = t('{count} of {need} selected', { count, need });
     readout.classList.toggle('is-ready', count === need);
   }
   if (clearError) clearChallengeIssue();
@@ -3709,10 +3744,11 @@ function showNextAward() {
   } else {
     dom.awardGlyph.textContent = next.glyph || '';
   }
-  dom.awardKicker.textContent = next.kicker;
-  dom.awardTitle.textContent = next.title;
-  dom.awardMeta.textContent = next.meta;
-  dom.awardDone.textContent = next.action || 'Keep exploring';
+  visibleAward = next;
+  dom.awardKicker.textContent = t(next.kicker);
+  dom.awardTitle.textContent = t(next.title);
+  dom.awardMeta.textContent = t(next.meta);
+  dom.awardDone.textContent = t(next.action || 'Keep exploring');
   const awakened = Store.realmsAwakened();
   dom.awardPips.innerHTML = Array.from({ length: 5 }, (_, i) =>
     `<span class="award__pip ${i < awakened ? 'is-on' : ''}"></span>`).join('');
@@ -3754,10 +3790,11 @@ function placeRunePiece(piece, root) {
   if (!altar || altar.classList.contains('is-forged') || altar.classList.contains('is-submitting')) return false;
   if (piece.dataset.fits !== '1') {
     const station = Store.touchBySlug(root.dataset.station);
-    showChallengeIssue(root, station?.challenge?.retry || 'These shapes have not found each other yet.');
+    const raw = Store.touchBySlugRaw?.(root.dataset.station);
+    showChallengeIssue(root, t(raw?.challenge?.retry || station?.challenge?.retry || 'These shapes have not found each other yet.'));
     piece.classList.add('is-rejected');
     setTimeout(() => piece.classList.remove('is-rejected'), 450);
-    announceRune(root, `${piece.querySelector('span')?.textContent || 'Piece'} does not fit.`);
+    announceRune(root, t('{piece} does not fit.', { piece: piece.querySelector('span')?.textContent || t('Piece') }));
     return false;
   }
   const label = piece.querySelector('span');
@@ -3769,7 +3806,7 @@ function placeRunePiece(piece, root) {
   if (runeSelectedPiece === piece) runeSelectedPiece = null;
   const need = root.querySelectorAll('.runePiece[data-fits="1"]').length;
   const placed = [...altar.querySelectorAll('.runePiece.is-placed')];
-  announceRune(root, `${placed.length} of ${need} pieces placed.`);
+  announceRune(root, t('{placed} of {need} pieces placed.', { placed: placed.length, need }));
   showRuneError(root, '');
   if (placed.length < need) return true;
   submitRuneArrangement(root);
@@ -3793,9 +3830,10 @@ async function submitRuneArrangement(root) {
   if (result.status === 'error') {
     // Keep the solved arrangement for retry; do not treat UI forge as completion.
     altar.classList.remove('is-forged');
+    const raw = Store.touchBySlugRaw?.(slug);
     const message = result.connection
-      ? 'Could not reach the park. Your rune is still assembled — try again when you have signal.'
-      : (Store.touchBySlug(slug)?.challenge?.retry
+      ? t('Could not reach the park. Your rune is still assembled — try again when you have signal.')
+      : t(raw?.challenge?.retry
         || (result.error === 'bad_shapes'
           ? 'These shapes have not found each other yet.'
           : 'Not quite — try again.'));
@@ -3813,17 +3851,19 @@ async function applyChallengeSuccess(slug, result) {
   renderMap();
   if (result.realmAwakened) {
     const meta = REALM_META[result.realmAwakened] || { label: result.realmAwakened, glyph: '✦' };
+    const raw = Store.touchBySlugRaw?.(slug);
     enqueueAward({
       glyph: meta.glyph,
       glyphUrl: realmIcon(result.realmAwakened, true),
       kicker: 'Element Awakened',
       title: meta.label,
-      meta: Store.touchBySlug(slug)?.challenge?.success || `${Store.realmsAwakened()} / 5`,
+      meta: raw?.challenge?.success || `${Store.realmsAwakened()} / 5`,
+      action: 'Keep exploring',
     });
   } else if (result.status === 'repeat') {
-    toast('Already recorded.');
+    toast(t('Already recorded.'));
   } else {
-    toast('Saved.', { warm: true });
+    toast(t('Saved.'), { warm: true });
   }
 }
 
@@ -3835,7 +3875,7 @@ async function handleStationChallenge(slug, answer) {
   if (gen !== viewGeneration && pathSlug !== slug) return result;
   if (result.status === 'error') {
     if (gen !== viewGeneration) return result;
-    const station = Store.touchBySlug(slug);
+    const raw = Store.touchBySlugRaw?.(slug);
     const messages = {
       bad_code: 'That word isn’t right. Try again.',
       bad_images: 'Not those three — look again at the ice.',
@@ -3844,8 +3884,8 @@ async function handleStationChallenge(slug, answer) {
       no_spirit_challenge: 'Get your button sequence first, then try again.',
     };
     const message = result.connection
-      ? 'Could not reach the park. Check your signal and try again.'
-      : (station?.challenge?.retry || messages[result.error] || 'Not quite — try again.');
+      ? t('Could not reach the park. Check your signal and try again.')
+      : t(raw?.challenge?.retry || messages[result.error] || 'Not quite — try again.');
     showChallengeIssue(challengeRootForSlug(slug), message);
     return result;
   }
@@ -3867,26 +3907,26 @@ function normalizeScanInput(raw) {
 async function handleCode(raw) {
   const payload = normalizeScanInput(raw);
   Scanner.close();
-  if (payload.kind === 'invalid') return toast('Enter a station link or the printed code.');
+  if (payload.kind === 'invalid') return toast(t('Enter a station link or the printed code.'));
   if (payload.kind === 'station') {
     const venue = Store.state.adventure?.venueCode || Store.state.path.venueCode;
     if (venue && payload.venue && payload.venue !== venue) {
-      toast(`That code is for ${payload.venue.toUpperCase()}, not this park.`);
+      toast(t('That code is for {venue}, not this park.', { venue: payload.venue.toUpperCase() }));
       return;
     }
     goStation(payload.slug);
     return;
   }
   const result = await Store.scan(payload.code);
-  if (result.status === 'unknown') return toast('That code isn’t one of ours.');
-  if (result.status === 'invalid') return toast('Enter the printed code.');
-  if (result.status === 'queued') return toast('Saved until you have signal.', { warm: true });
+  if (result.status === 'unknown') return toast(t('That code isn’t one of ours.'));
+  if (result.status === 'invalid') return toast(t('Enter the printed code.'));
+  if (result.status === 'queued') return toast(t('Saved until you have signal.'), { warm: true });
   if (result.poi) {
     ensureMap();
     openGuide();
     openPoiSheet(result.poi);
     const touch = Store.touchForPoi(result.poi.id);
-    if (touch) toast(`${result.poi.name} — open the quest station if you like.`);
+    if (touch) toast(t('{name} — open the quest station if you like.', { name: t(result.poi.name) }));
   }
 }
 
@@ -3896,9 +3936,9 @@ async function reportQueueFlush(result) {
   const failed = result.failed?.length || 0;
   const pending = result.pending?.length || 0;
   if (!synced && !failed && !pending) return;
-  if (synced && !pending && !failed) toast(synced === 1 ? 'Saved scan synced.' : `${synced} saved scans synced.`, { warm: true });
-  else if (failed && !pending) toast(failed === 1 ? 'One saved code was not recognized.' : `${failed} saved codes were not recognized.`);
-  else if (pending) toast('Still saving scans until signal returns.', { warm: true });
+  if (synced && !pending && !failed) toast(synced === 1 ? t('Saved scan synced.') : t('{count} saved scans synced.', { count: synced }), { warm: true });
+  else if (failed && !pending) toast(failed === 1 ? t('One saved code was not recognized.') : t('{count} saved codes were not recognized.', { count: failed }));
+  else if (pending) toast(t('Still saving scans until signal returns.'), { warm: true });
 }
 
 /* -------------------------------------------------------------------------- */
@@ -4032,8 +4072,8 @@ function paintSequence(root) {
   const readout = root.querySelector('[data-seq-readout]');
   if (!readout) return;
   readout.textContent = sequenceBuffer.length
-    ? sequenceBuffer.map((id) => REALM_META[id]?.label || id).join(' → ')
-    : 'Tap the sequence';
+    ? sequenceBuffer.map((id) => realmLabel(id)).join(' → ')
+    : t('Tap the sequence');
 }
 
 function wire() {
@@ -4096,7 +4136,7 @@ function wire() {
     const refit = () => {
       ParkMap.invalidate?.();
       ParkMap.fit();
-      toast('Whole park in view');
+      toast(t('Whole park in view'));
     };
     if (framed) setTimeout(refit, 40);
     else refit();
@@ -4104,7 +4144,7 @@ function wire() {
   dom.journeyButton.addEventListener('click', () => {
     const on = Store.toggleJourneyMode();
     renderMap();
-    toast(on ? 'Guardian stops only' : 'Full park map');
+    toast(on ? t('Guardian stops only') : t('Full park map'));
   });
   const closeLegend = () => {
     if (!dom.legend) return;
@@ -4329,7 +4369,7 @@ function wire() {
       return;
     }
     if (event.target.closest('[data-quiz-skip]')) {
-      toast('The quiz is optional. It does not change your quest.');
+      toast(t('The quiz is optional. It does not change your quest.'));
       return;
     }
     if (event.target.closest('[data-rune-retry]')) {
@@ -4354,8 +4394,8 @@ function wire() {
     runeSelectedPiece = piece;
     piece.setAttribute('aria-pressed', 'true');
     piece.setAttribute('aria-grabbed', 'true');
-    const label = piece.querySelector('span')?.textContent || 'Piece';
-    announceRune(root, `${label} selected. Activate the rune to place it.`);
+    const label = piece.querySelector('span')?.textContent || t('Piece');
+    announceRune(root, t('{piece} selected. Activate the rune to place it.', { piece: label }));
   }
 
   let runeDrag = null;
@@ -4511,25 +4551,68 @@ function consumePendingScanDeepLink() {
   return { kind: 'amenity', code };
 }
 
+function applyLanguage() {
+  if (window.Lang) Lang.applyStatic();
+  const park = Store.state?.park || {};
+  if (dom.parkLocation) dom.parkLocation.textContent = t(park.locationName || park.name || '');
+  if (dom.landingPlace) dom.landingPlace.textContent = t(park.locationName || park.name || 'Ice Castles');
+  document.title = `Castle Quest — ${t(park.name || 'Ice Castles')}`;
+  renderProgress();
+  if (landingFact && dom.landingBubbleText && dom.landingTalk && !dom.landingTalk.hidden) {
+    dom.landingBubbleText.textContent = t(landingFact.text);
+    fitLandingBubbleText();
+  }
+  if (dom.landingPartyHint) {
+    const raw = String(dom.landingPartySize?.value || '').trim();
+    dom.landingPartyHint.textContent = dom.landingPartyHint.classList.contains('is-on') && raw && !readPartySize()
+      ? t('Enter a party size from 1 to 20.')
+      : t('Enter your party size to continue.');
+  }
+  const guideLabel = dom.guideToggle?.querySelector('span');
+  if (guideLabel) guideLabel.textContent = t('Quest');
+  dom.guideToggle?.setAttribute('aria-label', t('Back to Castle Quest'));
+  if (shrineSlug) renderStation(shrineSlug);
+  if (document.body.classList.contains('guide-open')) renderLegend();
+  if (currentPanel === 'journey') renderJourney();
+  if (currentPanel === 'passport') renderPassport();
+  if (mapModalMode === 'choice') showChoiceModal();
+  else if (mapModalMode === 'begin' && mapModalStation) {
+    showBeginStationModal(Store.touchBySlug(mapModalStation.slug) || mapModalStation);
+  } else if (mapModalMode === 'beginGuide') showBeginGuide();
+  if (openPoi && document.body.classList.contains('sheet-open')) openPoiSheet(openPoi);
+  if (!dom.finale.hidden && finaleKind === 'reveal') openThroneReveal();
+  else if (!dom.finale.hidden && finaleKind === 'staff') showFinale();
+  if (!dom.award.hidden && visibleAward) {
+    dom.awardKicker.textContent = t(visibleAward.kicker);
+    dom.awardTitle.textContent = t(visibleAward.title);
+    dom.awardMeta.textContent = t(visibleAward.meta);
+    dom.awardDone.textContent = t(visibleAward.action || 'Keep exploring');
+  }
+  window.Scanner?.syncHint?.();
+}
+
+if (window.Lang) Lang.onChange(() => applyLanguage());
+
 async function boot() {
   wire();
   try {
     await Store.load();
   } catch {
-    dom.splash.innerHTML = `<div class="empty"><h3 class="empty__title">Can’t reach Castle Quest</h3><p class="empty__body">Check your connection and reload.</p></div>`;
+    dom.splash.innerHTML = `<div class="empty"><h3 class="empty__title">${escapeHtml(t('Can’t reach Castle Quest'))}</h3><p class="empty__body">${escapeHtml(t('Check your connection and reload.'))}</p></div>`;
     return;
   }
 
   const park = Store.state.park || {};
   const adventure = Store.state.adventure || {};
   dom.parkName.textContent = 'Castle Quest';
-  dom.parkLocation.textContent = park.locationName || park.name || '';
-  document.title = `Castle Quest — ${park.name || 'Ice Castles'}`;
+  dom.parkLocation.textContent = t(park.locationName || park.name || '');
+  document.title = `Castle Quest — ${t(park.name || 'Ice Castles')}`;
   if (adventure.venueCode && !Store.state.path.venueCode) {
     history.replaceState(null, '', `${Store.stationPath(Store.state.path.station)}${location.search}${location.hash || ''}`);
     Store.state.path = Store.pathContext();
   }
 
+  if (window.Lang) Lang.useVenue(adventure.venueCode || Store.state.path.venueCode, { notify: false });
   renderProgress();
   await route();
 

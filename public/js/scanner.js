@@ -29,6 +29,16 @@ const Scanner = (() => {
   let lastCodeAt = 0;
   let openGeneration = 0;
   let opening = false;
+  let hintKey = 'Point your camera at a code on the trail';
+
+  function say(message) {
+    return window.Lang ? Lang.t(message) : message;
+  }
+
+  function setHint(key) {
+    hintKey = key;
+    if (el.hint) el.hint.textContent = say(key);
+  }
 
   function parsePayload(raw) {
     if (window.GuestSupport?.parseScanPayload) {
@@ -85,7 +95,7 @@ const Scanner = (() => {
 
     if (!navigator.mediaDevices?.getUserMedia) {
       if (generation === openGeneration) {
-        el.hint.textContent = 'This browser can’t open the camera. Type the code printed under the sign instead.';
+        setHint('This browser can’t open the camera. Type the code printed under the sign instead.');
         el.input.focus();
       }
       opening = false;
@@ -113,16 +123,16 @@ const Scanner = (() => {
         stopTracks();
         return;
       }
-      el.hint.textContent = 'Point your camera at a station or map code';
+      setHint('Point your camera at a station or map code');
       decoding = true;
       tick(jsqr, generation);
     } catch (err) {
       stopStream(localStream);
       if (generation !== openGeneration) return;
       const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
-      el.hint.textContent = denied
+      setHint(denied
         ? 'Camera access is off. Turn it on in your browser settings, or type the code below.'
-        : 'Camera isn’t available right now. Type the code printed under the sign instead.';
+        : 'Camera isn’t available right now. Type the code printed under the sign instead.');
       el.input.focus();
     } finally {
       if (generation === openGeneration) opening = false;
@@ -199,7 +209,7 @@ const Scanner = (() => {
   function submitManual() {
     const payload = parsePayload(el.input.value);
     if (payload.kind === 'invalid') {
-      el.hint.textContent = 'That code doesn’t look right. Use a station link or the letters under the sign.';
+      setHint('That code doesn’t look right. Use a station link or the letters under the sign.');
       return;
     }
     el.input.value = '';
@@ -219,7 +229,10 @@ const Scanner = (() => {
     if (opening || decoding || stream) close();
   });
 
-  return { open, close, isOpen, buzz, parsePayload };
+  return {
+    open, close, isOpen, buzz, parsePayload,
+    syncHint() { if (el.hint) el.hint.textContent = say(hintKey); },
+  };
 })();
 
 window.Scanner = Scanner;

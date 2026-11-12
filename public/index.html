@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Ice Castles — Castle Quest</title>
-<meta name="description" content="Explore the castle, awaken five elements, and become a Winter Keeper.">
+<title data-i18n="Ice Castles — Castle Quest">Ice Castles — Castle Quest</title>
+<meta name="description" content="Explore the castle, awaken five elements, and become a Winter Keeper." data-i18n-content="Explore the castle, awaken five elements, and become a Winter Keeper.">
 <meta name="theme-color" content="#62B4E0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,6 +20,24 @@
 </head>
 <body class="quest">
 
+<div class="langToggle" id="langToggle" role="group" aria-label="Language" data-i18n-aria="Language" hidden>
+  <button class="langToggle__opt" type="button" data-lang="fr" aria-pressed="true" aria-label="Français">
+    <svg class="flag flag--fr" viewBox="0 0 60 40" aria-hidden="true">
+      <rect width="60" height="40" rx="3" fill="#003399"></rect>
+      <path fill="#fff" d="M30 4.2c1.2 3.4.4 6.2-1.6 8 3.6-1.6 7.2-.4 8.8 2.6-2.6.4-4.6 2-6 4.4 2.2-1.6 4.6-2 7.2-.8-2.4 2.6-3.2 5.6-2 8.4-2-2.6-4.4-3.6-7.2-2.4.6-3.2.2-6.4-1.6-8.8-1.4 3.2-2 6.2-1 8.8-2.8-1.2-5.2-.2-7.2 2.4 1.2-2.8.4-5.8-2-8.4 2.6-1.2 5-.8 7.2.8-1.4-2.4-3.4-4-6-4.4 1.6-3 5.2-4.2 8.8-2.6-2-1.8-2.8-4.6-1.6-8zM28.2 20.6h3.6V33h-3.6zM21.5 31.2h17v2.6h-17z"></path>
+    </svg>
+  </button>
+  <button class="langToggle__opt" type="button" data-lang="en" aria-pressed="false" aria-label="English">
+    <svg class="flag flag--en" viewBox="0 0 60 40" aria-hidden="true">
+      <rect width="60" height="40" rx="3" fill="#012169"></rect>
+      <path d="M0 0 L60 40 M60 0 L0 40" stroke="#fff" stroke-width="10"></path>
+      <path d="M0 0 L60 40 M60 0 L0 40" stroke="#C8102E" stroke-width="5"></path>
+      <path d="M30 0 V40 M0 20 H60" stroke="#fff" stroke-width="14"></path>
+      <path d="M30 0 V40 M0 20 H60" stroke="#C8102E" stroke-width="8"></path>
+    </svg>
+  </button>
+</div>
+
 <div class="aurora" aria-hidden="true">
   <span class="aurora__band aurora__band--1"></span>
   <span class="aurora__band aurora__band--2"></span>
@@ -28,18 +46,18 @@
 
 <header class="topbar">
   <div class="topbar__id">
-    <span class="topbar__eyebrow" id="parkLocation">Loading</span>
-    <button class="topbar__markBtn" id="logoHome" type="button" aria-label="Back to Castle Quest start">
+    <span class="topbar__eyebrow" id="parkLocation" data-i18n="Loading">Loading</span>
+    <button class="topbar__markBtn" id="logoHome" type="button" aria-label="Back to Castle Quest start" data-i18n-aria="Back to Castle Quest start">
       <img class="topbar__mark" src="/assets/art/logo-mark.svg?v=4" alt="">
     </button>
     <div class="topbar__copy">
       <h1 class="topbar__name" id="parkName">Castle Quest</h1>
       <p class="questProgress" id="questProgress">0 / 5</p>
-      <div class="realmPips" id="realmPips" aria-label="Guardians"></div>
+      <div class="realmPips" id="realmPips" aria-label="Guardians" data-i18n-aria="Guardians"></div>
     </div>
   </div>
   <div class="topbar__actions">
-    <button class="progressRing" id="progressButton" type="button" aria-label="View my journey">
+    <button class="progressRing" id="progressButton" type="button" aria-label="View my journey" data-i18n-aria="View my journey">
       <svg viewBox="0 0 44 44" aria-hidden="true">
         <circle class="progressRing__track" cx="22" cy="22" r="18"></circle>
         <circle class="progressRing__fill" cx="22" cy="22" r="18" id="progressFill"></circle>
@@ -47,61 +65,61 @@
       <img class="progressRing__gem" src="/assets/art/ui/icon-discover.svg" alt="">
       <span class="progressRing__label" id="progressLabel">0</span>
     </button>
-    <button class="mapChip" id="headerMap" type="button" aria-label="Open map">
+    <button class="mapChip" id="headerMap" type="button" aria-label="Open map" data-i18n-aria="Open map">
       <img src="/assets/art/ui/chip-map.svg" alt="">
     </button>
   </div>
 </header>
 
-<main class="station" id="stationView" aria-label="Castle Quest station"></main>
+<main class="station" id="stationView" aria-label="Castle Quest station" data-i18n-aria="Castle Quest station"></main>
 
 <div class="guide" id="guide" hidden>
-  <main id="map" aria-label="Park map"></main>
+  <main id="map" aria-label="Park map" data-i18n-aria="Park map"></main>
   <div class="mapTools">
-    <button class="mapTool" id="recenterButton" type="button" aria-label="Fit the whole park on screen">
+    <button class="mapTool" id="recenterButton" type="button" aria-label="Fit the whole park on screen" data-i18n-aria="Fit the whole park on screen">
       <img src="/assets/art/ui/icon-recenter.svg" alt="">
     </button>
-    <button class="mapTool" id="journeyButton" type="button" aria-pressed="false" aria-label="Show Guardian stops only">
+    <button class="mapTool" id="journeyButton" type="button" aria-pressed="false" aria-label="Show Guardian stops only" data-i18n-aria="Show Guardian stops only">
       <img src="/assets/art/ui/icon-guardians.svg" alt="">
     </button>
-    <button class="mapTool" id="filterButton" type="button" aria-label="Filter what the map shows" aria-expanded="false" aria-controls="legend">
+    <button class="mapTool" id="filterButton" type="button" aria-label="Filter what the map shows" data-i18n-aria="Filter what the map shows" aria-expanded="false" aria-controls="legend">
       <img src="/assets/art/ui/icon-filter.svg" alt="">
     </button>
   </div>
   <div class="legend" id="legend" hidden>
     <header class="legend__head">
-      <p class="legend__title">Filter map</p>
-      <button class="legend__close" id="legendClose" type="button" aria-label="Close filters">Done</button>
+      <p class="legend__title" data-i18n="Filter map">Filter map</p>
+      <button class="legend__close" id="legendClose" type="button" aria-label="Close filters" data-i18n-aria="Close filters" data-i18n="Done">Done</button>
     </header>
-    <p class="legend__hint" id="legendHint">All categories on</p>
+    <p class="legend__hint" id="legendHint" data-i18n="All categories on">All categories on</p>
     <div class="legend__rows" id="legendRows"></div>
   </div>
-  <section class="sheet" id="sheet" aria-live="polite" aria-label="Marker details">
-    <button class="sheet__grip" id="sheetGrip" type="button" aria-label="Collapse details"></button>
+  <section class="sheet" id="sheet" aria-live="polite" aria-label="Marker details" data-i18n-aria="Marker details">
+    <button class="sheet__grip" id="sheetGrip" type="button" aria-label="Collapse details" data-i18n-aria="Collapse details"></button>
     <div class="sheet__scroll" id="sheetBody"></div>
   </section>
-  <button class="scanFab scanFab--guide" id="scanFab" type="button" aria-label="Scan a map code">
+  <button class="scanFab scanFab--guide" id="scanFab" type="button" aria-label="Scan a map code" data-i18n-aria="Scan a map code">
     <span class="scanFab__pulse" aria-hidden="true"></span>
     <img src="/assets/art/ui/icon-scan.svg" alt="">
   </button>
-  <button class="guideFab" id="guideToggle" type="button" aria-pressed="false" aria-label="Back to Castle Quest">
+  <button class="guideFab" id="guideToggle" type="button" aria-pressed="false" aria-label="Back to Castle Quest" data-i18n-aria="Back to Castle Quest">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6 8 12.5 14.5 19"/></svg>
-    <span>Quest</span>
+    <span data-i18n="Quest">Quest</span>
   </button>
 </div>
 
 <section class="panel" id="journeyPanel" role="dialog" aria-modal="true" aria-labelledby="journeyTitle" hidden inert>
   <header class="panel__head">
-    <h2 class="panel__title" id="journeyTitle">My Journey</h2>
-    <button class="panel__close" data-close-panel type="button" aria-label="Close My Journey">Done</button>
+    <h2 class="panel__title" id="journeyTitle" data-i18n="My Journey">My Journey</h2>
+    <button class="panel__close" data-close-panel type="button" aria-label="Close My Journey" data-i18n-aria="Close My Journey" data-i18n="Done">Done</button>
   </header>
   <div class="panel__scroll" id="journeyBody"></div>
 </section>
 
 <section class="panel" id="passportPanel" role="dialog" aria-modal="true" aria-labelledby="passportTitle" hidden inert>
   <header class="panel__head">
-    <h2 class="panel__title" id="passportTitle">Passport</h2>
-    <button class="panel__close" data-close-panel type="button" aria-label="Close Passport">Done</button>
+    <h2 class="panel__title" id="passportTitle" data-i18n="Passport">Passport</h2>
+    <button class="panel__close" data-close-panel type="button" aria-label="Close Passport" data-i18n-aria="Close Passport" data-i18n="Done">Done</button>
   </header>
   <div class="panel__scroll" id="passportBody"></div>
 </section>
@@ -111,32 +129,32 @@
   <div class="landing__brand">
     <img class="landing__crest" src="/assets/art/logo-mark.svg?v=4" alt="">
     <h1 class="landing__title">Castle Quest</h1>
-    <p class="landing__kicker">Awaken the five elements</p>
+    <p class="landing__kicker" data-i18n="Awaken the five elements">Awaken the five elements</p>
     <div class="landing__crew">
-    <ul class="landing__realms" id="landingRealms" aria-label="The five Guardians. Tap one for a castle fact.">
+    <ul class="landing__realms" id="landingRealms" aria-label="The five Guardians. Tap one for a castle fact." data-i18n-aria="The five Guardians. Tap one for a castle fact.">
       <li>
-        <button class="landing__realm landing__realm--water" data-realm="water" type="button" aria-label="Cascade, Water Guardian">
-          <span class="landing__face"><img src="/assets/art/pfp-cascade.png" alt=""></span>Water
+        <button class="landing__realm landing__realm--water" data-realm="water" type="button" aria-label="Cascade, Water Guardian" data-i18n-aria="Cascade, Water Guardian">
+          <span class="landing__face"><img src="/assets/art/pfp-cascade.png" alt=""></span><span data-i18n="Water">Water</span>
         </button>
       </li>
       <li>
-        <button class="landing__realm landing__realm--earth" data-realm="earth" type="button" aria-label="Granite, Earth Guardian">
-          <span class="landing__face"><img src="/assets/art/pfp-granite.png" alt=""></span>Earth
+        <button class="landing__realm landing__realm--earth" data-realm="earth" type="button" aria-label="Granite, Earth Guardian" data-i18n-aria="Granite, Earth Guardian">
+          <span class="landing__face"><img src="/assets/art/pfp-granite.png" alt=""></span><span data-i18n="Earth">Earth</span>
         </button>
       </li>
       <li>
-        <button class="landing__realm landing__realm--fire" data-realm="fire" type="button" aria-label="Ember, Fire Guardian">
-          <span class="landing__face"><img src="/assets/art/pfp-ember.png" alt=""></span>Fire
+        <button class="landing__realm landing__realm--fire" data-realm="fire" type="button" aria-label="Ember, Fire Guardian" data-i18n-aria="Ember, Fire Guardian">
+          <span class="landing__face"><img src="/assets/art/pfp-ember.png" alt=""></span><span data-i18n="Fire">Fire</span>
         </button>
       </li>
       <li>
-        <button class="landing__realm landing__realm--air" data-realm="air" type="button" aria-label="Summit, Air Guardian">
-          <span class="landing__face"><img src="/assets/art/pfp-summit.png" alt=""></span>Air
+        <button class="landing__realm landing__realm--air" data-realm="air" type="button" aria-label="Summit, Air Guardian" data-i18n-aria="Summit, Air Guardian">
+          <span class="landing__face"><img src="/assets/art/pfp-summit.png" alt=""></span><span data-i18n="Air">Air</span>
         </button>
       </li>
       <li>
-        <button class="landing__realm landing__realm--spirit" data-realm="spirit" type="button" aria-label="Aurora, Spirit Guardian">
-          <span class="landing__face"><img src="/assets/art/pfp-aurora.png" alt=""></span>Spirit
+        <button class="landing__realm landing__realm--spirit" data-realm="spirit" type="button" aria-label="Aurora, Spirit Guardian" data-i18n-aria="Aurora, Spirit Guardian">
+          <span class="landing__face"><img src="/assets/art/pfp-aurora.png" alt=""></span><span data-i18n="Spirit">Spirit</span>
         </button>
       </li>
     </ul>
@@ -148,7 +166,7 @@
     </div>
     </div>
     <p class="landing__progress" id="landingProgress">0 / 5</p>
-    <p class="landing__progressLine" id="landingProgressLine">Your quest has begun. Five elements await.</p>
+    <p class="landing__progressLine" id="landingProgressLine" data-i18n="Your quest has begun. Five elements await.">Your quest has begun. Five elements await.</p>
   </div>
   <div class="landing__gate" id="landingGate" aria-hidden="true">
     <div class="landing__scene" id="landingScene">
@@ -191,12 +209,12 @@
       <i class="landing__dbgAurora"></i>
     </div>
   </div>
-  <p class="landing__lead">Find the Guardians. Complete their trials. Gather at the Winter Keeper Throne.</p>
+  <p class="landing__lead" data-i18n="Find the Guardians. Complete their trials. Gather at the Winter Keeper Throne.">Find the Guardians. Complete their trials. Gather at the Winter Keeper Throne.</p>
   <label class="landing__party" id="landingParty" for="landingPartySize">
-    <span>Party size</span>
-    <input id="landingPartySize" name="partySize" type="number" inputmode="numeric" min="1" max="20" step="1" placeholder="How many?" autocomplete="off" enterkeyhint="done" aria-describedby="landingPartyHint">
+    <span data-i18n="Party size">Party size</span>
+    <input id="landingPartySize" name="partySize" type="number" inputmode="numeric" min="1" max="20" step="1" placeholder="How many?" data-i18n-placeholder="How many?" autocomplete="off" enterkeyhint="done" aria-describedby="landingPartyHint">
   </label>
-  <p class="landing__partyHint" id="landingPartyHint" role="status" aria-live="polite">Enter your party size to continue.</p>
+  <p class="landing__partyHint" id="landingPartyHint" role="status" aria-live="polite" data-i18n="Enter your party size to continue.">Enter your party size to continue.</p>
   <button class="landing__begin" id="thresholdStart" type="button">
     <svg class="beginCompass" viewBox="0 0 32 32" aria-hidden="true">
       <circle class="beginCompass__ring" cx="16" cy="16" r="13"/>
@@ -204,59 +222,59 @@
       <path class="beginCompass__north" d="M16 5 19.2 13.2 16 16 12.8 13.2Z"/>
       <circle class="beginCompass__hub" cx="16" cy="16" r="1.8"/>
     </svg>
-    <span>Begin Quest</span>
+    <span data-i18n="Begin Quest">Begin Quest</span>
   </button>
   <div class="landing__foot">
     <button class="landing__link landing__map" id="landingMap" type="button">
       <svg class="btnGlyph" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2.6c-3.7 0-6.4 2.9-6.4 6.6 0 4.8 6.4 11.2 6.4 11.2s6.4-6.4 6.4-11.2c0-3.7-2.7-6.6-6.4-6.6zm0 8.8a2.3 2.3 0 1 1 0-4.6 2.3 2.3 0 0 1 0 4.6z"/></svg>
-      Map
+      <span data-i18n="Map">Map</span>
     </button>
   </div>
   <div class="beginBrief" id="beginBrief" role="dialog" aria-modal="true" aria-labelledby="beginBriefTitle" hidden>
     <div class="beginBrief__card">
       <header class="beginBrief__head">
         <div>
-          <p class="beginBrief__kicker">Enter the quest</p>
-          <h2 id="beginBriefTitle">Your quest begins here.</h2>
+          <p class="beginBrief__kicker" data-i18n="Enter the quest">Enter the quest</p>
+          <h2 id="beginBriefTitle" data-i18n="Your quest begins here.">Your quest begins here.</h2>
         </div>
-        <button class="beginBrief__close" id="beginBriefClose" type="button" aria-label="Back to welcome">
+        <button class="beginBrief__close" id="beginBriefClose" type="button" aria-label="Back to welcome" data-i18n-aria="Back to welcome">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
         </button>
       </header>
       <div class="beginBrief__scroll">
-        <p>Five Guardians wait among the ice. Awaken Water, Earth, Fire, Air, and Spirit in any order, then scan the Winter Keeper Throne to become a Winter Keeper.</p>
-        <button class="beginStory" id="beginStoryOpen" type="button">The Story of Castle Quest</button>
+        <p data-i18n="Five Guardians wait among the ice. Awaken Water, Earth, Fire, Air, and Spirit in any order, then scan the Winter Keeper Throne to become a Winter Keeper.">Five Guardians wait among the ice. Awaken Water, Earth, Fire, Air, and Spirit in any order, then scan the Winter Keeper Throne to become a Winter Keeper.</p>
+        <button class="beginStory" id="beginStoryOpen" type="button" data-i18n="The Story of Castle Quest">The Story of Castle Quest</button>
         <section class="beginSteps" id="beginSteps">
-          <p class="beginBrief__kicker">How it works</p>
-          <h3>Any order. Unlimited tries.</h3>
+          <p class="beginBrief__kicker" data-i18n="How it works">How it works</p>
+          <h3 data-i18n="Any order. Unlimited tries.">Any order. Unlimited tries.</h3>
           <ol>
-            <li><span>01</span> Find each Guardian and complete their challenge.</li>
-            <li><span>02</span> After all five elements are awake, scan the Winter Keeper Throne.</li>
-            <li><span>03</span> Show your completion screen at the Gift Shop for your medallion.</li>
+            <li><span>01</span> <span data-i18n="Find each Guardian and complete their challenge.">Find each Guardian and complete their challenge.</span></li>
+            <li><span>02</span> <span data-i18n="After all five elements are awake, scan the Winter Keeper Throne.">After all five elements are awake, scan the Winter Keeper Throne.</span></li>
+            <li><span>03</span> <span data-i18n="Show your completion screen at the Gift Shop for your medallion.">Show your completion screen at the Gift Shop for your medallion.</span></li>
           </ol>
         </section>
       </div>
-      <button class="threshold__primary beginContinue" id="beginContinue" type="button">Continue</button>
+      <button class="threshold__primary beginContinue" id="beginContinue" type="button" data-i18n="Continue">Continue</button>
     </div>
     <div class="storyModal" id="beginStory" hidden>
       <div class="storyModal__card" role="dialog" aria-modal="true" aria-labelledby="beginStoryTitle">
         <header class="storyModal__head">
-          <h2 id="beginStoryTitle">The Story of Castle Quest</h2>
-          <button class="storyModal__close" id="beginStoryClose" type="button" aria-label="Close">
+          <h2 id="beginStoryTitle" data-i18n="The Story of Castle Quest">The Story of Castle Quest</h2>
+          <button class="storyModal__close" id="beginStoryClose" type="button" aria-label="Close" data-i18n-aria="Close">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
           </button>
         </header>
         <div class="storyModal__body">
-          <p>Castle Quest is a winter adventure: discover how five elements—Water, Earth, Fire, Air, and Spirit—help bring an Ice Castle to life.</p>
-          <p>Five Guardians guide the quest. Each watches over an element and offers a challenge to awaken it.</p>
+          <p data-i18n="Castle Quest is a winter adventure: discover how five elements—Water, Earth, Fire, Air, and Spirit—help bring an Ice Castle to life.">Castle Quest is a winter adventure: discover how five elements—Water, Earth, Fire, Air, and Spirit—help bring an Ice Castle to life.</p>
+          <p data-i18n="Five Guardians guide the quest. Each watches over an element and offers a challenge to awaken it.">Five Guardians guide the quest. Each watches over an element and offers a challenge to awaken it.</p>
           <ul class="storyModal__guardians">
-            <li>Cascade notices water’s smallest wonders</li>
-            <li>Granite remembers the ground beneath the ice</li>
-            <li>Ember finds balance in cold and light</li>
-            <li>Summit follows the wind</li>
-            <li>Aurora gathers the memories people carry away.</li>
+            <li data-i18n="Cascade notices water’s smallest wonders">Cascade notices water’s smallest wonders</li>
+            <li data-i18n="Granite remembers the ground beneath the ice">Granite remembers the ground beneath the ice</li>
+            <li data-i18n="Ember finds balance in cold and light">Ember finds balance in cold and light</li>
+            <li data-i18n="Summit follows the wind">Summit follows the wind</li>
+            <li data-i18n="Aurora gathers the memories people carry away.">Aurora gathers the memories people carry away.</li>
           </ul>
-          <p>Guests awaken the five elements in any order with help from their Guardians, then visit the Winter Keeper Throne to confirm the quest is complete.</p>
+          <p data-i18n="Guests awaken the five elements in any order with help from their Guardians, then visit the Winter Keeper Throne to confirm the quest is complete.">Guests awaken the five elements in any order with help from their Guardians, then visit the Winter Keeper Throne to confirm the quest is complete.</p>
         </div>
       </div>
     </div>
@@ -276,11 +294,11 @@
   </div>
 </section>
 
-<section class="finale" id="finale" role="dialog" aria-modal="true" aria-label="Winter Keeper recognition" hidden>
+<section class="finale" id="finale" role="dialog" aria-modal="true" aria-label="Winter Keeper recognition" data-i18n-aria="Winter Keeper recognition" hidden>
   <div class="finale__card" id="finaleCard"></div>
 </section>
 
-<section class="scanner" id="scanner" role="dialog" aria-modal="true" aria-label="Scan a code" hidden>
+<section class="scanner" id="scanner" role="dialog" aria-modal="true" aria-label="Scan a code" data-i18n-aria="Scan a code" hidden>
   <video id="scannerVideo" playsinline muted></video>
   <canvas id="scannerCanvas" hidden></canvas>
   <div class="scanner__veil"></div>
@@ -288,16 +306,16 @@
     <span></span><span></span><span></span><span></span>
     <i class="scanner__sweep"></i>
   </div>
-  <p class="scanner__hint" id="scannerHint">Point your camera at a code on the trail</p>
+  <p class="scanner__hint" id="scannerHint" data-i18n="Point your camera at a code on the trail">Point your camera at a code on the trail</p>
   <div class="scanner__manual">
-    <label class="scanner__label" for="manualCode">Or type the code printed under it</label>
+    <label class="scanner__label" for="manualCode" data-i18n="Or type the code printed under it">Or type the code printed under it</label>
     <div class="scanner__row">
       <input id="manualCode" inputmode="latin" autocapitalize="characters" autocomplete="off"
              spellcheck="false" maxlength="12" placeholder="ABC123">
-      <button id="manualSubmit" type="button">Go</button>
+      <button id="manualSubmit" type="button" data-i18n="Go">Go</button>
     </div>
   </div>
-  <button class="scanner__close" id="scannerClose" type="button" aria-label="Close scanner">
+  <button class="scanner__close" id="scannerClose" type="button" aria-label="Close scanner" data-i18n-aria="Close scanner">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
   </button>
 </section>
@@ -312,11 +330,11 @@
       </svg>
       <span class="award__glyph" id="awardGlyph"></span>
     </div>
-    <p class="award__kicker" id="awardKicker">Element Awakened</p>
+    <p class="award__kicker" id="awardKicker" data-i18n="Element Awakened">Element Awakened</p>
     <h2 class="award__title" id="awardTitle"></h2>
     <p class="award__meta" id="awardMeta"></p>
     <div class="award__pips" id="awardPips"></div>
-    <button class="award__done" id="awardDone" type="button">Keep exploring</button>
+    <button class="award__done" id="awardDone" type="button" data-i18n="Keep exploring">Keep exploring</button>
   </div>
 </section>
 
@@ -347,7 +365,7 @@
       </g>
     </svg>
   </div>
-  <p class="bootSplash__text">Growing the ice…</p>
+  <p class="bootSplash__text" data-i18n="Growing the ice…">Growing the ice…</p>
 </div>
 
 <script src="/vendor/leaflet.js"></script>
@@ -356,6 +374,7 @@
 <script src="/js/map.js?v=31"></script>
 <script src="/js/scanner.js?v=20"></script>
 <script src="/js/wind-wisps.js?v=9"></script>
+<script src="/js/i18n.js?v=1"></script>
 <script src="/js/app.js?v=126"></script>
 </body>
 </html>

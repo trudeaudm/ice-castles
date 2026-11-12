@@ -11,7 +11,7 @@ const CACHE = 'icecastles-__CQ_BUILD__';
 const SHELL = [
   '/', '/app.css?v=__CQ_BUILD__', '/manifest.webmanifest',
   '/js/guest-support.js?v=__CQ_BUILD__', '/js/api.js?v=__CQ_BUILD__', '/js/map.js?v=__CQ_BUILD__',
-  '/js/scanner.js?v=__CQ_BUILD__', '/js/wind-wisps.js?v=__CQ_BUILD__', '/js/app.js?v=__CQ_BUILD__',
+  '/js/scanner.js?v=__CQ_BUILD__', '/js/wind-wisps.js?v=__CQ_BUILD__', '/js/i18n.js?v=__CQ_BUILD__', '/js/app.js?v=__CQ_BUILD__',
   '/vendor/leaflet.js', '/vendor/leaflet.css', '/vendor/jsqr.js',
   '/assets/park-map.webp', '/assets/art/logo-mark.svg?v=__CQ_BUILD__', '/assets/art/logo-mark.png?v=__CQ_BUILD__', '/assets/art/logo-mark-app.png?v=__CQ_BUILD__',
   '/assets/art/icon-threshold.svg?v=__CQ_BUILD__', '/assets/art/icon-builders.svg?v=__CQ_BUILD__', '/assets/art/icon-throne.svg?v=__CQ_BUILD__',

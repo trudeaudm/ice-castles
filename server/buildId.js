@@ -16,6 +16,7 @@ const FINGERPRINT_FILES = [
   'public/js/scanner.js',
   'public/js/guest-support.js',
   'public/js/wind-wisps.js',
+  'public/js/i18n.js',
   'public/manifest.webmanifest',
   'server/index.js',
   'server/routes/public.js',

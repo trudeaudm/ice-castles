@@ -4755,3 +4755,54 @@ body[data-realm="spirit"] .realmSky i {
   color: var(--ink-text);
 }
 .combine__photo { margin: 0; color: #3d5a7a; font-size: 14px; }
+
+/* -------------------------------- language -------------------------------- */
+
+.langToggle {
+  position: fixed;
+  z-index: 140;
+  top: calc(var(--safe-t) + 8px);
+  right: max(10px, calc((100vw - 460px) / 2 + 10px));
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(7, 21, 38, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  box-shadow: 0 6px 16px rgba(4, 16, 31, 0.28);
+  pointer-events: auto;
+}
+.langToggle[hidden] { display: none !important; }
+.langToggle__opt {
+  width: 44px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  opacity: 0.55;
+}
+.langToggle__opt[aria-pressed="true"] {
+  opacity: 1;
+  box-shadow: inset 0 0 0 2px #fff;
+}
+.langToggle svg {
+  width: 30px;
+  height: 20px;
+  display: block;
+  border-radius: 2px;
+  stroke: none;
+  overflow: hidden;
+}
+.langToggle .flag--fr rect,
+.langToggle .flag--fr path { stroke: none; }
+html.lang-on .topbar__eyebrow { padding-right: 96px; }
+html.lang-on .landing__place { max-width: calc(100% - 104px); }
+html[lang="fr"] .shrineIcon__label {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+  text-align: center;
+}
