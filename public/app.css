@@ -83,6 +83,7 @@ html {
   min-height: 100%;
   margin: 0;
   background: #8ecce8;
+  overflow-x: clip;
 }
 
 html, body {
@@ -104,7 +105,7 @@ body {
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
 }
-body.quest { overflow: auto; }
+body.quest { overflow-x: clip; overflow-y: auto; }
 body.quest.guide-open,
 body.quest.panel-open,
 body.quest.landing-open,
@@ -3847,12 +3848,12 @@ body.quest.guide-open .toast:not(.is-anchored) {
 
 button.is-fun { position: relative; overflow: visible; }
 
-button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__guardian) {
+button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__guardian):not(.langToggle__opt) {
   transition: transform 200ms var(--ease-spring), filter 200ms var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__guardian):not(.beginStory):hover {
+  button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__guardian):not(.beginStory):not(.langToggle__opt):hover {
     transform: translateY(-3px) scale(1.045);
     filter: brightness(1.08);
   }
@@ -4761,45 +4762,53 @@ body[data-realm="spirit"] .realmSky i {
 .langToggle {
   position: fixed;
   z-index: 140;
-  top: calc(var(--safe-t) + 8px);
-  right: max(10px, calc((100vw - 460px) / 2 + 10px));
+  top: calc(var(--safe-t) + 6px);
+  right: max(8px, calc((100% - 460px) / 2 + 8px));
   display: flex;
-  gap: 4px;
-  padding: 3px;
+  gap: 2px;
+  padding: 2px;
   border-radius: 999px;
   background: rgba(7, 21, 38, 0.62);
   border: 1px solid rgba(255, 255, 255, 0.42);
-  box-shadow: 0 6px 16px rgba(4, 16, 31, 0.28);
+  box-shadow: 0 2px 6px rgba(4, 16, 31, 0.22);
   pointer-events: auto;
+  overflow: hidden;
+  max-width: calc(100% - 16px);
+  display: none;
 }
+body.landing-open .langToggle { display: flex; }
+body.landing-open:has(.beginBrief:not([hidden])) .langToggle { display: none; }
 .langToggle[hidden] { display: none !important; }
 .langToggle__opt {
-  width: 44px;
-  height: 32px;
+  width: 28px;
+  height: 20px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 4px;
   display: grid;
   place-items: center;
   background: transparent;
-  opacity: 0.55;
+  opacity: 0.72;
+  overflow: hidden;
 }
 .langToggle__opt[aria-pressed="true"] {
   opacity: 1;
-  box-shadow: inset 0 0 0 2px #fff;
+  box-shadow: inset 0 0 0 1.5px #fff;
 }
 .langToggle svg {
-  width: 30px;
-  height: 20px;
+  width: 18px;
+  height: 12px;
   display: block;
-  border-radius: 2px;
+  border-radius: 1px;
   stroke: none;
   overflow: hidden;
 }
 .langToggle .flag--fr rect,
-.langToggle .flag--fr path { stroke: none; }
-html.lang-on .topbar__eyebrow { padding-right: 96px; }
-html.lang-on .landing__place { max-width: calc(100% - 104px); }
+.langToggle .flag--fr path,
+.langToggle .flag--en rect,
+.langToggle .flag--en path,
+.langToggle .flag--en circle { stroke: none; }
+html.lang-on .landing__place { max-width: calc(100% - 72px); }
 html[lang="fr"] .shrineIcon__label {
   font-size: 11px;
   letter-spacing: 0.02em;
