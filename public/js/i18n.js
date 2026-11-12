@@ -489,10 +489,10 @@ const Lang = (() => {
     if (!root) return;
     root.hidden = !bilingual;
     document.documentElement.classList.toggle('lang-on', bilingual);
-    root.querySelectorAll('[data-lang]').forEach((button) => {
-      const on = button.getAttribute('data-lang') === locale;
-      button.setAttribute('aria-pressed', on ? 'true' : 'false');
+    root.querySelectorAll('[data-lang]').forEach((flag) => {
+      flag.classList.toggle('is-on', flag.getAttribute('data-lang') === locale);
     });
+    root.setAttribute('aria-label', locale === 'fr' ? 'Passer à l’anglais' : 'Switch to French');
   }
 
   function applyChrome() {
@@ -535,10 +535,8 @@ const Lang = (() => {
   }
 
   const root = document.getElementById('langToggle');
-  root?.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-lang]');
-    if (!button) return;
-    setLocale(button.getAttribute('data-lang'));
+  root?.addEventListener('click', () => {
+    setLocale(locale === 'fr' ? 'en' : 'fr');
   });
 
   useVenue(venueFromPath());

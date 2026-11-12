@@ -3848,12 +3848,12 @@ body.quest.guide-open .toast:not(.is-anchored) {
 
 button.is-fun { position: relative; overflow: visible; }
 
-button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__guardian):not(.langToggle__opt) {
+button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__guardian):not(.langToggle) {
   transition: transform 200ms var(--ease-spring), filter 200ms var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__guardian):not(.beginStory):not(.langToggle__opt):hover {
+  button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__guardian):not(.beginStory):not(.langToggle):hover {
     transform: translateY(-3px) scale(1.045);
     filter: brightness(1.08);
   }
@@ -4796,7 +4796,7 @@ body.landing-open:has(.beginBrief:not([hidden])) .langToggle { display: none; }
   opacity: 0.72;
   overflow: hidden;
 }
-.langToggle__opt[aria-pressed="true"] {
+.langToggle__opt.is-on {
   opacity: 1;
   box-shadow: inset 0 0 0 1.5px #fff;
 }
