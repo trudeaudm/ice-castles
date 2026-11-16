@@ -2469,7 +2469,8 @@ function restoreModalTrigger() {
 }
 
 function openPanel(name) {
-  closeGuide();
+  // Keep the map/shrine underneath. Closing My Journey should return there,
+  // not to an empty station view.
   panelTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   ['journeyPanel', 'passportPanel'].forEach((key) => {
     if (!dom[key]) return;
@@ -2510,6 +2511,15 @@ function closePanels() {
     && !document.body.classList.contains('scanner-open')
     && !document.body.classList.contains('finale-open')) {
     setChromeInert(false);
+  }
+  // If nothing sits under the panel (no map, no shrine, no welcome), reopen the map.
+  if (
+    Store.hasLiveSession()
+    && !document.body.classList.contains('guide-open')
+    && !document.body.classList.contains('landing-open')
+    && !shrineSlug
+  ) {
+    openGuide();
   }
   if (trigger && document.contains(trigger) && typeof trigger.focus === 'function') {
     requestAnimationFrame(() => trigger.focus());
