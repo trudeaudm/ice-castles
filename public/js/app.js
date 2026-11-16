@@ -63,11 +63,16 @@ function elementLine(count) {
   Store.touchForPoi = (id) => present(rawPoi(id));
 })();
 const RUNE_SHAPES = {
-  vortex: { tray: "<svg viewBox=\"39.28 37.95 25.32 25.32\" aria-hidden=\"true\"><path d=\"M47.18 48.97 L46.53 48.57 L46.05 48.18 L45.63 47.77 L45.26 47.33 L44.94 46.87 L44.67 46.38 L44.43 45.88 L44.24 45.36 L44.09 44.82 L43.98 44.27 L43.90 43.70 L43.87 43.13 L43.88 42.54 L43.94 41.95\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M52.30 48.07 L52.97 47.71 L53.55 47.49 L54.12 47.33 L54.68 47.23 L55.24 47.19 L55.80 47.19 L56.35 47.24 L56.90 47.33 L57.44 47.47 L57.98 47.65 L58.50 47.87 L59.01 48.13 L59.51 48.43 L60.00 48.77\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M50.52 52.95 L50.50 53.72 L50.40 54.33 L50.25 54.90 L50.05 55.44 L49.81 55.95 L49.53 56.43 L49.22 56.88 L48.86 57.31 L48.47 57.71 L48.05 58.08 L47.59 58.43 L47.11 58.74 L46.60 59.02 L46.06 59.27\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M47.18 48.97 L46.53 48.57 L46.05 48.18 L45.63 47.77 L45.26 47.33 L44.94 46.87 L44.67 46.38 L44.43 45.88 L44.24 45.36 L44.09 44.82 L43.98 44.27 L43.90 43.70 L43.87 43.13 L43.88 42.54 L43.94 41.95\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M52.30 48.07 L52.97 47.71 L53.55 47.49 L54.12 47.33 L54.68 47.23 L55.24 47.19 L55.80 47.19 L56.35 47.24 L56.90 47.33 L57.44 47.47 L57.98 47.65 L58.50 47.87 L59.01 48.13 L59.51 48.43 L60.00 48.77\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M50.52 52.95 L50.50 53.72 L50.40 54.33 L50.25 54.90 L50.05 55.44 L49.81 55.95 L49.53 56.43 L49.22 56.88 L48.86 57.31 L48.47 57.71 L48.05 58.08 L47.59 58.43 L47.11 58.74 L46.60 59.02 L46.06 59.27\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" },
-  draft: { tray: "<svg viewBox=\"24.37 27.52 44.48 44.48\" aria-hidden=\"true\"><path d=\"M43.94 41.95 L44.03 41.36 L44.16 40.76 L44.34 40.17 L44.56 39.58 L44.81 38.99 L45.11 38.41 L45.45 37.84 L45.83 37.28 L46.25 36.73 L46.71 36.20 L47.20 35.69 L47.73 35.20 L48.30 34.73 L48.90 34.29 L49.54 33.87 L50.21 33.48 L50.91 33.12 L51.64 32.79 L52.39 32.50 L53.18 32.24 L53.99 32.02 L54.82 31.84 L55.67 31.70 L56.54 31.60 L57.43 31.54 L58.34 31.52 L59.25 31.56 L60.18 31.63\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M60.00 48.77 L60.47 49.15 L60.92 49.56 L61.34 50.01 L61.75 50.50 L62.13 51.02 L62.48 51.56 L62.81 52.14 L63.10 52.75 L63.37 53.39 L63.60 54.05 L63.79 54.73 L63.95 55.44 L64.07 56.16 L64.16 56.91 L64.20 57.67 L64.20 58.44 L64.17 59.22 L64.08 60.02 L63.96 60.82 L63.79 61.63 L63.58 62.44 L63.32 63.25 L63.02 64.06 L62.67 64.87 L62.27 65.67 L61.83 66.46 L61.35 67.24 L60.82 68.00\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M46.06 59.27 L45.50 59.49 L44.92 59.67 L44.32 59.82 L43.69 59.93 L43.06 60.00 L42.40 60.03 L41.74 60.02 L41.07 59.97 L40.38 59.88 L39.70 59.75 L39.01 59.58 L38.32 59.37 L37.63 59.11 L36.94 58.81 L36.26 58.47 L35.59 58.08 L34.93 57.66 L34.28 57.19 L33.65 56.68 L33.03 56.13 L32.44 55.54 L31.86 54.91 L31.31 54.24 L30.79 53.54 L30.30 52.79 L29.83 52.02 L29.40 51.21 L29.00 50.37\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M43.94 41.95 L44.03 41.36 L44.16 40.76 L44.34 40.17 L44.56 39.58 L44.81 38.99 L45.11 38.41 L45.45 37.84 L45.83 37.28 L46.25 36.73 L46.71 36.20 L47.20 35.69 L47.73 35.20 L48.30 34.73 L48.90 34.29 L49.54 33.87 L50.21 33.48 L50.91 33.12 L51.64 32.79 L52.39 32.50 L53.18 32.24 L53.99 32.02 L54.82 31.84 L55.67 31.70 L56.54 31.60 L57.43 31.54 L58.34 31.52 L59.25 31.56 L60.18 31.63\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M60.00 48.77 L60.47 49.15 L60.92 49.56 L61.34 50.01 L61.75 50.50 L62.13 51.02 L62.48 51.56 L62.81 52.14 L63.10 52.75 L63.37 53.39 L63.60 54.05 L63.79 54.73 L63.95 55.44 L64.07 56.16 L64.16 56.91 L64.20 57.67 L64.20 58.44 L64.17 59.22 L64.08 60.02 L63.96 60.82 L63.79 61.63 L63.58 62.44 L63.32 63.25 L63.02 64.06 L62.67 64.87 L62.27 65.67 L61.83 66.46 L61.35 67.24 L60.82 68.00\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M46.06 59.27 L45.50 59.49 L44.92 59.67 L44.32 59.82 L43.69 59.93 L43.06 60.00 L42.40 60.03 L41.74 60.02 L41.07 59.97 L40.38 59.88 L39.70 59.75 L39.01 59.58 L38.32 59.37 L37.63 59.11 L36.94 58.81 L36.26 58.47 L35.59 58.08 L34.93 57.66 L34.28 57.19 L33.65 56.68 L33.03 56.13 L32.44 55.54 L31.86 54.91 L31.31 54.24 L30.79 53.54 L30.30 52.79 L29.83 52.02 L29.40 51.21 L29.00 50.37\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" },
-  gale: { tray: "<svg viewBox=\"24.08 26.64 55.56 55.56\" aria-hidden=\"true\"><path d=\"M60.18 31.63 L62.03 32.25 L63.83 33.07 L65.58 34.07 L67.25 35.26 L68.81 36.63 L70.26 38.17 L71.57 39.87 L72.73 41.71 L73.71 43.68 L74.51 45.77 L75.10 47.95 L75.48 50.20 L75.64 52.50 L75.57 54.83 L75.27 57.16 L74.74 59.46 L73.98 61.72 L72.99 63.91 L71.78 66.00 L70.37 67.97 L68.76 69.79 L66.97 71.45 L65.02 72.93 L62.93 74.21 L60.72 75.28 L58.42 76.11 L56.04 76.72 L53.62 77.08 L51.19 77.20 L48.76 77.08 L46.37 76.71 L44.04 76.11 L41.79 75.28 L39.66 74.24 L37.66 72.99 L35.81 71.57 L34.13 69.98 L32.63 68.25 L31.34 66.39 L30.25 64.44 L29.37 62.42 L28.72 60.35 L28.29 58.25 L28.08 56.16 L28.08 54.09 L28.29 52.07 L28.70 50.12 L29.29 48.26 L30.06 46.51 L30.98 44.89 L32.04 43.41 L33.21 42.07 L34.49 40.90 L35.84 39.89 L37.25 39.06 L38.69 38.39 L40.15 37.89 L41.61 37.56\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M60.18 31.63 L62.03 32.25 L63.83 33.07 L65.58 34.07 L67.25 35.26 L68.81 36.63 L70.26 38.17 L71.57 39.87 L72.73 41.71 L73.71 43.68 L74.51 45.77 L75.10 47.95 L75.48 50.20 L75.64 52.50 L75.57 54.83 L75.27 57.16 L74.74 59.46 L73.98 61.72 L72.99 63.91 L71.78 66.00 L70.37 67.97 L68.76 69.79 L66.97 71.45 L65.02 72.93 L62.93 74.21 L60.72 75.28 L58.42 76.11 L56.04 76.72 L53.62 77.08 L51.19 77.20 L48.76 77.08 L46.37 76.71 L44.04 76.11 L41.79 75.28 L39.66 74.24 L37.66 72.99 L35.81 71.57 L34.13 69.98 L32.63 68.25 L31.34 66.39 L30.25 64.44 L29.37 62.42 L28.72 60.35 L28.29 58.25 L28.08 56.16 L28.08 54.09 L28.29 52.07 L28.70 50.12 L29.29 48.26 L30.06 46.51 L30.98 44.89 L32.04 43.41 L33.21 42.07 L34.49 40.90 L35.84 39.89 L37.25 39.06 L38.69 38.39 L40.15 37.89 L41.61 37.56\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" },
-  zephyr: { tray: "<svg viewBox=\"16.12 21.64 56.19 56.19\" aria-hidden=\"true\"><path d=\"M60.82 68.00 L59.36 69.29 L57.75 70.45 L56.01 71.46 L54.14 72.30 L52.17 72.98 L50.11 73.46 L47.99 73.75 L45.81 73.83 L43.61 73.69 L41.41 73.34 L39.23 72.76 L37.09 71.97 L35.01 70.96 L33.03 69.73 L31.17 68.31 L29.43 66.70 L27.86 64.91 L26.46 62.96 L25.26 60.87 L24.26 58.66 L23.48 56.35 L22.94 53.97 L22.63 51.54 L22.57 49.09 L22.75 46.65 L23.18 44.23 L23.84 41.87 L24.73 39.60 L25.85 37.43 L27.17 35.39 L28.69 33.50 L30.37 31.78 L32.21 30.25 L34.18 28.93 L36.26 27.81 L38.42 26.93 L40.63 26.26 L42.88 25.84 L45.14 25.64 L47.37 25.67 L49.56 25.93 L51.68 26.40 L53.71 27.07 L55.63 27.94 L57.42 28.97 L59.06 30.16 L60.54 31.49 L61.86 32.94 L62.99 34.47 L63.93 36.08 L64.69 37.74 L65.26 39.43 L65.64 41.12 L65.83 42.79 L65.85 44.43 L65.71 46.01 L65.41 47.53 L64.96 48.95\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M60.82 68.00 L59.36 69.29 L57.75 70.45 L56.01 71.46 L54.14 72.30 L52.17 72.98 L50.11 73.46 L47.99 73.75 L45.81 73.83 L43.61 73.69 L41.41 73.34 L39.23 72.76 L37.09 71.97 L35.01 70.96 L33.03 69.73 L31.17 68.31 L29.43 66.70 L27.86 64.91 L26.46 62.96 L25.26 60.87 L24.26 58.66 L23.48 56.35 L22.94 53.97 L22.63 51.54 L22.57 49.09 L22.75 46.65 L23.18 44.23 L23.84 41.87 L24.73 39.60 L25.85 37.43 L27.17 35.39 L28.69 33.50 L30.37 31.78 L32.21 30.25 L34.18 28.93 L36.26 27.81 L38.42 26.93 L40.63 26.26 L42.88 25.84 L45.14 25.64 L47.37 25.67 L49.56 25.93 L51.68 26.40 L53.71 27.07 L55.63 27.94 L57.42 28.97 L59.06 30.16 L60.54 31.49 L61.86 32.94 L62.99 34.47 L63.93 36.08 L64.69 37.74 L65.26 39.43 L65.64 41.12 L65.83 42.79 L65.85 44.43 L65.71 46.01 L65.41 47.53 L64.96 48.95\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" },
-  squall: { tray: "<svg viewBox=\"24.42 18.21 55.74 55.74\" aria-hidden=\"true\"><path d=\"M29.00 50.37 L28.62 48.46 L28.42 46.49 L28.42 44.47 L28.61 42.43 L29.02 40.39 L29.62 38.37 L30.44 36.38 L31.46 34.46 L32.67 32.62 L34.08 30.89 L35.67 29.29 L37.43 27.83 L39.34 26.54 L41.39 25.44 L43.56 24.53 L45.82 23.84 L48.16 23.37 L50.55 23.14 L52.96 23.14 L55.37 23.38 L57.76 23.86 L60.09 24.58 L62.35 25.53 L64.50 26.70 L66.53 28.08 L68.41 29.65 L70.12 31.41 L71.64 33.32 L72.96 35.37 L74.07 37.54 L74.95 39.79 L75.59 42.11 L75.99 44.47 L76.16 46.84 L76.08 49.19 L75.77 51.51 L75.24 53.76 L74.49 55.92 L73.53 57.97 L72.38 59.89 L71.07 61.65 L69.60 63.25 L68.00 64.68 L66.29 65.91 L64.50 66.94 L62.65 67.76 L60.76 68.39 L58.85 68.80 L56.95 69.01 L55.09 69.03 L53.27 68.85 L51.53 68.50 L49.88 67.98 L48.33 67.32 L46.90 66.52 L45.60 65.60 L44.44 64.58 L43.42 63.48\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M29.00 50.37 L28.62 48.46 L28.42 46.49 L28.42 44.47 L28.61 42.43 L29.02 40.39 L29.62 38.37 L30.44 36.38 L31.46 34.46 L32.67 32.62 L34.08 30.89 L35.67 29.29 L37.43 27.83 L39.34 26.54 L41.39 25.44 L43.56 24.53 L45.82 23.84 L48.16 23.37 L50.55 23.14 L52.96 23.14 L55.37 23.38 L57.76 23.86 L60.09 24.58 L62.35 25.53 L64.50 26.70 L66.53 28.08 L68.41 29.65 L70.12 31.41 L71.64 33.32 L72.96 35.37 L74.07 37.54 L74.95 39.79 L75.59 42.11 L75.99 44.47 L76.16 46.84 L76.08 49.19 L75.77 51.51 L75.24 53.76 L74.49 55.92 L73.53 57.97 L72.38 59.89 L71.07 61.65 L69.60 63.25 L68.00 64.68 L66.29 65.91 L64.50 66.94 L62.65 67.76 L60.76 68.39 L58.85 68.80 L56.95 69.01 L55.09 69.03 L53.27 68.85 L51.53 68.50 L49.88 67.98 L48.33 67.32 L46.90 66.52 L45.60 65.60 L44.44 64.58 L43.42 63.48\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" }
+  vortex: { tray: "<svg viewBox=\"34.64 33.31 34.60 34.60\" aria-hidden=\"true\"><path d=\"M47.18 48.97 L46.53 48.57 L46.05 48.18 L45.63 47.77 L45.26 47.33 L44.94 46.87 L44.67 46.38 L44.43 45.88 L44.24 45.36 L44.09 44.82 L43.98 44.27 L43.90 43.70 L43.87 43.13 L43.88 42.54 L43.94 41.95\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M52.30 48.07 L52.97 47.71 L53.55 47.49 L54.12 47.33 L54.68 47.23 L55.24 47.19 L55.80 47.19 L56.35 47.24 L56.90 47.33 L57.44 47.47 L57.98 47.65 L58.50 47.87 L59.01 48.13 L59.51 48.43 L60.00 48.77\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M50.52 52.95 L50.50 53.72 L50.40 54.33 L50.25 54.90 L50.05 55.44 L49.81 55.95 L49.53 56.43 L49.22 56.88 L48.86 57.31 L48.47 57.71 L48.05 58.08 L47.59 58.43 L47.11 58.74 L46.60 59.02 L46.06 59.27\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M47.18 48.97 L46.53 48.57 L46.05 48.18 L45.63 47.77 L45.26 47.33 L44.94 46.87 L44.67 46.38 L44.43 45.88 L44.24 45.36 L44.09 44.82 L43.98 44.27 L43.90 43.70 L43.87 43.13 L43.88 42.54 L43.94 41.95\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M52.30 48.07 L52.97 47.71 L53.55 47.49 L54.12 47.33 L54.68 47.23 L55.24 47.19 L55.80 47.19 L56.35 47.24 L56.90 47.33 L57.44 47.47 L57.98 47.65 L58.50 47.87 L59.01 48.13 L59.51 48.43 L60.00 48.77\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M50.52 52.95 L50.50 53.72 L50.40 54.33 L50.25 54.90 L50.05 55.44 L49.81 55.95 L49.53 56.43 L49.22 56.88 L48.86 57.31 L48.47 57.71 L48.05 58.08 L47.59 58.43 L47.11 58.74 L46.60 59.02 L46.06 59.27\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" },
+  draft: { tray: "<svg viewBox=\"19.72 22.88 53.76 53.76\" aria-hidden=\"true\"><path d=\"M43.94 41.95 L44.03 41.36 L44.16 40.76 L44.34 40.17 L44.56 39.58 L44.81 38.99 L45.11 38.41 L45.45 37.84 L45.83 37.28 L46.25 36.73 L46.71 36.20 L47.20 35.69 L47.73 35.20 L48.30 34.73 L48.90 34.29 L49.54 33.87 L50.21 33.48 L50.91 33.12 L51.64 32.79 L52.39 32.50 L53.18 32.24 L53.99 32.02 L54.82 31.84 L55.67 31.70 L56.54 31.60 L57.43 31.54 L58.34 31.52 L59.25 31.56 L60.18 31.63\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M60.00 48.77 L60.47 49.15 L60.92 49.56 L61.34 50.01 L61.75 50.50 L62.13 51.02 L62.48 51.56 L62.81 52.14 L63.10 52.75 L63.37 53.39 L63.60 54.05 L63.79 54.73 L63.95 55.44 L64.07 56.16 L64.16 56.91 L64.20 57.67 L64.20 58.44 L64.17 59.22 L64.08 60.02 L63.96 60.82 L63.79 61.63 L63.58 62.44 L63.32 63.25 L63.02 64.06 L62.67 64.87 L62.27 65.67 L61.83 66.46 L61.35 67.24 L60.82 68.00\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M46.06 59.27 L45.50 59.49 L44.92 59.67 L44.32 59.82 L43.69 59.93 L43.06 60.00 L42.40 60.03 L41.74 60.02 L41.07 59.97 L40.38 59.88 L39.70 59.75 L39.01 59.58 L38.32 59.37 L37.63 59.11 L36.94 58.81 L36.26 58.47 L35.59 58.08 L34.93 57.66 L34.28 57.19 L33.65 56.68 L33.03 56.13 L32.44 55.54 L31.86 54.91 L31.31 54.24 L30.79 53.54 L30.30 52.79 L29.83 52.02 L29.40 51.21 L29.00 50.37\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M43.94 41.95 L44.03 41.36 L44.16 40.76 L44.34 40.17 L44.56 39.58 L44.81 38.99 L45.11 38.41 L45.45 37.84 L45.83 37.28 L46.25 36.73 L46.71 36.20 L47.20 35.69 L47.73 35.20 L48.30 34.73 L48.90 34.29 L49.54 33.87 L50.21 33.48 L50.91 33.12 L51.64 32.79 L52.39 32.50 L53.18 32.24 L53.99 32.02 L54.82 31.84 L55.67 31.70 L56.54 31.60 L57.43 31.54 L58.34 31.52 L59.25 31.56 L60.18 31.63\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M60.00 48.77 L60.47 49.15 L60.92 49.56 L61.34 50.01 L61.75 50.50 L62.13 51.02 L62.48 51.56 L62.81 52.14 L63.10 52.75 L63.37 53.39 L63.60 54.05 L63.79 54.73 L63.95 55.44 L64.07 56.16 L64.16 56.91 L64.20 57.67 L64.20 58.44 L64.17 59.22 L64.08 60.02 L63.96 60.82 L63.79 61.63 L63.58 62.44 L63.32 63.25 L63.02 64.06 L62.67 64.87 L62.27 65.67 L61.83 66.46 L61.35 67.24 L60.82 68.00\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M46.06 59.27 L45.50 59.49 L44.92 59.67 L44.32 59.82 L43.69 59.93 L43.06 60.00 L42.40 60.03 L41.74 60.02 L41.07 59.97 L40.38 59.88 L39.70 59.75 L39.01 59.58 L38.32 59.37 L37.63 59.11 L36.94 58.81 L36.26 58.47 L35.59 58.08 L34.93 57.66 L34.28 57.19 L33.65 56.68 L33.03 56.13 L32.44 55.54 L31.86 54.91 L31.31 54.24 L30.79 53.54 L30.30 52.79 L29.83 52.02 L29.40 51.21 L29.00 50.37\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" },
+  gale: { tray: "<svg viewBox=\"19.44 21.99 64.84 64.84\" aria-hidden=\"true\"><path d=\"M60.18 31.63 L62.03 32.25 L63.83 33.07 L65.58 34.07 L67.25 35.26 L68.81 36.63 L70.26 38.17 L71.57 39.87 L72.73 41.71 L73.71 43.68 L74.51 45.77 L75.10 47.95 L75.48 50.20 L75.64 52.50 L75.57 54.83 L75.27 57.16 L74.74 59.46 L73.98 61.72 L72.99 63.91 L71.78 66.00 L70.37 67.97 L68.76 69.79 L66.97 71.45 L65.02 72.93 L62.93 74.21 L60.72 75.28 L58.42 76.11 L56.04 76.72 L53.62 77.08 L51.19 77.20 L48.76 77.08 L46.37 76.71 L44.04 76.11 L41.79 75.28 L39.66 74.24 L37.66 72.99 L35.81 71.57 L34.13 69.98 L32.63 68.25 L31.34 66.39 L30.25 64.44 L29.37 62.42 L28.72 60.35 L28.29 58.25 L28.08 56.16 L28.08 54.09 L28.29 52.07 L28.70 50.12 L29.29 48.26 L30.06 46.51 L30.98 44.89 L32.04 43.41 L33.21 42.07 L34.49 40.90 L35.84 39.89 L37.25 39.06 L38.69 38.39 L40.15 37.89 L41.61 37.56\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M60.18 31.63 L62.03 32.25 L63.83 33.07 L65.58 34.07 L67.25 35.26 L68.81 36.63 L70.26 38.17 L71.57 39.87 L72.73 41.71 L73.71 43.68 L74.51 45.77 L75.10 47.95 L75.48 50.20 L75.64 52.50 L75.57 54.83 L75.27 57.16 L74.74 59.46 L73.98 61.72 L72.99 63.91 L71.78 66.00 L70.37 67.97 L68.76 69.79 L66.97 71.45 L65.02 72.93 L62.93 74.21 L60.72 75.28 L58.42 76.11 L56.04 76.72 L53.62 77.08 L51.19 77.20 L48.76 77.08 L46.37 76.71 L44.04 76.11 L41.79 75.28 L39.66 74.24 L37.66 72.99 L35.81 71.57 L34.13 69.98 L32.63 68.25 L31.34 66.39 L30.25 64.44 L29.37 62.42 L28.72 60.35 L28.29 58.25 L28.08 56.16 L28.08 54.09 L28.29 52.07 L28.70 50.12 L29.29 48.26 L30.06 46.51 L30.98 44.89 L32.04 43.41 L33.21 42.07 L34.49 40.90 L35.84 39.89 L37.25 39.06 L38.69 38.39 L40.15 37.89 L41.61 37.56\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" },
+  zephyr: { tray: "<svg viewBox=\"11.47 17.00 65.47 65.47\" aria-hidden=\"true\"><path d=\"M60.82 68.00 L59.36 69.29 L57.75 70.45 L56.01 71.46 L54.14 72.30 L52.17 72.98 L50.11 73.46 L47.99 73.75 L45.81 73.83 L43.61 73.69 L41.41 73.34 L39.23 72.76 L37.09 71.97 L35.01 70.96 L33.03 69.73 L31.17 68.31 L29.43 66.70 L27.86 64.91 L26.46 62.96 L25.26 60.87 L24.26 58.66 L23.48 56.35 L22.94 53.97 L22.63 51.54 L22.57 49.09 L22.75 46.65 L23.18 44.23 L23.84 41.87 L24.73 39.60 L25.85 37.43 L27.17 35.39 L28.69 33.50 L30.37 31.78 L32.21 30.25 L34.18 28.93 L36.26 27.81 L38.42 26.93 L40.63 26.26 L42.88 25.84 L45.14 25.64 L47.37 25.67 L49.56 25.93 L51.68 26.40 L53.71 27.07 L55.63 27.94 L57.42 28.97 L59.06 30.16 L60.54 31.49 L61.86 32.94 L62.99 34.47 L63.93 36.08 L64.69 37.74 L65.26 39.43 L65.64 41.12 L65.83 42.79 L65.85 44.43 L65.71 46.01 L65.41 47.53 L64.96 48.95\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M60.82 68.00 L59.36 69.29 L57.75 70.45 L56.01 71.46 L54.14 72.30 L52.17 72.98 L50.11 73.46 L47.99 73.75 L45.81 73.83 L43.61 73.69 L41.41 73.34 L39.23 72.76 L37.09 71.97 L35.01 70.96 L33.03 69.73 L31.17 68.31 L29.43 66.70 L27.86 64.91 L26.46 62.96 L25.26 60.87 L24.26 58.66 L23.48 56.35 L22.94 53.97 L22.63 51.54 L22.57 49.09 L22.75 46.65 L23.18 44.23 L23.84 41.87 L24.73 39.60 L25.85 37.43 L27.17 35.39 L28.69 33.50 L30.37 31.78 L32.21 30.25 L34.18 28.93 L36.26 27.81 L38.42 26.93 L40.63 26.26 L42.88 25.84 L45.14 25.64 L47.37 25.67 L49.56 25.93 L51.68 26.40 L53.71 27.07 L55.63 27.94 L57.42 28.97 L59.06 30.16 L60.54 31.49 L61.86 32.94 L62.99 34.47 L63.93 36.08 L64.69 37.74 L65.26 39.43 L65.64 41.12 L65.83 42.79 L65.85 44.43 L65.71 46.01 L65.41 47.53 L64.96 48.95\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" },
+  squall: { tray: "<svg viewBox=\"19.78 13.58 65.02 65.02\" aria-hidden=\"true\"><path d=\"M29.00 50.37 L28.62 48.46 L28.42 46.49 L28.42 44.47 L28.61 42.43 L29.02 40.39 L29.62 38.37 L30.44 36.38 L31.46 34.46 L32.67 32.62 L34.08 30.89 L35.67 29.29 L37.43 27.83 L39.34 26.54 L41.39 25.44 L43.56 24.53 L45.82 23.84 L48.16 23.37 L50.55 23.14 L52.96 23.14 L55.37 23.38 L57.76 23.86 L60.09 24.58 L62.35 25.53 L64.50 26.70 L66.53 28.08 L68.41 29.65 L70.12 31.41 L71.64 33.32 L72.96 35.37 L74.07 37.54 L74.95 39.79 L75.59 42.11 L75.99 44.47 L76.16 46.84 L76.08 49.19 L75.77 51.51 L75.24 53.76 L74.49 55.92 L73.53 57.97 L72.38 59.89 L71.07 61.65 L69.60 63.25 L68.00 64.68 L66.29 65.91 L64.50 66.94 L62.65 67.76 L60.76 68.39 L58.85 68.80 L56.95 69.01 L55.09 69.03 L53.27 68.85 L51.53 68.50 L49.88 67.98 L48.33 67.32 L46.90 66.52 L45.60 65.60 L44.44 64.58 L43.42 63.48\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M29.00 50.37 L28.62 48.46 L28.42 46.49 L28.42 44.47 L28.61 42.43 L29.02 40.39 L29.62 38.37 L30.44 36.38 L31.46 34.46 L32.67 32.62 L34.08 30.89 L35.67 29.29 L37.43 27.83 L39.34 26.54 L41.39 25.44 L43.56 24.53 L45.82 23.84 L48.16 23.37 L50.55 23.14 L52.96 23.14 L55.37 23.38 L57.76 23.86 L60.09 24.58 L62.35 25.53 L64.50 26.70 L66.53 28.08 L68.41 29.65 L70.12 31.41 L71.64 33.32 L72.96 35.37 L74.07 37.54 L74.95 39.79 L75.59 42.11 L75.99 44.47 L76.16 46.84 L76.08 49.19 L75.77 51.51 L75.24 53.76 L74.49 55.92 L73.53 57.97 L72.38 59.89 L71.07 61.65 L69.60 63.25 L68.00 64.68 L66.29 65.91 L64.50 66.94 L62.65 67.76 L60.76 68.39 L58.85 68.80 L56.95 69.01 L55.09 69.03 L53.27 68.85 L51.53 68.50 L49.88 67.98 L48.33 67.32 L46.90 66.52 L45.60 65.60 L44.44 64.58 L43.42 63.48\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" },
+  rift: { tray: "<svg viewBox=\"6.36 13.36 73.28 73.28\" aria-hidden=\"true\"><path d=\"M28 22 L38 34 L32 40 L48 52 L40 58 L58 72 L52 78\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M28 22 L38 34 L32 40 L48 52 L40 58 L58 72 L52 78\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" },
+  eddy: { tray: "<svg viewBox=\"19.36 19.36 63.28 63.28\" aria-hidden=\"true\"><path d=\"M50 28 C66 28 74 40 74 50 C74 64 62 74 50 74 C36 74 28 62 28 50 C28 40 34 34 42 34 C50 34 54 40 54 48 C54 54 50 58 46 58\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M50 28 C66 28 74 40 74 50 C74 64 62 74 50 74 C36 74 28 62 28 50 C28 40 34 34 42 34 C50 34 54 40 54 48 C54 54 50 58 46 58\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" },
+  shear: { tray: "<svg viewBox=\"9.36 3.48 89.28 89.28\" aria-hidden=\"true\"><path d=\"M22 38 C34 28 46 28 58 38 C70 48 82 48 90 40\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M18 58 C30 48 42 48 54 58 C66 68 78 68 86 60\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M22 38 C34 28 46 28 58 38 C70 48 82 48 90 40\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M18 58 C30 48 42 48 54 58 C66 68 78 68 86 60\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" },
+  plume: { tray: "<svg viewBox=\"17.36 13.36 73.28 73.28\" aria-hidden=\"true\"><path d=\"M36 78 L48 22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M48 34 C58 30 68 36 72 46\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M48 48 C60 46 70 54 72 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M48 62 C58 62 66 68 68 76\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M36 78 L48 22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M48 34 C58 30 68 36 72 46\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M48 48 C60 46 70 54 72 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M48 62 C58 62 66 68 68 76\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" },
+  cipher: { tray: "<svg viewBox=\"9.36 9.36 81.28 81.28\" aria-hidden=\"true\"><path d=\"M50 18 L50 82\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M50 42 L28 28\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M50 42 L72 28\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M50 58 L30 74\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M50 58 L70 74\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>", full: "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M50 18 L50 82\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M50 42 L28 28\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M50 42 L72 28\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M50 58 L30 74\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M50 58 L70 74\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>" }
 };
 const RUNE_FULL = "<svg viewBox=\"0 0 100 100\" aria-hidden=\"true\"><path d=\"M47.18 48.97 L46.53 48.57 L46.05 48.18 L45.63 47.77 L45.26 47.33 L44.94 46.87 L44.67 46.38 L44.43 45.88 L44.24 45.36 L44.09 44.82 L43.98 44.27 L43.90 43.70 L43.87 43.13 L43.88 42.54 L43.94 41.95\" fill=\"none\" stroke=\"currentColor\" opacity=\"0.22\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M52.30 48.07 L52.97 47.71 L53.55 47.49 L54.12 47.33 L54.68 47.23 L55.24 47.19 L55.80 47.19 L56.35 47.24 L56.90 47.33 L57.44 47.47 L57.98 47.65 L58.50 47.87 L59.01 48.13 L59.51 48.43 L60.00 48.77\" fill=\"none\" stroke=\"currentColor\" opacity=\"0.22\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M50.52 52.95 L50.50 53.72 L50.40 54.33 L50.25 54.90 L50.05 55.44 L49.81 55.95 L49.53 56.43 L49.22 56.88 L48.86 57.31 L48.47 57.71 L48.05 58.08 L47.59 58.43 L47.11 58.74 L46.60 59.02 L46.06 59.27\" fill=\"none\" stroke=\"currentColor\" opacity=\"0.22\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M43.94 41.95 L44.03 41.36 L44.16 40.76 L44.34 40.17 L44.56 39.58 L44.81 38.99 L45.11 38.41 L45.45 37.84 L45.83 37.28 L46.25 36.73 L46.71 36.20 L47.20 35.69 L47.73 35.20 L48.30 34.73 L48.90 34.29 L49.54 33.87 L50.21 33.48 L50.91 33.12 L51.64 32.79 L52.39 32.50 L53.18 32.24 L53.99 32.02 L54.82 31.84 L55.67 31.70 L56.54 31.60 L57.43 31.54 L58.34 31.52 L59.25 31.56 L60.18 31.63\" fill=\"none\" stroke=\"currentColor\" opacity=\"0.22\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M60.00 48.77 L60.47 49.15 L60.92 49.56 L61.34 50.01 L61.75 50.50 L62.13 51.02 L62.48 51.56 L62.81 52.14 L63.10 52.75 L63.37 53.39 L63.60 54.05 L63.79 54.73 L63.95 55.44 L64.07 56.16 L64.16 56.91 L64.20 57.67 L64.20 58.44 L64.17 59.22 L64.08 60.02 L63.96 60.82 L63.79 61.63 L63.58 62.44 L63.32 63.25 L63.02 64.06 L62.67 64.87 L62.27 65.67 L61.83 66.46 L61.35 67.24 L60.82 68.00\" fill=\"none\" stroke=\"currentColor\" opacity=\"0.22\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M46.06 59.27 L45.50 59.49 L44.92 59.67 L44.32 59.82 L43.69 59.93 L43.06 60.00 L42.40 60.03 L41.74 60.02 L41.07 59.97 L40.38 59.88 L39.70 59.75 L39.01 59.58 L38.32 59.37 L37.63 59.11 L36.94 58.81 L36.26 58.47 L35.59 58.08 L34.93 57.66 L34.28 57.19 L33.65 56.68 L33.03 56.13 L32.44 55.54 L31.86 54.91 L31.31 54.24 L30.79 53.54 L30.30 52.79 L29.83 52.02 L29.40 51.21 L29.00 50.37\" fill=\"none\" stroke=\"currentColor\" opacity=\"0.22\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M60.18 31.63 L62.03 32.25 L63.83 33.07 L65.58 34.07 L67.25 35.26 L68.81 36.63 L70.26 38.17 L71.57 39.87 L72.73 41.71 L73.71 43.68 L74.51 45.77 L75.10 47.95 L75.48 50.20 L75.64 52.50 L75.57 54.83 L75.27 57.16 L74.74 59.46 L73.98 61.72 L72.99 63.91 L71.78 66.00 L70.37 67.97 L68.76 69.79 L66.97 71.45 L65.02 72.93 L62.93 74.21 L60.72 75.28 L58.42 76.11 L56.04 76.72 L53.62 77.08 L51.19 77.20 L48.76 77.08 L46.37 76.71 L44.04 76.11 L41.79 75.28 L39.66 74.24 L37.66 72.99 L35.81 71.57 L34.13 69.98 L32.63 68.25 L31.34 66.39 L30.25 64.44 L29.37 62.42 L28.72 60.35 L28.29 58.25 L28.08 56.16 L28.08 54.09 L28.29 52.07 L28.70 50.12 L29.29 48.26 L30.06 46.51 L30.98 44.89 L32.04 43.41 L33.21 42.07 L34.49 40.90 L35.84 39.89 L37.25 39.06 L38.69 38.39 L40.15 37.89 L41.61 37.56\" fill=\"none\" stroke=\"currentColor\" opacity=\"0.22\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M60.82 68.00 L59.36 69.29 L57.75 70.45 L56.01 71.46 L54.14 72.30 L52.17 72.98 L50.11 73.46 L47.99 73.75 L45.81 73.83 L43.61 73.69 L41.41 73.34 L39.23 72.76 L37.09 71.97 L35.01 70.96 L33.03 69.73 L31.17 68.31 L29.43 66.70 L27.86 64.91 L26.46 62.96 L25.26 60.87 L24.26 58.66 L23.48 56.35 L22.94 53.97 L22.63 51.54 L22.57 49.09 L22.75 46.65 L23.18 44.23 L23.84 41.87 L24.73 39.60 L25.85 37.43 L27.17 35.39 L28.69 33.50 L30.37 31.78 L32.21 30.25 L34.18 28.93 L36.26 27.81 L38.42 26.93 L40.63 26.26 L42.88 25.84 L45.14 25.64 L47.37 25.67 L49.56 25.93 L51.68 26.40 L53.71 27.07 L55.63 27.94 L57.42 28.97 L59.06 30.16 L60.54 31.49 L61.86 32.94 L62.99 34.47 L63.93 36.08 L64.69 37.74 L65.26 39.43 L65.64 41.12 L65.83 42.79 L65.85 44.43 L65.71 46.01 L65.41 47.53 L64.96 48.95\" fill=\"none\" stroke=\"currentColor\" opacity=\"0.22\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M29.00 50.37 L28.62 48.46 L28.42 46.49 L28.42 44.47 L28.61 42.43 L29.02 40.39 L29.62 38.37 L30.44 36.38 L31.46 34.46 L32.67 32.62 L34.08 30.89 L35.67 29.29 L37.43 27.83 L39.34 26.54 L41.39 25.44 L43.56 24.53 L45.82 23.84 L48.16 23.37 L50.55 23.14 L52.96 23.14 L55.37 23.38 L57.76 23.86 L60.09 24.58 L62.35 25.53 L64.50 26.70 L66.53 28.08 L68.41 29.65 L70.12 31.41 L71.64 33.32 L72.96 35.37 L74.07 37.54 L74.95 39.79 L75.59 42.11 L75.99 44.47 L76.16 46.84 L76.08 49.19 L75.77 51.51 L75.24 53.76 L74.49 55.92 L73.53 57.97 L72.38 59.89 L71.07 61.65 L69.60 63.25 L68.00 64.68 L66.29 65.91 L64.50 66.94 L62.65 67.76 L60.76 68.39 L58.85 68.80 L56.95 69.01 L55.09 69.03 L53.27 68.85 L51.53 68.50 L49.88 67.98 L48.33 67.32 L46.90 66.52 L45.60 65.60 L44.44 64.58 L43.42 63.48\" fill=\"none\" stroke=\"currentColor\" opacity=\"0.22\" stroke-width=\"6.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>";
 function runeShapeSvg(id, which = "tray") {
@@ -689,10 +694,6 @@ const dom = {
   landingFx: el('landingFx'), landingFxDebug: el('landingFxDebug'),
   landingParty: el('landingParty'), landingPartySize: el('landingPartySize'),
   landingPartyHint: el('landingPartyHint'),
-  beginBrief: el('beginBrief'), beginBriefClose: el('beginBriefClose'),
-  beginContinue: el('beginContinue'),
-  beginSteps: el('beginSteps'), beginStory: el('beginStory'),
-  beginStoryOpen: el('beginStoryOpen'), beginStoryClose: el('beginStoryClose'),
   landingTalk: el('landingTalk'), landingBubble: el('landingBubble'),
   landingBubbleWho: el('landingBubbleWho'), landingBubbleText: el('landingBubbleText'),
   landingRealms: el('landingRealms'),
@@ -956,8 +957,7 @@ function setShrineFocus(key, { spin = true, scroll = true, restore = false } = {
 }
 
 function goStartHero() {
-  const welcome = Store.touchByType('threshold')[0];
-  goStation(welcome?.slug || 'threshold');
+  goStation('threshold');
 }
 
 function resetToastAnchor() {
@@ -1982,6 +1982,20 @@ function bumpViewGeneration() {
   return viewGeneration;
 }
 
+function clearStationView() {
+  bumpViewGeneration();
+  stopStoryAudio();
+  stopHearth();
+  stopWind();
+  stopLeaves();
+  if (!document.body.classList.contains('landing-open')) haltWaves();
+  setShrineScrollLock(false);
+  delete document.body.dataset.realm;
+  shrineSlug = null;
+  shrineFocus = null;
+  dom.stationView.innerHTML = '';
+}
+
 function renderStation(slug) {
   bumpViewGeneration();
   stopStoryAudio();
@@ -1989,11 +2003,17 @@ function renderStation(slug) {
   stopWind();
   stopLeaves();
   if (!document.body.classList.contains('landing-open')) haltWaves();
-  const station = Store.touchBySlug(slug) || Store.touchByType('threshold')[0];
-  if (!station) {
-    delete document.body.dataset.realm;
-    setShrineScrollLock(false);
-    dom.stationView.innerHTML = `<div class="empty"><p class="empty__title">${escapeHtml(t('This station isn’t on tonight’s quest.'))}</p></div>`;
+  // Never fall back to the Threshold station page — that slug is welcome-only.
+  if (!slug || slug === 'threshold') {
+    clearStationView();
+    return;
+  }
+  const station = Store.touchBySlug(slug);
+  if (!station || station.type === 'threshold') {
+    clearStationView();
+    if (!station) {
+      dom.stationView.innerHTML = `<div class="empty"><p class="empty__title">${escapeHtml(t('This station isn’t on tonight’s quest.'))}</p></div>`;
+    }
     return;
   }
   if (station.type === 'guardian' && station.element) document.body.dataset.realm = station.element;
@@ -2347,14 +2367,15 @@ function hideFinale() {
 /* -------------------------------------------------------------------------- */
 
 function renderJourney() {
-  const stations = (Store.state.touchpoints || []).map((tp) => (window.Lang ? Lang.present(tp) : tp));
+  const stations = (Store.state.touchpoints || [])
+    .filter((tp) => tp.type !== 'threshold')
+    .map((tp) => (window.Lang ? Lang.present(tp) : tp));
   const session = Store.state.session;
   const realms = session?.realms || [];
   const rows = stations.map((tp) => {
     let status = 'Visit';
     if (tp.type === 'heart') status = session?.winterKeeper ? 'Complete' : session?.realmsComplete ? 'Ready to scan' : 'Final destination';
     else if (tp.type === 'monument') status = session?.builderQuizAt ? 'Quiz done' : session?.buildersVisitedAt ? 'Visited' : 'Optional';
-    else if (tp.type === 'threshold') status = session ? 'Welcome' : 'Start here';
     else if (tp.complete) status = 'Element awake';
     const awake = Boolean(tp.complete || (tp.type === 'heart' && session?.winterKeeper));
     const realm = tp.element ? ` data-realm="${escapeHtml(tp.element)}"` : '';
@@ -3029,8 +3050,7 @@ async function runWave(realm, mode, paintHost, wavingHost, gen) {
 
 function landingCanWave() {
   return document.body.classList.contains('landing-open')
-    && Boolean(dom.threshold?.classList.contains('is-open'))
-    && !(dom.beginBrief && !dom.beginBrief.hidden);
+    && Boolean(dom.threshold?.classList.contains('is-open'));
 }
 
 function armLandWaves(realm) {
@@ -3125,7 +3145,6 @@ function startLandTalk() {
     if (dom.threshold?.classList.contains('is-open')) landTalk('water');
     talkPulse = window.setInterval(() => {
       if (!dom.threshold?.classList.contains('is-open')) return;
-      if (dom.beginBrief && !dom.beginBrief.hidden) return;
       const realm = REALM_ORDER[Math.floor(Math.random() * REALM_ORDER.length)];
       landTalk(realm);
     }, 7000);
@@ -3258,12 +3277,12 @@ function showThreshold() {
     dom.landingProgress.textContent = `${awakened} / 5`;
     if (dom.landingProgressLine) dom.landingProgressLine.textContent = elementLine(awakened);
   }
-  hideBeginBrief();
   clearPartyReminder();
   const known = Store.state.session?.partySize;
   if (dom.landingPartySize && known && !String(dom.landingPartySize.value || '').trim()) {
     dom.landingPartySize.value = String(known);
   }
+  clearStationView();
   setShrineScrollLock(false);
   document.body.classList.add('landing-open');
   dom.threshold.hidden = false;
@@ -3313,45 +3332,9 @@ function remindPartySize() {
   dom.landingPartySize?.focus();
 }
 
-function hideStoryModal() {
-  if (!dom.beginStory) return;
-  dom.beginStory.hidden = true;
-}
-
-function openStoryModal() {
-  if (!dom.beginStory) return;
-  dom.beginStory.hidden = false;
-}
-
-function hideBeginBrief() {
-  hideStoryModal();
-  if (!dom.beginBrief) return;
-  dom.beginBrief.hidden = true;
-  restoreModalTrigger();
-}
-
-function openBeginBrief() {
-  if (!readPartySize()) {
-    remindPartySize();
-    return;
-  }
-  clearPartyReminder();
-  hideLandTalk();
-  hideStoryModal();
-  if (dom.beginBrief) {
-    rememberModalTrigger();
-    dom.beginBrief.hidden = false;
-    dom.beginBrief.querySelector('.beginBrief__scroll')?.scrollTo(0, 0);
-    requestAnimationFrame(() => {
-      (dom.beginContinue || dom.beginBriefClose || focusables(dom.beginBrief)[0])?.focus();
-    });
-  }
-}
-
 function hideThreshold() {
   stopLandTalk();
   haltWaves();
-  hideBeginBrief();
   document.body.classList.remove('landing-open');
   syncLandingFxPause();
   dom.threshold.classList.remove('is-open');
@@ -3362,15 +3345,16 @@ function hideThreshold() {
 async function enterFromLanding({ journeyMode }) {
   const partySize = readPartySize();
   if (!partySize) {
-    hideBeginBrief();
     remindPartySize();
     return;
   }
-  try {
-    await Store.startSession(Store.intendedStation(), partySize);
-  } catch {
-    toast(t('Couldn’t start just yet. Try again in a moment.'));
-    return;
+  if (!Store.hasLiveSession()) {
+    try {
+      await Store.startSession(Store.intendedStation(), partySize);
+    } catch {
+      toast(t('Couldn’t start just yet. Try again in a moment.'));
+      return;
+    }
   }
   stripWelcomePreview();
   Store.setIntendedStation(null);
@@ -3535,8 +3519,7 @@ function openMapHome({ showChoice = false, fit = 'park' } = {}) {
   hideThreshold();
   if (!showChoice) hideMapModal();
   document.body.classList.toggle('begin-frame', fit === 'guardians');
-  const welcome = Store.touchByType('threshold')[0];
-  renderStation(welcome?.slug || 'threshold');
+  clearStationView();
   openGuide();
   setTimeout(() => {
     ParkMap.invalidate?.();
@@ -3557,8 +3540,7 @@ function showGuardianQrLanding(station) {
   hideThreshold();
   markHistoryView(station.slug, 'map-begin');
   Store.state.path = Store.pathContext();
-  const welcome = Store.touchByType('threshold')[0];
-  renderStation(welcome?.slug || 'threshold');
+  clearStationView();
   openGuide();
   document.body.classList.remove('sheet-open');
   showBeginStationModal(station);
@@ -3568,13 +3550,17 @@ function showGuardianQrLanding(station) {
   }, 120);
 }
 
+function syncQuestFab() {
+  const guideLabel = dom.guideToggle?.querySelector('span');
+  if (guideLabel) guideLabel.textContent = t('Quest');
+  dom.guideToggle?.setAttribute('aria-label', t('Open My Journey'));
+  dom.guideToggle?.removeAttribute('aria-pressed');
+}
+
 function openGuide() {
   document.body.classList.add('guide-open');
   dom.guide.hidden = false;
-  dom.guideToggle.setAttribute('aria-pressed', 'true');
-  const guideLabel = dom.guideToggle.querySelector('span');
-  if (guideLabel) guideLabel.textContent = t('Quest');
-  dom.guideToggle.setAttribute('aria-label', t('Back to Castle Quest'));
+  syncQuestFab();
   if (dom.headerMap) dom.headerMap.setAttribute('aria-pressed', 'true');
   ensureMap();
   setTimeout(() => ParkMap.invalidate?.(), 80);
@@ -3586,10 +3572,7 @@ function closeGuide({ force = false } = {}) {
   document.body.classList.remove('guide-open');
   document.body.classList.remove('sheet-open');
   dom.guide.hidden = true;
-  dom.guideToggle.setAttribute('aria-pressed', 'false');
-  const guideLabel = dom.guideToggle.querySelector('span');
-  if (guideLabel) guideLabel.textContent = t('Quest');
-  dom.guideToggle.setAttribute('aria-label', t('Back to Castle Quest'));
+  syncQuestFab();
   if (dom.headerMap) dom.headerMap.setAttribute('aria-pressed', 'false');
 }
 
@@ -3957,8 +3940,6 @@ async function route() {
     closePanels();
     closeGuide({ force: true });
     showThreshold();
-    const welcome = Store.touchByType('threshold')[0];
-    renderStation(welcome?.slug || 'threshold');
     return;
   }
 
@@ -4085,25 +4066,20 @@ function wire() {
   window.addEventListener('scroll', onShrineWindowScroll, { passive: true });
   dom.progressButton.addEventListener('click', () => openPanel('journey'));
   dom.logoHome?.addEventListener('click', goStartHero);
-  const toggleGuide = () => {
+  // Map chip toggles the park map. Quest FAB opens My Journey.
+  // Welcome hero is only via the Castle Quest logo or a Threshold QR.
+  const toggleMap = () => {
     if (mapModalMode === 'choice') return;
     if (document.body.classList.contains('guide-open')) closeGuide();
     else openGuide();
   };
-  dom.guideToggle.addEventListener('click', toggleGuide);
-  if (dom.headerMap) dom.headerMap.addEventListener('click', toggleGuide);
+  dom.guideToggle.addEventListener('click', () => openPanel('journey'));
+  if (dom.headerMap) dom.headerMap.addEventListener('click', toggleMap);
 
-  dom.thresholdStart.addEventListener('click', openBeginBrief);
+  dom.thresholdStart.addEventListener('click', () => enterFromLanding({ journeyMode: true }));
   dom.landingMap?.addEventListener('click', () => enterFromLanding({ journeyMode: false }));
   dom.landingPartySize?.addEventListener('input', () => {
     if (readPartySize()) clearPartyReminder();
-  });
-  dom.beginContinue?.addEventListener('click', () => enterFromLanding({ journeyMode: true }));
-  dom.beginBriefClose?.addEventListener('click', hideBeginBrief);
-  dom.beginStoryOpen?.addEventListener('click', openStoryModal);
-  dom.beginStoryClose?.addEventListener('click', hideStoryModal);
-  dom.beginStory?.addEventListener('click', (event) => {
-    if (event.target === dom.beginStory) hideStoryModal();
   });
   dom.landingRealms?.addEventListener('click', (event) => {
     const btn = event.target.closest('[data-realm]');
@@ -4507,13 +4483,9 @@ function wire() {
       else if (mapModalMode) trapModalFocus(event, dom.mapModal);
       else if (currentPanel === 'journey') trapModalFocus(event, dom.journeyPanel);
       else if (currentPanel === 'passport') trapModalFocus(event, dom.passportPanel);
-      else if (dom.beginStory && !dom.beginStory.hidden) trapModalFocus(event, dom.beginStory);
-      else if (dom.beginBrief && !dom.beginBrief.hidden) trapModalFocus(event, dom.beginBrief);
       return;
     }
     if (event.key !== 'Escape') return;
-    if (dom.beginStory && !dom.beginStory.hidden) { hideStoryModal(); return; }
-    if (dom.beginBrief && !dom.beginBrief.hidden) { hideBeginBrief(); return; }
     if (Scanner.isOpen()) {
       Scanner.close();
       document.body.classList.remove('scanner-open');
@@ -4568,9 +4540,7 @@ function applyLanguage() {
       ? t('Enter a party size from 1 to 20.')
       : t('Enter your party size to continue.');
   }
-  const guideLabel = dom.guideToggle?.querySelector('span');
-  if (guideLabel) guideLabel.textContent = t('Quest');
-  dom.guideToggle?.setAttribute('aria-label', t('Back to Castle Quest'));
+  syncQuestFab();
   if (shrineSlug) renderStation(shrineSlug);
   if (document.body.classList.contains('guide-open')) renderLegend();
   if (currentPanel === 'journey') renderJourney();

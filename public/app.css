@@ -81,8 +81,11 @@
 
 html {
   min-height: 100%;
+  min-height: 100dvh;
   margin: 0;
-  background: #8ecce8;
+  /* Match the bottom of the default body sky so the home-indicator
+     safe-area never flashes a mid-tone strip behind shrine buttons. */
+  background: #c8e8f6;
   overflow-x: clip;
 }
 
@@ -93,7 +96,9 @@ html, body {
 
 body {
   min-height: 100%;
-  background:
+  min-height: 100dvh;
+  background-color: #c8e8f6;
+  background-image:
     radial-gradient(120% 70% at 50% -8%, rgba(255, 255, 255, 0.62), transparent 50%),
     radial-gradient(80% 50% at 100% 0%, rgba(196, 160, 255, 0.2), transparent 48%),
     linear-gradient(180deg, #62b4e0 0%, #8ecce8 42%, #c8e8f6 100%);
@@ -1379,186 +1384,6 @@ body.landing-open .station { visibility: hidden; }
   transform: translateX(-130%);
   pointer-events: none;
 }
-.beginBrief {
-  position: fixed;
-  inset: 0;
-  z-index: 6;
-  display: grid;
-  place-items: center;
-  padding: calc(16px + var(--safe-t)) 16px calc(16px + var(--safe-b));
-  background: rgba(7, 22, 38, 0.42);
-}
-.beginBrief[hidden] { display: none !important; }
-.beginBrief:has(.storyModal:not([hidden])) .beginBrief__card { visibility: hidden; }
-.beginBrief__card,
-.storyModal__card {
-  width: min(400px, 100%);
-  border-radius: 18px;
-  border: 3px solid var(--ice-card);
-  background: var(--ice-pale);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
-  color: var(--ink-text);
-}
-.beginBrief__card {
-  display: flex;
-  flex-direction: column;
-  max-height: min(92dvh, 760px);
-  padding: 18px 16px 16px;
-}
-.beginBrief__head,
-.storyModal__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-.beginBrief__kicker {
-  margin: 0 0 4px;
-  font-family: var(--body);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--ice-mid);
-}
-.beginBrief__head h2,
-.storyModal__head h2,
-.beginSteps h3 {
-  margin: 0;
-  font-family: var(--display);
-  font-weight: 650;
-  font-size: 26px;
-  line-height: 1.12;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--ink-text);
-}
-.beginBrief__close,
-.storyModal__close {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  margin-top: 2px;
-  border-radius: 50%;
-  border: 3px solid #123056;
-  background: #f4fbff;
-  color: #123056;
-}
-.beginBrief__close svg,
-.storyModal__close svg {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  fill: none;
-}
-.beginBrief__scroll {
-  flex: 1;
-  min-height: 0;
-  margin-top: 12px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-.beginBrief__scroll > p,
-.storyModal__body p {
-  margin: 0 0 12px;
-  font-size: 15px;
-  font-weight: 650;
-  line-height: 1.45;
-  color: var(--ink-text);
-}
-.beginStory {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  min-height: 52px;
-  margin: 4px 0 18px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 3px solid #123056;
-  background: #f4fbff;
-  color: #123056;
-  font-weight: 800;
-  font-size: 15px;
-  text-align: left;
-}
-.beginStory::after {
-  content: "+";
-  font-size: 22px;
-  font-weight: 600;
-  line-height: 1;
-  color: var(--ice-mid);
-}
-.beginSteps {
-  margin: 0;
-  padding-top: 16px;
-  border-top: 2px solid var(--ice-card);
-}
-.beginSteps h3 { font-size: 22px; margin-bottom: 12px; }
-.beginSteps ol {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 12px;
-}
-.beginSteps li {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px;
-  align-items: start;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.4;
-  color: var(--ink-text);
-}
-.beginSteps span {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--ice-mid);
-}
-.beginContinue { width: 100%; margin-top: 14px; }
-.storyModal {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  padding: 22px 16px;
-  background: rgba(7, 22, 38, 0.42);
-}
-.storyModal[hidden] { display: none; }
-.storyModal__card {
-  max-height: min(78dvh, 640px);
-  overflow: auto;
-  padding: 18px 16px 8px;
-}
-.storyModal__head h2 { font-size: 22px; }
-.storyModal__body { margin-top: 14px; }
-.storyModal__guardians {
-  list-style: none;
-  margin: 0 0 12px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: var(--snow);
-  border: 2px solid var(--ice-card);
-}
-.storyModal__guardians li {
-  margin: 0;
-  padding: 8px 0;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.35;
-  color: var(--ink-text);
-}
-.storyModal__guardians li + li { border-top: 1px solid var(--ice-card); }
 .threshold__primary,
 .threshold__ghost {
   min-height: 56px;
@@ -2979,7 +2804,8 @@ button.realmPip:focus-visible {
 .station {
   position: relative;
   z-index: 5;
-  padding: 8px 16px calc(28px + var(--safe-b));
+  /* Extra floor so Meet / Discover / Play clear the home-indicator strip. */
+  padding: 8px 16px calc(36px + var(--safe-b));
 }
 .shrine { max-width: 460px; margin: 0 auto; --realm: var(--aurora); }
 .shrine[data-realm="water"] { --realm: var(--water); }
@@ -3180,6 +3006,8 @@ button.realmPip:focus-visible {
 .listenButton + audio { display: none; }
 
 .shrineGate {
+  position: relative;
+  z-index: 6;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -3189,6 +3017,7 @@ button.realmPip:focus-visible {
 }
 .shrineIcon {
   position: relative;
+  z-index: 1;
   width: 88px;
   display: grid;
   justify-items: center;
@@ -3310,7 +3139,17 @@ button.realmPip:focus-visible {
   outline-offset: 3px;
 }
 
-/* Short phones: after PLAY, shrink the hero so the challenge is reachable. */
+/* Short phones: shrink the hero so Meet / Discover / Play stay on-screen
+   above the safe-area, including before a section is opened. */
+@media (max-height: 780px) {
+  .summon.shrine__hero {
+    width: min(100%, calc(220px * 1.3 * var(--hero-fit, 1) * var(--summon-w) / var(--summon-h)));
+  }
+  .shrineGate {
+    min-height: 148px;
+    margin-top: 12px;
+  }
+}
 @media (max-height: 740px) {
   .shrine.is-play-open .shrine__art {
     max-height: 132px;
@@ -3318,27 +3157,37 @@ button.realmPip:focus-visible {
   .shrine.is-play-open .shrine__hero {
     margin-block: 4px;
   }
-  .shrine.is-play-open .shrineGate {
+  .shrine.is-play-open .shrineGate,
+  .shrineGate {
     min-height: 118px;
-    margin: 10px 0 4px;
+    margin-top: 10px;
     gap: 10px;
   }
   .shrine.is-play-open .shrineIcon__gem,
   .shrine.is-play-open .shrineIcon__gem .realmBtn,
-  .shrine.is-play-open .shrineIcon__gem img {
+  .shrine.is-play-open .shrineIcon__gem img,
+  .shrineIcon__gem,
+  .shrineIcon__gem .realmBtn,
+  .shrineIcon__gem img {
     width: 60px;
     height: 60px;
   }
-  .shrine.is-play-open .shrineIcon__orbit {
+  .shrine.is-play-open .shrineIcon__orbit,
+  .shrineIcon__orbit {
     width: 74px;
     height: 74px;
     top: -6px;
   }
 }
 @media (max-height: 640px) {
+  .summon.shrine__hero {
+    width: min(100%, calc(180px * 1.3 * var(--hero-fit, 1) * var(--summon-w) / var(--summon-h)));
+  }
   .shrine.is-play-open .shrine__art { max-height: 96px; }
-  .shrine.is-play-open .shrine__kicker { font-size: 9px; }
-  .shrine.is-play-open .shrine__title { font-size: 26px; margin-bottom: 4px; }
+  .shrine.is-play-open .shrine__kicker,
+  .shrine__kicker { font-size: 9px; }
+  .shrine.is-play-open .shrine__title,
+  .shrine__title { font-size: 26px; margin-bottom: 4px; }
 }
 @keyframes shrineReveal {
   from { opacity: 0; transform: scale(0.88) translateY(16px); }
@@ -3853,11 +3702,10 @@ button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__gu
 }
 
 @media (hover: hover) and (pointer: fine) {
-  button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__guardian):not(.beginStory):not(.langToggle):hover {
+  button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__guardian):not(.langToggle):hover {
     transform: translateY(-3px) scale(1.045);
     filter: brightness(1.08);
   }
-  .beginStory:hover { filter: brightness(1.06); }
   .landing__realm:hover .landing__face { animation: pfpTalk 480ms var(--ease-spring); }
   .mapModal__guardian:hover .mapModal__face {
     transform: scale(1.08);
@@ -4113,12 +3961,13 @@ body[data-realm="water"] {
   --btn-deep: #3d97d4;
   --btn-lip: #143e66;
   --btn-label: #fff;
-  background:
+  background-color: #dff6fc;
+  background-image:
     radial-gradient(90% 46% at 50% -6%, rgba(210, 242, 255, 0.7), transparent 58%),
     linear-gradient(180deg, #0d4c8c 0%, #1c86c9 34%, #79c7ea 68%, #dff6fc 100%);
   background-attachment: fixed;
 }
-html:has(body[data-realm="water"]) { background: #1c86c9; }
+html:has(body[data-realm="water"]) { background: #dff6fc; }
 body.quest[data-realm="water"] .topbar {
   background: linear-gradient(to bottom, rgba(13, 76, 140, 0.92) 0%, rgba(28, 134, 201, 0.5) 70%, rgba(28, 134, 201, 0));
 }
@@ -4235,12 +4084,13 @@ body[data-realm="earth"] {
   --btn-deep: #3d6b32;
   --btn-lip: #1e3d18;
   --btn-label: #fff;
-  background:
+  background-color: #efe0b4;
+  background-image:
     radial-gradient(80% 40% at 50% 0%, rgba(210, 230, 160, 0.35), transparent 55%),
     linear-gradient(180deg, #1b3d22 0%, #3d6b32 32%, #8eae5c 66%, #efe0b4 100%);
   background-attachment: fixed;
 }
-html:has(body[data-realm="earth"]) { background: #3d6b32; }
+html:has(body[data-realm="earth"]) { background: #efe0b4; }
 body.quest[data-realm="earth"] .topbar {
   background: linear-gradient(to bottom, rgba(27, 61, 34, 0.92) 0%, rgba(61, 107, 50, 0.5) 70%, rgba(61, 107, 50, 0));
 }
@@ -4282,12 +4132,13 @@ body[data-realm="fire"] {
   --btn-deep: #e25a14;
   --btn-lip: #8a240c;
   --btn-label: #fff;
-  background:
+  background-color: #f6c98a;
+  background-image:
     radial-gradient(70% 36% at 50% 108%, rgba(255, 170, 50, 0.55), transparent 62%),
     linear-gradient(180deg, #4a0d0a 0%, #a32210 30%, #e25a14 58%, #f6c98a 100%);
   background-attachment: fixed;
 }
-html:has(body[data-realm="fire"]) { background: #a32210; }
+html:has(body[data-realm="fire"]) { background: #f6c98a; }
 body.quest[data-realm="fire"] .topbar {
   background: linear-gradient(to bottom, rgba(74, 13, 10, 0.92) 0%, rgba(163, 34, 16, 0.5) 70%, rgba(163, 34, 16, 0));
 }
@@ -4367,12 +4218,13 @@ body[data-realm="air"] {
   --btn-deep: #7fa8c4;
   --btn-lip: #3a627c;
   --btn-label: #123056;
-  background:
+  background-color: #f7fcff;
+  background-image:
     radial-gradient(80% 42% at 50% -8%, rgba(255, 255, 255, 0.72), transparent 56%),
     linear-gradient(180deg, #5f86a4 0%, #b7d4e6 40%, #f7fcff 100%);
   background-attachment: fixed;
 }
-html:has(body[data-realm="air"]) { background: #b7d4e6; }
+html:has(body[data-realm="air"]) { background: #f7fcff; }
 body[data-realm="air"] .shrineIcon__label,
 body[data-realm="air"] .shrineGate.is-focus .shrineIcon.is-on .shrineIcon__label {
   color: #1d3a4e;
@@ -4412,12 +4264,13 @@ body[data-realm="spirit"] {
   --btn-deep: #7a4eab;
   --btn-lip: #3a1868;
   --btn-label: #fff;
-  background:
+  background-color: #f7f0ff;
+  background-image:
     radial-gradient(70% 40% at 50% 0%, rgba(230, 200, 255, 0.4), transparent 58%),
     linear-gradient(180deg, #26124f 0%, #6a3d9a 38%, #c9a6e8 74%, #f7f0ff 100%);
   background-attachment: fixed;
 }
-html:has(body[data-realm="spirit"]) { background: #6a3d9a; }
+html:has(body[data-realm="spirit"]) { background: #f7f0ff; }
 body.quest[data-realm="spirit"] .topbar {
   background: linear-gradient(to bottom, rgba(38, 18, 79, 0.92) 0%, rgba(106, 61, 154, 0.5) 70%, rgba(106, 61, 154, 0));
 }
@@ -4780,7 +4633,6 @@ body[data-realm="spirit"] .realmSky i {
   box-sizing: border-box;
 }
 body.landing-open .langToggle { display: flex; }
-body.landing-open:has(.beginBrief:not([hidden])) .langToggle { display: none; }
 .langToggle[hidden] { display: none !important; }
 .langToggle__opt {
   width: 28px;

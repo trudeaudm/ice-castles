@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap">
-<link rel="stylesheet" href="/app.css?v=113">
+<link rel="stylesheet" href="/app.css?v=115">
 </head>
 <body class="quest">
 
@@ -84,7 +84,7 @@
     <span class="scanFab__pulse" aria-hidden="true"></span>
     <img src="/assets/art/ui/icon-scan.svg" alt="">
   </button>
-  <button class="guideFab" id="guideToggle" type="button" aria-pressed="false" aria-label="Back to Castle Quest" data-i18n-aria="Back to Castle Quest">
+  <button class="guideFab" id="guideToggle" type="button" aria-label="Open My Journey" data-i18n-aria="Open My Journey">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6 8 12.5 14.5 19"/></svg>
     <span data-i18n="Quest">Quest</span>
   </button>
@@ -234,55 +234,6 @@
       <span data-i18n="Map">Map</span>
     </button>
   </div>
-  <div class="beginBrief" id="beginBrief" role="dialog" aria-modal="true" aria-labelledby="beginBriefTitle" hidden>
-    <div class="beginBrief__card">
-      <header class="beginBrief__head">
-        <div>
-          <p class="beginBrief__kicker" data-i18n="Enter the quest">Enter the quest</p>
-          <h2 id="beginBriefTitle" data-i18n="Your quest begins here.">Your quest begins here.</h2>
-        </div>
-        <button class="beginBrief__close" id="beginBriefClose" type="button" aria-label="Back to welcome" data-i18n-aria="Back to welcome">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-        </button>
-      </header>
-      <div class="beginBrief__scroll">
-        <p data-i18n="Five Guardians wait among the ice. Awaken Water, Earth, Fire, Air, and Spirit in any order, then scan the Winter Keeper Throne to become a Winter Keeper.">Five Guardians wait among the ice. Awaken Water, Earth, Fire, Air, and Spirit in any order, then scan the Winter Keeper Throne to become a Winter Keeper.</p>
-        <button class="beginStory" id="beginStoryOpen" type="button" data-i18n="The Story of Castle Quest">The Story of Castle Quest</button>
-        <section class="beginSteps" id="beginSteps">
-          <p class="beginBrief__kicker" data-i18n="How it works">How it works</p>
-          <h3 data-i18n="Any order. Unlimited tries.">Any order. Unlimited tries.</h3>
-          <ol>
-            <li><span>01</span> <span data-i18n="Find each Guardian and complete their challenge.">Find each Guardian and complete their challenge.</span></li>
-            <li><span>02</span> <span data-i18n="After all five elements are awake, scan the Winter Keeper Throne.">After all five elements are awake, scan the Winter Keeper Throne.</span></li>
-            <li><span>03</span> <span data-i18n="Show your completion screen at the Gift Shop for your medallion.">Show your completion screen at the Gift Shop for your medallion.</span></li>
-          </ol>
-        </section>
-      </div>
-      <button class="threshold__primary beginContinue" id="beginContinue" type="button" data-i18n="Continue">Continue</button>
-    </div>
-    <div class="storyModal" id="beginStory" hidden>
-      <div class="storyModal__card" role="dialog" aria-modal="true" aria-labelledby="beginStoryTitle">
-        <header class="storyModal__head">
-          <h2 id="beginStoryTitle" data-i18n="The Story of Castle Quest">The Story of Castle Quest</h2>
-          <button class="storyModal__close" id="beginStoryClose" type="button" aria-label="Close" data-i18n-aria="Close">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-          </button>
-        </header>
-        <div class="storyModal__body">
-          <p data-i18n="Castle Quest is a winter adventure: discover how five elements—Water, Earth, Fire, Air, and Spirit—help bring an Ice Castle to life.">Castle Quest is a winter adventure: discover how five elements—Water, Earth, Fire, Air, and Spirit—help bring an Ice Castle to life.</p>
-          <p data-i18n="Five Guardians guide the quest. Each watches over an element and offers a challenge to awaken it.">Five Guardians guide the quest. Each watches over an element and offers a challenge to awaken it.</p>
-          <ul class="storyModal__guardians">
-            <li data-i18n="Cascade notices water’s smallest wonders">Cascade notices water’s smallest wonders</li>
-            <li data-i18n="Granite remembers the ground beneath the ice">Granite remembers the ground beneath the ice</li>
-            <li data-i18n="Ember finds balance in cold and light">Ember finds balance in cold and light</li>
-            <li data-i18n="Summit follows the wind">Summit follows the wind</li>
-            <li data-i18n="Aurora gathers the memories people carry away.">Aurora gathers the memories people carry away.</li>
-          </ul>
-          <p data-i18n="Guests awaken the five elements in any order with help from their Guardians, then visit the Winter Keeper Throne to confirm the quest is complete.">Guests awaken the five elements in any order with help from their Guardians, then visit the Winter Keeper Throne to confirm the quest is complete.</p>
-        </div>
-      </div>
-    </div>
-  </div>
 </section>
 
 <section class="mapModal" id="mapModal" role="dialog" aria-modal="true" aria-labelledby="mapModalTitle" hidden inert>
@@ -378,7 +329,7 @@
 <script src="/js/map.js?v=31"></script>
 <script src="/js/scanner.js?v=20"></script>
 <script src="/js/wind-wisps.js?v=9"></script>
-<script src="/js/i18n.js?v=1"></script>
-<script src="/js/app.js?v=126"></script>
+<script src="/js/i18n.js?v=2"></script>
+<script src="/js/app.js?v=129"></script>
 </body>
 </html>
