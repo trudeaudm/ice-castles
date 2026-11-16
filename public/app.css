@@ -743,13 +743,72 @@ body.landing-open .station { visibility: hidden; }
   color: #eef8ff;
   text-shadow: 0 1px 6px rgba(7, 21, 38, 0.85);
 }
+.landing__face,
+.mapModal__face,
+.journeyHead__face,
+.stop__face {
+  --face-ring: rgba(186, 226, 248, 0.92);
+  --face-well-hi: #1a568f;
+  --face-well-mid: #0c335f;
+  --face-well-lo: #071526;
+  background: radial-gradient(
+    circle at 50% 42%,
+    var(--face-well-hi) 0%,
+    var(--face-well-mid) 72%,
+    var(--face-well-lo) 100%
+  );
+}
+.landing__realm--water .landing__face,
+.mapModal__face--water,
+.journeyHead__face[data-realm="water"],
+.stop[data-realm="water"] .stop__face {
+  --face-ring: rgba(183, 228, 255, 0.95);
+  --face-well-hi: #1a6aa8;
+  --face-well-mid: #0c3f70;
+  --face-well-lo: #071a2e;
+}
+.landing__realm--earth .landing__face,
+.mapModal__face--earth,
+.journeyHead__face[data-realm="earth"],
+.stop[data-realm="earth"] .stop__face {
+  --face-ring: rgba(182, 239, 154, 0.94);
+  --face-well-hi: #3f6e34;
+  --face-well-mid: #1f3a1a;
+  --face-well-lo: #0c160a;
+}
+.landing__realm--fire .landing__face,
+.mapModal__face--fire,
+.journeyHead__face[data-realm="fire"],
+.stop[data-realm="fire"] .stop__face {
+  --face-ring: rgba(255, 196, 138, 0.95);
+  --face-well-hi: #9a4216;
+  --face-well-mid: #4f1e0a;
+  --face-well-lo: #1a0a04;
+}
+.landing__realm--air .landing__face,
+.mapModal__face--air,
+.journeyHead__face[data-realm="air"],
+.stop[data-realm="air"] .stop__face {
+  --face-ring: rgba(242, 248, 252, 0.95);
+  --face-well-hi: #4a6e88;
+  --face-well-mid: #2a4258;
+  --face-well-lo: #101820;
+}
+.landing__realm--spirit .landing__face,
+.mapModal__face--spirit,
+.journeyHead__face[data-realm="spirit"],
+.stop[data-realm="spirit"] .stop__face {
+  --face-ring: rgba(230, 204, 255, 0.95);
+  --face-well-hi: #6a4298;
+  --face-well-mid: #321a58;
+  --face-well-lo: #140a24;
+}
 .landing__face {
   position: relative;
   width: clamp(52px, 16vw, 80px);
   height: clamp(52px, 16vw, 80px);
   border-radius: 50%;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 42%, #1a568f 0%, #0c335f 72%, #071526 100%);
   animation: pfpBob 2.6s ease-in-out infinite;
 }
 /* Keep drop-shadow off while the wave canvas paints — filter re-rasterizes every frame. */
@@ -778,7 +837,7 @@ body.landing-open .station { visibility: hidden; }
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 3px rgba(186, 226, 248, 0.92);
+  box-shadow: inset 0 0 0 3px var(--face-ring);
   opacity: 0;
   z-index: 1;
   pointer-events: none;
@@ -1496,7 +1555,6 @@ body.begin-frame.map-modal-open .guideFab {
   height: clamp(44px, 11vw, 56px);
   border-radius: 50%;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 42%, #1a568f 0%, #0c335f 72%, #071526 100%);
   box-shadow: 0 3px 8px rgba(4, 16, 31, 0.28);
   transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
 }
@@ -1511,7 +1569,7 @@ body.begin-frame.map-modal-open .guideFab {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 2px rgba(186, 226, 248, 0.9);
+  box-shadow: inset 0 0 0 2px var(--face-ring);
   pointer-events: none;
 }
 .mapModal__guardianName {
@@ -1526,7 +1584,9 @@ body.begin-frame.map-modal-open .guideFab {
 .mapModal__guardian:active .mapModal__face,
 .mapModal__guardian:focus-visible .mapModal__face {
   transform: scale(1.08);
-  box-shadow: 0 0 0 3px rgba(74, 168, 220, 0.45), 0 4px 12px rgba(4, 16, 31, 0.3);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--face-ring) 72%, transparent),
+    0 4px 12px rgba(4, 16, 31, 0.3);
 }
 .mapModal__guardian.is-done {
   opacity: 0.52;
@@ -2861,9 +2921,10 @@ button.realmPip:focus-visible {
   aspect-ratio: calc(var(--summon-w) / var(--summon-h));
   margin: 8px auto 0;
 }
-/* Match subject size across realms (--hero-fit), then bump everyone +30%. */
+/* Same hero box for every Guardian. Subject framing stays in the art
+   assets — do not scale width per-realm or Spirit becomes a wider screen. */
 .summon.shrine__hero {
-  width: min(100%, calc(280px * 1.3 * var(--hero-fit, 1) * var(--summon-w) / var(--summon-h)));
+  width: min(100%, calc(280px * 1.3 * var(--summon-w) / var(--summon-h)));
 }
 .summon--portrait {
   width: min(240px, 72%);
@@ -3143,7 +3204,7 @@ button.realmPip:focus-visible {
    above the safe-area, including before a section is opened. */
 @media (max-height: 780px) {
   .summon.shrine__hero {
-    width: min(100%, calc(220px * 1.3 * var(--hero-fit, 1) * var(--summon-w) / var(--summon-h)));
+    width: min(100%, calc(220px * 1.3 * var(--summon-w) / var(--summon-h)));
   }
   .shrineGate {
     min-height: 148px;
@@ -3181,7 +3242,7 @@ button.realmPip:focus-visible {
 }
 @media (max-height: 640px) {
   .summon.shrine__hero {
-    width: min(100%, calc(180px * 1.3 * var(--hero-fit, 1) * var(--summon-w) / var(--summon-h)));
+    width: min(100%, calc(180px * 1.3 * var(--summon-w) / var(--summon-h)));
   }
   .shrine.is-play-open .shrine__art { max-height: 96px; }
   .shrine.is-play-open .shrine__kicker,
