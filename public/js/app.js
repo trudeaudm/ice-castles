@@ -815,6 +815,27 @@ function quietShrineScroll(ms = 480) {
   }, ms);
 }
 
+/* Quiz reveals / challenge step changes resize the card and can nudge
+   scrollY upward — without a quiet window that looks like “swipe up to
+   close” and dumps the guest back on the shrine gate. */
+let challengeScrollGuard = null;
+function armChallengeScrollGuard(root = document) {
+  if (typeof ResizeObserver === 'undefined') return;
+  challengeScrollGuard?.disconnect();
+  challengeScrollGuard = null;
+  const challenge = root.querySelector?.('.challenge');
+  if (!challenge) return;
+  challengeScrollGuard = new ResizeObserver(() => {
+    if (!shrineFocus || !document.body.classList.contains('shrine-fixed')) return;
+    quietShrineScroll(640);
+  });
+  challengeScrollGuard.observe(challenge);
+}
+function clearChallengeScrollGuard() {
+  challengeScrollGuard?.disconnect();
+  challengeScrollGuard = null;
+}
+
 function closeShrineSectionByScroll() {
   if (!shrineFocus || shrineScrollQuiet) return;
   if (!document.body.classList.contains('shrine-fixed')) return;
@@ -1977,6 +1998,7 @@ function clearStationView() {
   stopLeaves();
   if (!document.body.classList.contains('landing-open')) haltWaves();
   setShrineScrollLock(false);
+  clearChallengeScrollGuard();
   delete document.body.dataset.realm;
   shrineSlug = null;
   shrineFocus = null;
@@ -2103,6 +2125,7 @@ function renderStation(slug) {
   if (shrineFocus) setShrineFocus(shrineFocus, { spin: false, scroll: true, restore: true });
   else scrollShrineHome({ smooth: false });
   armSummons(dom.stationView);
+  armChallengeScrollGuard(dom.stationView);
   if (waveRealm && !document.body.classList.contains('landing-open')) armShrineWaves(waveRealm);
   if (station.element === 'fire') startHearth();
   if (station.element === 'air') startWind();
@@ -4324,6 +4347,9 @@ function wire() {
       const station = Store.touchBySlug(root.dataset.station);
       const step = Number(root.dataset.quizStep || 0);
       const card = root.querySelector('[data-quiz-card]');
+      // Reveal swaps tall choice list for shorter fact card — quiet before
+      // layout so upward scroll does not close Play.
+      quietShrineScroll(640);
       if (card) card.innerHTML = quizCardHtml(station, step, Number(event.target.closest('[data-quiz-choice]').dataset.quizChoice));
       return;
     }
@@ -4336,6 +4362,7 @@ function wire() {
         handleStationChallenge(root.dataset.station, { done: true });
         return;
       }
+      quietShrineScroll(640);
       root.dataset.quizStep = String(step);
       const card = root.querySelector('[data-quiz-card]');
       if (card) card.innerHTML = quizCardHtml(station, step, null);
