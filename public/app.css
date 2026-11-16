@@ -2017,7 +2017,6 @@ body.sheet-open .sheet { transform: none; }
   border-radius: 50%;
   overflow: hidden;
   flex: none;
-  background: radial-gradient(circle at 50% 42%, #1a568f 0%, #0c335f 72%, #071526 100%);
   opacity: 0.42;
   filter: grayscale(0.28) drop-shadow(0 2px 6px rgba(4, 16, 31, 0.28));
   animation: pfpBob 2.6s ease-in-out infinite;
@@ -2033,7 +2032,7 @@ body.sheet-open .sheet { transform: none; }
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 2.5px rgba(186, 226, 248, 0.92);
+  box-shadow: inset 0 0 0 2.5px var(--face-ring);
   pointer-events: none;
 }
 .journeyHead__face[data-realm="earth"] { animation-name: pfpSway; animation-duration: 2.9s; animation-delay: 0.15s; }
@@ -2092,7 +2091,6 @@ body.sheet-open .sheet { transform: none; }
   height: 64px;
   border-radius: 50%;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 42%, #1a568f 0%, #0c335f 72%, #071526 100%);
   filter: drop-shadow(0 3px 8px rgba(4, 16, 31, 0.28));
   animation: pfpBob 2.6s ease-in-out infinite;
 }
@@ -2107,7 +2105,7 @@ body.sheet-open .sheet { transform: none; }
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 3px rgba(186, 226, 248, 0.92);
+  box-shadow: inset 0 0 0 3px var(--face-ring);
   pointer-events: none;
 }
 .stop[data-realm="earth"] .stop__face { animation-name: pfpSway; animation-duration: 2.9s; animation-delay: 0.15s; }
@@ -3770,7 +3768,9 @@ button:not(.shrineIcon):not(.sheet__grip):not(.landing__realm):not(.mapModal__gu
   .landing__realm:hover .landing__face { animation: pfpTalk 480ms var(--ease-spring); }
   .mapModal__guardian:hover .mapModal__face {
     transform: scale(1.08);
-    box-shadow: 0 0 0 3px rgba(74, 168, 220, 0.45), 0 4px 12px rgba(4, 16, 31, 0.3);
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--face-ring) 72%, transparent),
+      0 4px 12px rgba(4, 16, 31, 0.3);
   }
   .landing__begin:hover {
     filter: brightness(1.06);
@@ -3965,6 +3965,12 @@ body[data-realm] .shrine .chip--target {
 }
 body[data-realm] .shrine__art {
   filter: drop-shadow(0 14px 18px color-mix(in srgb, var(--realm-ink) 40%, transparent));
+}
+/* Match landing: drop-shadow + scale/wave re-rasterizes into a muddy fringe. */
+body[data-realm] .shrine__hero.is-waving .shrine__art,
+body[data-realm] .summon.is-summoning.is-shown:not(.is-settled) .shrine__art,
+body[data-realm] .summon.is-summoning.is-shown:not(.is-settled) .shrine__portrait {
+  filter: none;
 }
 body[data-realm] .shrinePanel {
   border-color: color-mix(in srgb, var(--realm-ink) 32%, white);
